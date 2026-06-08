@@ -1,0 +1,164 @@
+{
+  "registry_id": "7fbb3a288ecea6084ef09d4e6a771d9af9d9dd22e1492d0d26b7ed3a9541073f",
+  "registry_hash": "7fbb3a288ecea6084ef09d4e6a771d9af9d9dd22e1492d0d26b7ed3a9541073f",
+  "source_explanation_id": "518614169a935c8d02ac7549fcac83abcc4e8a42c93c403da333c1ba177d0024",
+  "source_bundle_id": "1093d437431086c4f5cb8e5fe37aaf1320bc4282bb412ad0c5afd32d9dcb58b5",
+  "source_agent_input_id": "26e5603ce3121e712925769a10d5d8ceb84928bdd1422a877d34718a0d8e2f0a",
+  "source_model_identifier": "template_explanation_v01",
+  "source_explanation_engine_version": "0.1.0",
+  "n_claims": 9,
+  "claims": [
+    {
+      "claim_id": "ec163980a7d1643933421f32ab55eb4f8e2566899d48847124c19148019543e3",
+      "source_explanation_id": "518614169a935c8d02ac7549fcac83abcc4e8a42c93c403da333c1ba177d0024",
+      "claim_index": 0,
+      "supporting_evidence_ids": [
+        "193fbefcef2f81c5f98e9a685612047be0ba52bdc42af306016cf1e310160983"
+      ],
+      "claim_text": "Evidence 193fbefcef2f\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=36086 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.0, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.378772906845563; is_apparent_not_confirmed=True.",
+      "schema_version": "0.1.0"
+    },
+    {
+      "claim_id": "bedae18091c32ed88d3e2296ad143bf8286498391258dd6ce0ea4d8854118729",
+      "source_explanation_id": "518614169a935c8d02ac7549fcac83abcc4e8a42c93c403da333c1ba177d0024",
+      "claim_index": 1,
+      "supporting_evidence_ids": [
+        "354b662ad04dc0a8e056695bad4b6c64f8cb3d0aa5cd457c671df784bb9ab937"
+      ],
+      "claim_text": "Evidence 354b662ad04d\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=49044 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.0, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.378772906845563; is_apparent_not_confirmed=True.",
+      "schema_version": "0.1.0"
+    },
+    {
+      "claim_id": "464383c0aeedb058161badd596cc75b6760bcb332105ad83831dc977318a780f",
+      "source_explanation_id": "518614169a935c8d02ac7549fcac83abcc4e8a42c93c403da333c1ba177d0024",
+      "claim_index": 2,
+      "supporting_evidence_ids": [
+        "4b95d9f548d4234376ae4728ae8ae0593f2db9964456da1ca32ae7d8dcf619b6"
+      ],
+      "claim_text": "Evidence 4b95d9f548d4\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=68319 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.0, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.378772906845563; is_apparent_not_confirmed=True.",
+      "schema_version": "0.1.0"
+    },
+    {
+      "claim_id": "02e0b8157e10728ceb7ce5a6f60f63b0a5530e868fa9e9f46ddac2b621a5a67d",
+      "source_explanation_id": "518614169a935c8d02ac7549fcac83abcc4e8a42c93c403da333c1ba177d0024",
+      "claim_index": 3,
+      "supporting_evidence_ids": [
+        "5b5eaac204becf4c5e7de8453bbd42cdff16452c6fbb05a149ecc8ec8eb5cae8"
+      ],
+      "claim_text": "Evidence 5b5eaac204be\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=68689 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.5659049458583728, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.3787730129115827; is_apparent_not_confirmed=True.",
+      "schema_version": "0.1.0"
+    },
+    {
+      "claim_id": "f09e71337e5c77e7eee2768654ac1472a0cbcae5f6566d793e6484359d666f61",
+      "source_explanation_id": "518614169a935c8d02ac7549fcac83abcc4e8a42c93c403da333c1ba177d0024",
+      "claim_index": 4,
+      "supporting_evidence_ids": [
+        "76b8db6f02a3ee5a7ae70f4540a4c379cc5c98e5dabbe3849f8f10698097a6b1"
+      ],
+      "claim_text": "Evidence 76b8db6f02a3\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=67796 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.5659049458583728, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.3787730129115827; is_apparent_not_confirmed=True.",
+      "schema_version": "0.1.0"
+    },
+    {
+      "claim_id": "f0a81f4538f64f66820582bb87ff198b0eb2afd0db0bb9cc6e3d67c3ab0d002d",
+      "source_explanation_id": "518614169a935c8d02ac7549fcac83abcc4e8a42c93c403da333c1ba177d0024",
+      "claim_index": 5,
+      "supporting_evidence_ids": [
+        "82df8436c406bdd81b7c96be52cc718b8aa81a0a148bae2b48f5a408dc82eb9c"
+      ],
+      "claim_text": "Evidence 82df8436c406\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=66664 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.0, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.378772906845563; is_apparent_not_confirmed=True.",
+      "schema_version": "0.1.0"
+    },
+    {
+      "claim_id": "66656bb809811cf02bc5d80a7b60d77a809712512f04a52188cbc6f981fcf682",
+      "source_explanation_id": "518614169a935c8d02ac7549fcac83abcc4e8a42c93c403da333c1ba177d0024",
+      "claim_index": 6,
+      "supporting_evidence_ids": [
+        "ba4dc89fd931afe1cdefea16920dd1358bf3b83b3820940173fb16b8a6258574"
+      ],
+      "claim_text": "Evidence ba4dc89fd931\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=68837 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.5659049458583728, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.3787730129115827; is_apparent_not_confirmed=True.",
+      "schema_version": "0.1.0"
+    },
+    {
+      "claim_id": "d049b290dbb4a6fe8747db1db0fe5e1754f0e829a08c3313fd322f7fd1f64002",
+      "source_explanation_id": "518614169a935c8d02ac7549fcac83abcc4e8a42c93c403da333c1ba177d0024",
+      "claim_index": 7,
+      "supporting_evidence_ids": [
+        "f28a7d1a884e30cfb7559d4b7b4df862612149495c994eb4f26bc76a7e4a2599"
+      ],
+      "claim_text": "Evidence f28a7d1a884e\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=69103 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.0, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.378772906845563; is_apparent_not_confirmed=True.",
+      "schema_version": "0.1.0"
+    },
+    {
+      "claim_id": "d67a7098f1ef162a300cad2df94eb3d106ee5e5219a7d1c4786b3140f8123b6e",
+      "source_explanation_id": "518614169a935c8d02ac7549fcac83abcc4e8a42c93c403da333c1ba177d0024",
+      "claim_index": 8,
+      "supporting_evidence_ids": [
+        "ea141da775c9029667e76233c978a5a88eaf4827de3f5c81d4bd11b9d0d19c24"
+      ],
+      "claim_text": "Evidence ea141da775c9\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=67688 at TCA=2026-06-14T08:46:28.769531+00:00; miss_distance_km=46.91449206842249, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=10.340632775852393; is_apparent_not_confirmed=True.",
+      "schema_version": "0.1.0"
+    }
+  ],
+  "claim_to_evidence_index": {
+    "02e0b8157e10728ceb7ce5a6f60f63b0a5530e868fa9e9f46ddac2b621a5a67d": [
+      "5b5eaac204becf4c5e7de8453bbd42cdff16452c6fbb05a149ecc8ec8eb5cae8"
+    ],
+    "464383c0aeedb058161badd596cc75b6760bcb332105ad83831dc977318a780f": [
+      "4b95d9f548d4234376ae4728ae8ae0593f2db9964456da1ca32ae7d8dcf619b6"
+    ],
+    "66656bb809811cf02bc5d80a7b60d77a809712512f04a52188cbc6f981fcf682": [
+      "ba4dc89fd931afe1cdefea16920dd1358bf3b83b3820940173fb16b8a6258574"
+    ],
+    "bedae18091c32ed88d3e2296ad143bf8286498391258dd6ce0ea4d8854118729": [
+      "354b662ad04dc0a8e056695bad4b6c64f8cb3d0aa5cd457c671df784bb9ab937"
+    ],
+    "d049b290dbb4a6fe8747db1db0fe5e1754f0e829a08c3313fd322f7fd1f64002": [
+      "f28a7d1a884e30cfb7559d4b7b4df862612149495c994eb4f26bc76a7e4a2599"
+    ],
+    "d67a7098f1ef162a300cad2df94eb3d106ee5e5219a7d1c4786b3140f8123b6e": [
+      "ea141da775c9029667e76233c978a5a88eaf4827de3f5c81d4bd11b9d0d19c24"
+    ],
+    "ec163980a7d1643933421f32ab55eb4f8e2566899d48847124c19148019543e3": [
+      "193fbefcef2f81c5f98e9a685612047be0ba52bdc42af306016cf1e310160983"
+    ],
+    "f09e71337e5c77e7eee2768654ac1472a0cbcae5f6566d793e6484359d666f61": [
+      "76b8db6f02a3ee5a7ae70f4540a4c379cc5c98e5dabbe3849f8f10698097a6b1"
+    ],
+    "f0a81f4538f64f66820582bb87ff198b0eb2afd0db0bb9cc6e3d67c3ab0d002d": [
+      "82df8436c406bdd81b7c96be52cc718b8aa81a0a148bae2b48f5a408dc82eb9c"
+    ]
+  },
+  "evidence_to_claim_index": {
+    "193fbefcef2f81c5f98e9a685612047be0ba52bdc42af306016cf1e310160983": [
+      "ec163980a7d1643933421f32ab55eb4f8e2566899d48847124c19148019543e3"
+    ],
+    "354b662ad04dc0a8e056695bad4b6c64f8cb3d0aa5cd457c671df784bb9ab937": [
+      "bedae18091c32ed88d3e2296ad143bf8286498391258dd6ce0ea4d8854118729"
+    ],
+    "4b95d9f548d4234376ae4728ae8ae0593f2db9964456da1ca32ae7d8dcf619b6": [
+      "464383c0aeedb058161badd596cc75b6760bcb332105ad83831dc977318a780f"
+    ],
+    "5b5eaac204becf4c5e7de8453bbd42cdff16452c6fbb05a149ecc8ec8eb5cae8": [
+      "02e0b8157e10728ceb7ce5a6f60f63b0a5530e868fa9e9f46ddac2b621a5a67d"
+    ],
+    "76b8db6f02a3ee5a7ae70f4540a4c379cc5c98e5dabbe3849f8f10698097a6b1": [
+      "f09e71337e5c77e7eee2768654ac1472a0cbcae5f6566d793e6484359d666f61"
+    ],
+    "82df8436c406bdd81b7c96be52cc718b8aa81a0a148bae2b48f5a408dc82eb9c": [
+      "f0a81f4538f64f66820582bb87ff198b0eb2afd0db0bb9cc6e3d67c3ab0d002d"
+    ],
+    "ba4dc89fd931afe1cdefea16920dd1358bf3b83b3820940173fb16b8a6258574": [
+      "66656bb809811cf02bc5d80a7b60d77a809712512f04a52188cbc6f981fcf682"
+    ],
+    "ea141da775c9029667e76233c978a5a88eaf4827de3f5c81d4bd11b9d0d19c24": [
+      "d67a7098f1ef162a300cad2df94eb3d106ee5e5219a7d1c4786b3140f8123b6e"
+    ],
+    "f28a7d1a884e30cfb7559d4b7b4df862612149495c994eb4f26bc76a7e4a2599": [
+      "d049b290dbb4a6fe8747db1db0fe5e1754f0e829a08c3313fd322f7fd1f64002"
+    ]
+  },
+  "registry_emit_reason": "evidence_bundle",
+  "schema_version": "0.1.0",
+  "claim_layer_engine_version": "0.1.0",
+  "derived_at": "2026-06-08T19:39:11.831870Z"
+}

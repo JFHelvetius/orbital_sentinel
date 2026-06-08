@@ -1,0 +1,78 @@
+{
+  "registry_id": "c7ed9a920c0eaba89969cab52d4b82370e3b54f8dd4612455abe6beea4f3a105",
+  "registry_hash": "c7ed9a920c0eaba89969cab52d4b82370e3b54f8dd4612455abe6beea4f3a105",
+  "source_claim_registry_id": "7fbb3a288ecea6084ef09d4e6a771d9af9d9dd22e1492d0d26b7ed3a9541073f",
+  "source_bundle_id": "1093d437431086c4f5cb8e5fe37aaf1320bc4282bb412ad0c5afd32d9dcb58b5",
+  "source_agent_input_id": "26e5603ce3121e712925769a10d5d8ceb84928bdd1422a877d34718a0d8e2f0a",
+  "source_explanation_id": "518614169a935c8d02ac7549fcac83abcc4e8a42c93c403da333c1ba177d0024",
+  "source_model_identifier": "template_hypothesis_grouping_v01",
+  "source_claim_layer_engine_version": "0.1.0",
+  "n_hypotheses": 1,
+  "hypotheses": [
+    {
+      "hypothesis_id": "82ba30f192baf5f87366c637949dedab6835252facf6e3b915d3edda91550936",
+      "source_claim_registry_id": "7fbb3a288ecea6084ef09d4e6a771d9af9d9dd22e1492d0d26b7ed3a9541073f",
+      "hypothesis_index": 0,
+      "grouping_key": "25544|conjunction_detected",
+      "supporting_claim_ids": [
+        "02e0b8157e10728ceb7ce5a6f60f63b0a5530e868fa9e9f46ddac2b621a5a67d",
+        "464383c0aeedb058161badd596cc75b6760bcb332105ad83831dc977318a780f",
+        "66656bb809811cf02bc5d80a7b60d77a809712512f04a52188cbc6f981fcf682",
+        "bedae18091c32ed88d3e2296ad143bf8286498391258dd6ce0ea4d8854118729",
+        "d049b290dbb4a6fe8747db1db0fe5e1754f0e829a08c3313fd322f7fd1f64002",
+        "d67a7098f1ef162a300cad2df94eb3d106ee5e5219a7d1c4786b3140f8123b6e",
+        "ec163980a7d1643933421f32ab55eb4f8e2566899d48847124c19148019543e3",
+        "f09e71337e5c77e7eee2768654ac1472a0cbcae5f6566d793e6484359d666f61",
+        "f0a81f4538f64f66820582bb87ff198b0eb2afd0db0bb9cc6e3d67c3ab0d002d"
+      ],
+      "hypothesis_label": "Object 25544 exhibits conjunction_detected evidence (9 claims).",
+      "schema_version": "1.0.0"
+    }
+  ],
+  "hypothesis_to_claim_index": {
+    "82ba30f192baf5f87366c637949dedab6835252facf6e3b915d3edda91550936": [
+      "02e0b8157e10728ceb7ce5a6f60f63b0a5530e868fa9e9f46ddac2b621a5a67d",
+      "464383c0aeedb058161badd596cc75b6760bcb332105ad83831dc977318a780f",
+      "66656bb809811cf02bc5d80a7b60d77a809712512f04a52188cbc6f981fcf682",
+      "bedae18091c32ed88d3e2296ad143bf8286498391258dd6ce0ea4d8854118729",
+      "d049b290dbb4a6fe8747db1db0fe5e1754f0e829a08c3313fd322f7fd1f64002",
+      "d67a7098f1ef162a300cad2df94eb3d106ee5e5219a7d1c4786b3140f8123b6e",
+      "ec163980a7d1643933421f32ab55eb4f8e2566899d48847124c19148019543e3",
+      "f09e71337e5c77e7eee2768654ac1472a0cbcae5f6566d793e6484359d666f61",
+      "f0a81f4538f64f66820582bb87ff198b0eb2afd0db0bb9cc6e3d67c3ab0d002d"
+    ]
+  },
+  "claim_to_hypothesis_index": {
+    "02e0b8157e10728ceb7ce5a6f60f63b0a5530e868fa9e9f46ddac2b621a5a67d": [
+      "82ba30f192baf5f87366c637949dedab6835252facf6e3b915d3edda91550936"
+    ],
+    "464383c0aeedb058161badd596cc75b6760bcb332105ad83831dc977318a780f": [
+      "82ba30f192baf5f87366c637949dedab6835252facf6e3b915d3edda91550936"
+    ],
+    "66656bb809811cf02bc5d80a7b60d77a809712512f04a52188cbc6f981fcf682": [
+      "82ba30f192baf5f87366c637949dedab6835252facf6e3b915d3edda91550936"
+    ],
+    "bedae18091c32ed88d3e2296ad143bf8286498391258dd6ce0ea4d8854118729": [
+      "82ba30f192baf5f87366c637949dedab6835252facf6e3b915d3edda91550936"
+    ],
+    "d049b290dbb4a6fe8747db1db0fe5e1754f0e829a08c3313fd322f7fd1f64002": [
+      "82ba30f192baf5f87366c637949dedab6835252facf6e3b915d3edda91550936"
+    ],
+    "d67a7098f1ef162a300cad2df94eb3d106ee5e5219a7d1c4786b3140f8123b6e": [
+      "82ba30f192baf5f87366c637949dedab6835252facf6e3b915d3edda91550936"
+    ],
+    "ec163980a7d1643933421f32ab55eb4f8e2566899d48847124c19148019543e3": [
+      "82ba30f192baf5f87366c637949dedab6835252facf6e3b915d3edda91550936"
+    ],
+    "f09e71337e5c77e7eee2768654ac1472a0cbcae5f6566d793e6484359d666f61": [
+      "82ba30f192baf5f87366c637949dedab6835252facf6e3b915d3edda91550936"
+    ],
+    "f0a81f4538f64f66820582bb87ff198b0eb2afd0db0bb9cc6e3d67c3ab0d002d": [
+      "82ba30f192baf5f87366c637949dedab6835252facf6e3b915d3edda91550936"
+    ]
+  },
+  "registry_emit_reason": "claim_registry_populated",
+  "schema_version": "1.0.0",
+  "hypothesis_layer_engine_version": "1.0.0",
+  "derived_at": "2026-06-08T19:39:12.140229Z"
+}

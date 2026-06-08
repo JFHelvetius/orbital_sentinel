@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# uv
+.python-version
+
+# Tests / coverage / type checking
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Project data (local caches, derived data — see ADR-0006)
+data/raw/
+data/derived/
+data/cache/
+!data/.gitkeep
+
+# Secrets (see ADR-0011)
+.env
+.env.local
+*.pem
+*.key
+
+# Local-only run artifacts (transient logs, not tracked)
+mypy_full.txt
+ruff_full.txt
+
+# Reference cases caches/raw are intermediate. Final artifacts (JSON + verifications + README)
+# are tracked explicitly; per-case raw/normalized/derived parquet are excluded by convention.
+reference_cases/*/raw/year=*
+reference_cases/*/normalized/engine_version=*
+reference_cases/*/derived/
+reference_cases/*/cache/

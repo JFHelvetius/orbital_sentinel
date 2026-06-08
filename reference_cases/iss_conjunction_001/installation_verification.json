@@ -1,0 +1,23 @@
+{
+  "contract_version": "1.0.0",
+  "frozen_at": "2026-06-07",
+  "is_valid": true,
+  "n_hashes_verified": 16,
+  "n_mismatches": 0,
+  "adrs_covered": [
+    "ADR-0029",
+    "ADR-0031",
+    "ADR-0032",
+    "ADR-0033",
+    "ADR-0035",
+    "ADR-0036",
+    "ADR-0037",
+    "ADR-0038",
+    "ADR-0039",
+    "ADR-0040",
+    "ADR-0041"
+  ],
+  "mismatches": [],
+  "package_version": "1.0.0",
+  "verified_at": "2026-06-08T19:41:22.379113Z"
+}

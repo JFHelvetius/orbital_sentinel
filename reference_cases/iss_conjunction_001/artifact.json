@@ -1,0 +1,45 @@
+{
+  "explanation_id": "518614169a935c8d02ac7549fcac83abcc4e8a42c93c403da333c1ba177d0024",
+  "source_agent_input_id": "26e5603ce3121e712925769a10d5d8ceb84928bdd1422a877d34718a0d8e2f0a",
+  "source_bundle_id": "1093d437431086c4f5cb8e5fe37aaf1320bc4282bb412ad0c5afd32d9dcb58b5",
+  "referenced_evidence_ids": [
+    "193fbefcef2f81c5f98e9a685612047be0ba52bdc42af306016cf1e310160983",
+    "354b662ad04dc0a8e056695bad4b6c64f8cb3d0aa5cd457c671df784bb9ab937",
+    "4b95d9f548d4234376ae4728ae8ae0593f2db9964456da1ca32ae7d8dcf619b6",
+    "5b5eaac204becf4c5e7de8453bbd42cdff16452c6fbb05a149ecc8ec8eb5cae8",
+    "76b8db6f02a3ee5a7ae70f4540a4c379cc5c98e5dabbe3849f8f10698097a6b1",
+    "82df8436c406bdd81b7c96be52cc718b8aa81a0a148bae2b48f5a408dc82eb9c",
+    "ba4dc89fd931afe1cdefea16920dd1358bf3b83b3820940173fb16b8a6258574",
+    "f28a7d1a884e30cfb7559d4b7b4df862612149495c994eb4f26bc76a7e4a2599",
+    "ea141da775c9029667e76233c978a5a88eaf4827de3f5c81d4bd11b9d0d19c24"
+  ],
+  "explanation_text": "Evidence 193fbefcef2f\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=36086 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.0, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.378772906845563; is_apparent_not_confirmed=True.\nEvidence 354b662ad04d\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=49044 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.0, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.378772906845563; is_apparent_not_confirmed=True.\nEvidence 4b95d9f548d4\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=68319 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.0, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.378772906845563; is_apparent_not_confirmed=True.\nEvidence 5b5eaac204be\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=68689 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.5659049458583728, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.3787730129115827; is_apparent_not_confirmed=True.\nEvidence 76b8db6f02a3\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=67796 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.5659049458583728, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.3787730129115827; is_apparent_not_confirmed=True.\nEvidence 82df8436c406\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=66664 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.0, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.378772906845563; is_apparent_not_confirmed=True.\nEvidence ba4dc89fd931\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=68837 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.5659049458583728, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.3787730129115827; is_apparent_not_confirmed=True.\nEvidence f28a7d1a884e\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=69103 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.0, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.378772906845563; is_apparent_not_confirmed=True.\nEvidence ea141da775c9\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=67688 at TCA=2026-06-14T08:46:28.769531+00:00; miss_distance_km=46.91449206842249, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=10.340632775852393; is_apparent_not_confirmed=True.",
+  "generation_metadata": {
+    "model_identifier": "template_explanation_v01",
+    "generation_method": "deterministic_template_concatenation_v01",
+    "prompt_hash": "ac87137764b8c39814cb8f77c9d3819ece18a16be1f84edb9e1164f7454656b0",
+    "n_evidence_processed": 9
+  },
+  "audit_record": {
+    "explanation_id": "518614169a935c8d02ac7549fcac83abcc4e8a42c93c403da333c1ba177d0024",
+    "agent_input_id": "26e5603ce3121e712925769a10d5d8ceb84928bdd1422a877d34718a0d8e2f0a",
+    "bundle_id": "1093d437431086c4f5cb8e5fe37aaf1320bc4282bb412ad0c5afd32d9dcb58b5",
+    "evidence_ids_used": [
+      "193fbefcef2f81c5f98e9a685612047be0ba52bdc42af306016cf1e310160983",
+      "354b662ad04dc0a8e056695bad4b6c64f8cb3d0aa5cd457c671df784bb9ab937",
+      "4b95d9f548d4234376ae4728ae8ae0593f2db9964456da1ca32ae7d8dcf619b6",
+      "5b5eaac204becf4c5e7de8453bbd42cdff16452c6fbb05a149ecc8ec8eb5cae8",
+      "76b8db6f02a3ee5a7ae70f4540a4c379cc5c98e5dabbe3849f8f10698097a6b1",
+      "82df8436c406bdd81b7c96be52cc718b8aa81a0a148bae2b48f5a408dc82eb9c",
+      "ba4dc89fd931afe1cdefea16920dd1358bf3b83b3820940173fb16b8a6258574",
+      "f28a7d1a884e30cfb7559d4b7b4df862612149495c994eb4f26bc76a7e4a2599",
+      "ea141da775c9029667e76233c978a5a88eaf4827de3f5c81d4bd11b9d0d19c24"
+    ],
+    "generation_timestamp": "2026-06-08T19:39:11.522396Z",
+    "prompt_hash": "ac87137764b8c39814cb8f77c9d3819ece18a16be1f84edb9e1164f7454656b0",
+    "model_identifier": "template_explanation_v01"
+  },
+  "schema_version": "0.1.0",
+  "explanation_engine_version": "0.1.0",
+  "generated_at": "2026-06-08T19:39:11.522396Z"
+}
