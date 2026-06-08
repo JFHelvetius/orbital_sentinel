@@ -1,0 +1,20 @@
+{
+  "registry_id": "2ce5fe8865b70f73e8f7df2f26468db1e677f768358d5a704dbe03479e96b328",
+  "is_valid": true,
+  "n_records_verified": 1,
+  "n_findings": 0,
+  "registry_id_is_alias_of_registry_hash": true,
+  "registry_hash_recomputes_correctly": true,
+  "all_source_record_ids_recompute_correctly": true,
+  "no_duplicate_source_record_ids": true,
+  "forward_index_consistent": true,
+  "reverse_index_consistent": true,
+  "all_evidence_ids_covered": true,
+  "source_bundle_id_matches": true,
+  "source_layer_engine_version_consistent": true,
+  "findings": [],
+  "verification_hash": "d21e5a672a1ec04a9325393d8a03678a519981e9e3dd7f757178ebc23713e0fc",
+  "verifier_engine_version": "1.0.0",
+  "schema_version": "1.0.0",
+  "verified_at": "2026-06-08T19:50:03.799962Z"
+}

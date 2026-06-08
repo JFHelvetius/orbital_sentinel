@@ -1,0 +1,11 @@
+Cross-case checks (auditor recomputes from JSON only):
+  case 001 references bundle  : 1093d437431086c4... == 1093d437431086c4... OK
+  src 001 points to bundle    : 1093d437431086c4... == 1093d437431086c4... OK
+  case 001 != case 002 (distinct content-addressable identities) OK
+  shared Celestrak payload    : both reference 8ebce06318d885caf194e9819fd457aa... OK
+  payload hash structure      : valid SHA-256 hex OK
+
+AUDITOR INDEPENDENT CONCLUSION:
+  Both reference cases are structurally consistent.
+  Cross-case binding is preserved cryptographically.
+  Provenance both anchors to the SAME real Celestrak snapshot.

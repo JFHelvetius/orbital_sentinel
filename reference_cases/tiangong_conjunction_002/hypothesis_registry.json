@@ -1,0 +1,63 @@
+{
+  "registry_id": "1f1beac5e8e2d92f5adb1ff688b0b45954c76711ba392cf5566551e8a7ad3876",
+  "registry_hash": "1f1beac5e8e2d92f5adb1ff688b0b45954c76711ba392cf5566551e8a7ad3876",
+  "source_claim_registry_id": "7dc8f5e02a91d158d6dfd17bd638ad70d5c78765f330c1dcb23bc6fd5125a7b8",
+  "source_bundle_id": "b021fbe1986367b30cb2345fe0f521638bca24420569d38669a308f01ec91ec6",
+  "source_agent_input_id": "cbbfb38c68f713b1428d5c91e1d0881e243a36c9f953deeb5aeb48ede483d67e",
+  "source_explanation_id": "bec82ba0db9a0388fdb38255e6f5abbe55ad1e9355287982b9cafbaff986f1aa",
+  "source_model_identifier": "template_hypothesis_grouping_v01",
+  "source_claim_layer_engine_version": "0.1.0",
+  "n_hypotheses": 1,
+  "hypotheses": [
+    {
+      "hypothesis_id": "76e72e659c32dc979c1a1506b0119120692c41d67e0f765ef789ba6d2b5a4a11",
+      "source_claim_registry_id": "7dc8f5e02a91d158d6dfd17bd638ad70d5c78765f330c1dcb23bc6fd5125a7b8",
+      "hypothesis_index": 0,
+      "grouping_key": "48274|conjunction_detected",
+      "supporting_claim_ids": [
+        "421c1fda1b0ecfc215c336fc317feb1fb2adc1d4ea5f82f2d47fca3c0ade4737",
+        "8683d2dd752751fc413dffcce06998e740e1d4357402b3d4ad98b57f7763d7a9",
+        "9998a377d2842b5e7b461980c17f3c889175e60c8e34cc4b3c4e7c17ffdf7d2d",
+        "c7a32ce7768cb81a0611d176c74ee5f89d47c0ad5d6eedffda9458d46cecbfbb",
+        "e23e6037af538c122f88b0463b5843b51dbb93a5bea8104e9f965081c915d779",
+        "e7019b27a1360db8143feb600aa3d981d031a43aad3276e8686ea46f8ec49094"
+      ],
+      "hypothesis_label": "Object 48274 exhibits conjunction_detected evidence (6 claims).",
+      "schema_version": "1.0.0"
+    }
+  ],
+  "hypothesis_to_claim_index": {
+    "76e72e659c32dc979c1a1506b0119120692c41d67e0f765ef789ba6d2b5a4a11": [
+      "421c1fda1b0ecfc215c336fc317feb1fb2adc1d4ea5f82f2d47fca3c0ade4737",
+      "8683d2dd752751fc413dffcce06998e740e1d4357402b3d4ad98b57f7763d7a9",
+      "9998a377d2842b5e7b461980c17f3c889175e60c8e34cc4b3c4e7c17ffdf7d2d",
+      "c7a32ce7768cb81a0611d176c74ee5f89d47c0ad5d6eedffda9458d46cecbfbb",
+      "e23e6037af538c122f88b0463b5843b51dbb93a5bea8104e9f965081c915d779",
+      "e7019b27a1360db8143feb600aa3d981d031a43aad3276e8686ea46f8ec49094"
+    ]
+  },
+  "claim_to_hypothesis_index": {
+    "421c1fda1b0ecfc215c336fc317feb1fb2adc1d4ea5f82f2d47fca3c0ade4737": [
+      "76e72e659c32dc979c1a1506b0119120692c41d67e0f765ef789ba6d2b5a4a11"
+    ],
+    "8683d2dd752751fc413dffcce06998e740e1d4357402b3d4ad98b57f7763d7a9": [
+      "76e72e659c32dc979c1a1506b0119120692c41d67e0f765ef789ba6d2b5a4a11"
+    ],
+    "9998a377d2842b5e7b461980c17f3c889175e60c8e34cc4b3c4e7c17ffdf7d2d": [
+      "76e72e659c32dc979c1a1506b0119120692c41d67e0f765ef789ba6d2b5a4a11"
+    ],
+    "c7a32ce7768cb81a0611d176c74ee5f89d47c0ad5d6eedffda9458d46cecbfbb": [
+      "76e72e659c32dc979c1a1506b0119120692c41d67e0f765ef789ba6d2b5a4a11"
+    ],
+    "e23e6037af538c122f88b0463b5843b51dbb93a5bea8104e9f965081c915d779": [
+      "76e72e659c32dc979c1a1506b0119120692c41d67e0f765ef789ba6d2b5a4a11"
+    ],
+    "e7019b27a1360db8143feb600aa3d981d031a43aad3276e8686ea46f8ec49094": [
+      "76e72e659c32dc979c1a1506b0119120692c41d67e0f765ef789ba6d2b5a4a11"
+    ]
+  },
+  "registry_emit_reason": "claim_registry_populated",
+  "schema_version": "1.0.0",
+  "hypothesis_layer_engine_version": "1.0.0",
+  "derived_at": "2026-06-08T19:47:58.037870Z"
+}

@@ -1,0 +1,8 @@
+  Producer cache path:  reference_cases/iss_conjunction_001/cache/blobs/8e/8ebce06318d885caf194e9819fd457aace3fb0f49c5c35ad62f0218ed745c4f9.bin
+  Declared payload hash:  8ebce06318d885caf194e9819fd457aace3fb0f49c5c35ad62f0218ed745c4f9
+  Recomputed from cache:  8ebce06318d885caf194e9819fd457aace3fb0f49c5c35ad62f0218ed745c4f9
+  Cache size:             4200 bytes
+
+  IDENTICAL: producer cache content matches declared hash bit-by-bit.
+  The provenance chain is verifiable from the original Celestrak bytes
+  to the InvestigationCase hash, end-to-end.

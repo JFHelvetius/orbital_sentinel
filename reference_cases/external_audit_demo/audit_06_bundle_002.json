@@ -1,0 +1,15 @@
+{
+  "bundle_id": "b021fbe1986367b30cb2345fe0f521638bca24420569d38669a308f01ec91ec6",
+  "is_valid": true,
+  "n_payloads_total": 6,
+  "n_payloads_with_valid_hash": 6,
+  "n_payloads_with_invalid_hash": 0,
+  "context_id_recomputes_correctly": true,
+  "source_catalog_signature_recomputes_correctly": true,
+  "bundle_payload_signature_recomputes_correctly": true,
+  "bundle_signature_recomputes_correctly": true,
+  "bundle_id_is_alias_of_bundle_signature": true,
+  "integrity_failures": [],
+  "verifier_engine_version": "0.1.0",
+  "verified_at": "2026-06-08T19:50:04.371049Z"
+}

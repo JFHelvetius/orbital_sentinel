@@ -1,0 +1,13 @@
+  Declared URL:           https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle
+  Declared payload hash:  8ebce06318d885caf194e9819fd457aace3fb0f49c5c35ad62f0218ed745c4f9
+  Declared payload size:  4200 bytes
+
+  Fetching original URL independently...
+  Re-fetched payload hash:  5075f9e1c50eefae350eca42b0859127d0aab087a484f9df8ab9a421ac442649
+  Re-fetched payload size:  4200 bytes
+
+  DIFFERS: Celestrak has updated the TLE since the producer fetched it.
+  This is EXPECTED behavior — TLEs are perishable.
+  The original producer hash is still cryptographically tied to the case.
+  An auditor with access to a Celestrak archive (or producer cache) can
+  recover the original bytes and re-verify the payload hash bit-by-bit.

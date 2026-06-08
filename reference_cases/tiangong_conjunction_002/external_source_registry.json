@@ -1,0 +1,53 @@
+{
+  "registry_id": "ef0b9918a8b26462399fc5208660d4499404cb996fb0ba914fa2ff806b590e22",
+  "registry_hash": "ef0b9918a8b26462399fc5208660d4499404cb996fb0ba914fa2ff806b590e22",
+  "source_bundle_id": "b021fbe1986367b30cb2345fe0f521638bca24420569d38669a308f01ec91ec6",
+  "records": [
+    {
+      "source_record_id": "cc99be8d2c85320b883264119ee8fd0be49471268bf9399b07eb6ce5a1ad6a40",
+      "source_provider": "celestrak",
+      "source_url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle",
+      "source_dataset_identifier": "stations",
+      "fetched_at": "2026-06-08T14:07:52.097802Z",
+      "source_payload_hash": "8ebce06318d885caf194e9819fd457aace3fb0f49c5c35ad62f0218ed745c4f9",
+      "source_payload_size_bytes": 4200,
+      "source_content_type": "tle_text",
+      "schema_version": "1.0.0"
+    }
+  ],
+  "n_records": 1,
+  "source_record_to_evidence_index": {
+    "cc99be8d2c85320b883264119ee8fd0be49471268bf9399b07eb6ce5a1ad6a40": [
+      "07dd02efce4076a3f342d9606125b344bc6a24fae904df1c4bc29a0ceba982a1",
+      "51b348d78968203a8adcbb6138f08dded6472655b38d80485d6f2831cc1ce4f3",
+      "5594a4fbf59a813ee819817a79f91a01b1b556ae2e8411caafcdd34a09a3970e",
+      "5a6f78c60659764feb1897a3f8302fec5568cb1f785595ec23763f070922caac",
+      "655c8ce94c1d28b78b05b766d5fcd4727f94c3aaeccbe80ddc071c853bc43d98",
+      "7539c323a024099cd3ab282555b7b8711237117542f7d5d54637df772ec20dc6"
+    ]
+  },
+  "evidence_to_source_record_index": {
+    "07dd02efce4076a3f342d9606125b344bc6a24fae904df1c4bc29a0ceba982a1": [
+      "cc99be8d2c85320b883264119ee8fd0be49471268bf9399b07eb6ce5a1ad6a40"
+    ],
+    "51b348d78968203a8adcbb6138f08dded6472655b38d80485d6f2831cc1ce4f3": [
+      "cc99be8d2c85320b883264119ee8fd0be49471268bf9399b07eb6ce5a1ad6a40"
+    ],
+    "5594a4fbf59a813ee819817a79f91a01b1b556ae2e8411caafcdd34a09a3970e": [
+      "cc99be8d2c85320b883264119ee8fd0be49471268bf9399b07eb6ce5a1ad6a40"
+    ],
+    "5a6f78c60659764feb1897a3f8302fec5568cb1f785595ec23763f070922caac": [
+      "cc99be8d2c85320b883264119ee8fd0be49471268bf9399b07eb6ce5a1ad6a40"
+    ],
+    "655c8ce94c1d28b78b05b766d5fcd4727f94c3aaeccbe80ddc071c853bc43d98": [
+      "cc99be8d2c85320b883264119ee8fd0be49471268bf9399b07eb6ce5a1ad6a40"
+    ],
+    "7539c323a024099cd3ab282555b7b8711237117542f7d5d54637df772ec20dc6": [
+      "cc99be8d2c85320b883264119ee8fd0be49471268bf9399b07eb6ce5a1ad6a40"
+    ]
+  },
+  "registry_emit_reason": "records_present",
+  "schema_version": "1.0.0",
+  "source_layer_engine_version": "1.0.0",
+  "derived_at": "2026-06-08T19:47:58.977378Z"
+}

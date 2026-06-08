@@ -1,0 +1,39 @@
+{
+  "explanation_id": "bec82ba0db9a0388fdb38255e6f5abbe55ad1e9355287982b9cafbaff986f1aa",
+  "source_agent_input_id": "cbbfb38c68f713b1428d5c91e1d0881e243a36c9f953deeb5aeb48ede483d67e",
+  "source_bundle_id": "b021fbe1986367b30cb2345fe0f521638bca24420569d38669a308f01ec91ec6",
+  "referenced_evidence_ids": [
+    "51b348d78968203a8adcbb6138f08dded6472655b38d80485d6f2831cc1ce4f3",
+    "5a6f78c60659764feb1897a3f8302fec5568cb1f785595ec23763f070922caac",
+    "655c8ce94c1d28b78b05b766d5fcd4727f94c3aaeccbe80ddc071c853bc43d98",
+    "7539c323a024099cd3ab282555b7b8711237117542f7d5d54637df772ec20dc6",
+    "07dd02efce4076a3f342d9606125b344bc6a24fae904df1c4bc29a0ceba982a1",
+    "5594a4fbf59a813ee819817a79f91a01b1b556ae2e8411caafcdd34a09a3970e"
+  ],
+  "explanation_text": "Evidence 51b348d78968\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=54216 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.0, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.12337166504591; is_apparent_not_confirmed=True.\nEvidence 5a6f78c60659\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=53239 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.0, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.12337166504591; is_apparent_not_confirmed=True.\nEvidence 655c8ce94c1d\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=69180 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.0, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.12337166504591; is_apparent_not_confirmed=True.\nEvidence 7539c323a024\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=69049 at TCA=2026-06-08T14:00:00+00:00; miss_distance_km=0.0, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=2.12337166504591; is_apparent_not_confirmed=True.\nEvidence 07dd02efce40\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=67684 at TCA=2026-06-13T19:50:26.660156+00:00; miss_distance_km=49.23987158272189, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=9.46452035106983; is_apparent_not_confirmed=True.\nEvidence 5594a4fbf59a\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=67688 at TCA=2026-06-14T02:00:16.113281+00:00; miss_distance_km=25.696315922649788, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.0, combined_sigma_at_tca_km=9.812114935941935; is_apparent_not_confirmed=True.",
+  "generation_metadata": {
+    "model_identifier": "template_explanation_v01",
+    "generation_method": "deterministic_template_concatenation_v01",
+    "prompt_hash": "ac87137764b8c39814cb8f77c9d3819ece18a16be1f84edb9e1164f7454656b0",
+    "n_evidence_processed": 6
+  },
+  "audit_record": {
+    "explanation_id": "bec82ba0db9a0388fdb38255e6f5abbe55ad1e9355287982b9cafbaff986f1aa",
+    "agent_input_id": "cbbfb38c68f713b1428d5c91e1d0881e243a36c9f953deeb5aeb48ede483d67e",
+    "bundle_id": "b021fbe1986367b30cb2345fe0f521638bca24420569d38669a308f01ec91ec6",
+    "evidence_ids_used": [
+      "51b348d78968203a8adcbb6138f08dded6472655b38d80485d6f2831cc1ce4f3",
+      "5a6f78c60659764feb1897a3f8302fec5568cb1f785595ec23763f070922caac",
+      "655c8ce94c1d28b78b05b766d5fcd4727f94c3aaeccbe80ddc071c853bc43d98",
+      "7539c323a024099cd3ab282555b7b8711237117542f7d5d54637df772ec20dc6",
+      "07dd02efce4076a3f342d9606125b344bc6a24fae904df1c4bc29a0ceba982a1",
+      "5594a4fbf59a813ee819817a79f91a01b1b556ae2e8411caafcdd34a09a3970e"
+    ],
+    "generation_timestamp": "2026-06-08T19:47:57.429471Z",
+    "prompt_hash": "ac87137764b8c39814cb8f77c9d3819ece18a16be1f84edb9e1164f7454656b0",
+    "model_identifier": "template_explanation_v01"
+  },
+  "schema_version": "0.1.0",
+  "explanation_engine_version": "0.1.0",
+  "generated_at": "2026-06-08T19:47:57.429471Z"
+}

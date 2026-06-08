@@ -1,0 +1,18 @@
+{
+  "case_id": "32d71fe60400b6a8c0fcbf1e62a19449e06a3d034ef6e0476c29fc746e05a38b",
+  "is_valid": true,
+  "n_artifacts_verified": 6,
+  "n_findings": 0,
+  "case_id_is_alias_of_case_signature": true,
+  "case_signature_recomputes_correctly": true,
+  "case_label_hash_recomputes_correctly": true,
+  "embedded_ids_match_referenced_ids": true,
+  "embedded_chain_consistent_with_others": true,
+  "embedded_artifacts_form_valid_pipeline": true,
+  "case_layer_engine_version_consistent": true,
+  "findings": [],
+  "verification_hash": "8269ccf2b55d0e33fc1bc3c303329d99e9bfaa60cf85ddde56e3061b8c7bb112",
+  "verifier_engine_version": "1.0.0",
+  "schema_version": "1.0.0",
+  "verified_at": "2026-06-08T19:50:04.095044Z"
+}
