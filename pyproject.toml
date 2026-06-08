@@ -1,6 +1,6 @@
 [project]
 name = "orbital-sentinel"
-version = "0.0.1"
+version = "0.1.0"
 description = "Open-source platform for observing, propagating, and reasoning about the satellite population from public data."
 readme = "README.md"
 license = { file = "LICENSE" }
