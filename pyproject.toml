@@ -89,6 +89,7 @@ files = ["src"]
 
 [[tool.mypy.overrides]]
 # Librerías de terceros sin PEP 561 stubs. Cubierto por el régimen
-# de entorno declarado (ADR-0013).
-module = ["pyarrow.*", "sgp4.*", "skyfield.*"]
+# de entorno declarado (ADR-0013). matplotlib es opcional (extra "viz")
+# y no se instala en CI por defecto; lo tratamos como untyped.
+module = ["pyarrow.*", "sgp4.*", "skyfield.*", "matplotlib", "matplotlib.*"]
 ignore_missing_imports = true
