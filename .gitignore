@@ -48,6 +48,11 @@ data/cache/
 *.pem
 *.key
 
+# 2FA / account recovery codes — NEVER commit these
+*Recovery-Codes*
+*recovery-codes*
+*recovery_codes*
+
 # Local-only run artifacts (transient logs, not tracked)
 mypy_full.txt
 ruff_full.txt
