@@ -287,6 +287,10 @@ class SatTrack(NamedTuple):
     lat0: float
     lon0: float
     alt0: float
+    incl: float        # inclination (deg)
+    period_min: float  # orbital period (min)
+    alt_mean: float    # mean altitude (km)
+    known: bool        # in _NAMES catalog
 
 def _gmst_rad(jd: float) -> float:
     t = (jd - 2451545.0) / 36525.0
@@ -337,39 +341,54 @@ def _parse_blocks(text: str) -> list[tuple[str,str,str]]:
     return out
 
 @st.cache_data(show_spinner=False)
-def _tracks(tle_text: str) -> list[SatTrack]:
+def _tracks(tle_text: str, t0_offset_min: int = 0) -> list[SatTrack]:
+    """Propaga todas las trazas 90 min a partir de epoch + t0_offset_min."""
     blocks = _parse_blocks(tle_text)
+    if not blocks:
+        return []
     ref = Satrec.twoline2rv(blocks[0][1], blocks[0][2])
-    epoch = _epoch_dt(ref)
+    base_epoch = _epoch_dt(ref)
+    epoch = base_epoch + timedelta(minutes=t0_offset_min)
 
     result: list[SatTrack] = []
     for name, l1, l2 in blocks:
-        sat = Satrec.twoline2rv(l1, l2)
+        sat  = Satrec.twoline2rv(l1, l2)
         norad = int(l2.split()[1])
+
+        # Parámetros orbitales desde el modelo SGP4
+        incl       = math.degrees(sat.inclo)
+        period_min = (2 * math.pi / sat.no_kozai) if sat.no_kozai > 0 else 0.0
+        a          = (398600.4418 * (period_min * 60 / (2 * math.pi)) ** 2) ** (1/3) if period_min > 0 else 6771.0
+        alt_mean   = a - EARTH_R
+        known      = norad in _NAMES
+
         lats: list[float | None] = []
         lons: list[float | None] = []
         prev_lon: float | None = None
 
         for m in range(93):
             t  = epoch + timedelta(minutes=m)
-            j1, j2 = _jday(t.year,t.month,t.day,t.hour,t.minute,t.second+t.microsecond/1e6)
+            j1, j2 = _jday(t.year, t.month, t.day, t.hour, t.minute, t.second + t.microsecond / 1e6)
             e, r, _ = sat.sgp4(j1, j2)
             if e != 0 or r[0] == 0:
                 lats.append(None); lons.append(None); prev_lon = None
                 continue
-            lat, lon, _ = _teme_latlon(r[0],r[1],r[2], j1+j2)
-            if prev_lon is not None and abs(lon-prev_lon) > 180:
+            lat, lon, _ = _teme_latlon(r[0], r[1], r[2], j1 + j2)
+            if prev_lon is not None and abs(lon - prev_lon) > 180:
                 lats.append(None); lons.append(None)
             lats.append(lat); lons.append(lon); prev_lon = lon
 
-        j1, j2 = _jday(epoch.year,epoch.month,epoch.day,epoch.hour,epoch.minute,epoch.second)
+        # Posición en el instante t0 (primer punto de la traza)
+        t0 = epoch
+        j1, j2 = _jday(t0.year, t0.month, t0.day, t0.hour, t0.minute, t0.second + t0.microsecond / 1e6)
         _, r0, _ = sat.sgp4(j1, j2)
         if r0[0] != 0:
-            lat0, lon0, alt0 = _teme_latlon(r0[0],r0[1],r0[2],j1+j2)
+            lat0, lon0, alt0 = _teme_latlon(r0[0], r0[1], r0[2], j1 + j2)
         else:
-            lat0, lon0, alt0 = 0.0, 0.0, 400.0
+            lat0, lon0, alt0 = 0.0, 0.0, alt_mean
 
-        result.append(SatTrack(norad, _NAMES.get(norad, name), lats, lons, lat0, lon0, alt0))
+        result.append(SatTrack(norad, _NAMES.get(norad, name), lats, lons,
+                               lat0, lon0, alt0, incl, period_min, alt_mean, known))
     return result
 
 
@@ -386,43 +405,51 @@ def _globe_figure(tracks: list[SatTrack], case: InvestigationCase) -> go.Figure:
     for t in tracks:
         is_primary  = (t.norad == primary)
         is_real     = (t.norad in real_norads)
-        is_iss_dock = (t.norad in _ISS_DOCK and not is_primary)
-        is_css_dock = (t.norad in _CSS_DOCK and not is_primary)
+        is_unknown  = not t.known and not is_primary and not is_real
+        is_iss_dock = (t.norad in _ISS_DOCK and not is_primary and not is_unknown)
+        is_css_dock = (t.norad in _CSS_DOCK and not is_primary and not is_unknown)
 
         if is_primary:
-            lc, mc, lw, ms, sym = "#ffd700","#ffd700", 2.5, 16, "star"
+            lc, mc, lw, ms, sym = "#ffd700", "#ffd700", 2.5, 16, "star"
         elif is_real:
-            lc, mc, lw, ms, sym = "#ff4757","#ff4757", 2.0, 13, "x"
+            lc, mc, lw, ms, sym = "#ff4757", "#ff4757", 2.0, 14, "x"
+        elif is_unknown:
+            lc, mc, lw, ms, sym = "rgba(255,165,0,.45)", "rgba(255,180,0,.9)", 1.2, 10, "diamond"
         elif is_iss_dock:
-            lc, mc, lw, ms, sym = "rgba(79,158,255,.35)","rgba(79,158,255,.7)", 1.0, 7, "circle"
+            lc, mc, lw, ms, sym = "rgba(79,158,255,.35)", "rgba(79,158,255,.7)", 1.0, 7, "circle"
         elif is_css_dock:
-            lc, mc, lw, ms, sym = "rgba(255,107,107,.35)","rgba(255,107,107,.7)", 1.0, 7, "circle"
+            lc, mc, lw, ms, sym = "rgba(255,107,107,.35)", "rgba(255,107,107,.7)", 1.0, 7, "circle"
         else:
-            lc, mc, lw, ms, sym = "rgba(100,200,120,.3)","rgba(130,220,140,.65)", 1.0, 7, "circle"
+            lc, mc, lw, ms, sym = "rgba(100,200,120,.3)", "rgba(130,220,140,.65)", 1.0, 7, "circle"
 
-        # Traza de órbita
+        # Hover enriquecido
+        unknown_tag = "<br><b>⚠ NO CATALOGADO localmente</b>" if is_unknown else ""
+        real_tag    = "<br><b>⚠ Acercamiento no cooperativo</b>" if is_real else ""
+        hover = (
+            f"<b>{'❓ ' if is_unknown else ''}{t.name}</b>"
+            f"<br>NORAD {t.norad}"
+            f"<br>Alt inst: {t.alt0:.0f} km  ·  Alt media: {t.alt_mean:.0f} km"
+            f"<br>Incl: {t.incl:.2f}°  ·  Período: {t.period_min:.1f} min"
+            + unknown_tag + real_tag
+            + "<extra></extra>"
+        )
+
+        show_txt = is_primary or is_real or is_unknown
         fig.add_trace(go.Scattergeo(
             lat=t.lats, lon=t.lons, mode="lines",
             line=dict(width=lw, color=lc),
             name=t.name, showlegend=True, hoverinfo="skip",
         ))
-        # Posición actual
-        show_txt = is_primary or is_real
         fig.add_trace(go.Scattergeo(
             lat=[t.lat0], lon=[t.lon0],
             mode="markers+text" if show_txt else "markers",
             marker=dict(size=ms, color=mc, symbol=sym,
                         line=dict(width=1.5 if show_txt else 0, color="white")),
-            text=[t.name] if show_txt else [],
+            text=[("❓ " if is_unknown else "") + t.name] if show_txt else [],
             textposition="top right",
-            textfont=dict(color="white", size=11, family="sans-serif"),
+            textfont=dict(color="#ffb300" if is_unknown else "white", size=11),
             name=t.name, showlegend=False,
-            hovertemplate=(
-                f"<b>{t.name}</b><br>NORAD {t.norad}<br>"
-                f"Alt: {t.alt0:.0f} km"
-                + ("<br><b>⚠ Acercamiento no cooperativo</b>" if is_real else "")
-                + "<extra></extra>"
-            ),
+            hovertemplate=hover,
         ))
 
     _geo_full = dict(
@@ -576,11 +603,23 @@ def _page_map() -> None:
     selected = st.session_state["map_case"]
     meta = _CASE_META.get(selected, {})
 
+    # ── Slider de trayectoria ─────────────────────────────────────────────────
+    t0_offset = st.slider(
+        "Proyección temporal desde época TLE",
+        min_value=0, max_value=1440, value=0, step=15,
+        format="%d min",
+        help="Desplaza las posiciones hacia adelante en el tiempo para ver trayectorias futuras.",
+        key="map_t0",
+    )
+    h, m = divmod(t0_offset, 60)
+    st.caption(f"Mostrando posiciones a T+{h}h {m:02d}min desde época TLE" if t0_offset else
+               "Mostrando posiciones en época TLE (T+0)")
+
     # ── Carga datos ──────────────────────────────────────────────────────────
     tle_text, tle_source = _fetch_live_tles()
     with st.spinner("Propagando órbitas…"):
         try:
-            track_list = _tracks(tle_text)
+            track_list = _tracks(tle_text, t0_offset)
             case       = _load(selected)
         except Exception as exc:
             st.error(f"Error: {exc}"); return
@@ -591,7 +630,30 @@ def _page_map() -> None:
         use_container_width=True,
         config={"displayModeBar": True, "scrollZoom": False},
     )
-    st.caption(f"📡 {tle_source} · trazas 90 min desde época TLE")
+    st.caption(f"📡 {tle_source} · trazas 90 min · arrastra para rotar · hover para detalles")
+
+    # ── Objetos no catalogados ────────────────────────────────────────────────
+    unknown_tracks = [t for t in track_list if not t.known]
+    if unknown_tracks:
+        st.markdown(f"""
+<div style="border:1px solid rgba(255,165,0,.4); border-radius:10px;
+            background:rgba(255,165,0,.06); padding:.8rem 1.2rem; margin:.8rem 0;">
+  <span style="color:#ffb300;font-weight:700;">❓ {len(unknown_tracks)} objeto(s) no catalogado(s) en este feed</span>
+  <span style="color:#8892a4;font-size:.85rem;margin-left:.8rem;">
+    Aparecen en el TLE de CelesTrak pero no en el catálogo local.
+  </span>
+</div>""", unsafe_allow_html=True)
+        unk_cols = st.columns(min(len(unknown_tracks), 4))
+        for col, t in zip(unk_cols, unknown_tracks):
+            with col:
+                st.markdown(f"""
+<div class="case-card" style="border-color:rgba(255,165,0,.3);">
+  <div class="cc-icon">❓</div>
+  <div class="cc-title" style="font-size:.95rem;">{t.name}</div>
+  <div class="cc-summary">NORAD {t.norad}</div>
+  <div class="cc-summary">Alt media: {t.alt_mean:.0f} km</div>
+  <div class="cc-summary">Incl: {t.incl:.1f}° · Per: {t.period_min:.1f} min</div>
+</div>""", unsafe_allow_html=True)
 
     # ── Métricas de conjunciones ──────────────────────────────────────────────
     real_evs = [
@@ -617,16 +679,41 @@ def _page_map() -> None:
 </div>""", unsafe_allow_html=True)
 
     # ── Stats chips ───────────────────────────────────────────────────────────
-    n_obj  = len(track_list)
-    n_real = len(real_evs)
-    n_ev   = case.evidence_bundle.n_evidence_payloads
+    n_obj     = len(track_list)
+    n_unknown = len(unknown_tracks)
+    n_real    = len(real_evs)
+    n_ev      = case.evidence_bundle.n_evidence_payloads
     st.markdown(f"""
 <div class="stat-row">
-  <div class="stat-chip"><span class="sv">{n_obj}</span><span class="sl">Objetos rastreados</span></div>
+  <div class="stat-chip"><span class="sv">{n_obj}</span><span class="sl">Objetos en feed</span></div>
+  <div class="stat-chip"><span class="sv" style="color:#ffb300">{n_unknown}</span><span class="sl">No catalogados</span></div>
   <div class="stat-chip"><span class="sv">{n_ev}</span><span class="sl">Evidencias totales</span></div>
   <div class="stat-chip"><span class="sv" style="color:#ff4757">{n_real}</span><span class="sl">Acercamientos reales</span></div>
   <div class="stat-chip"><span class="sv" style="color:#2ed573">✓</span><span class="sl">Cadena verificada</span></div>
 </div>""", unsafe_allow_html=True)
+
+    # ── Tabla completa de objetos ─────────────────────────────────────────────
+    with st.expander(f"📋 Todos los objetos detectados en el feed ({n_obj})", expanded=False):
+        rows = []
+        for t in sorted(track_list, key=lambda x: (x.known, x.norad)):
+            rows.append({
+                "Estado": "✓ Catalogado" if t.known else "❓ Desconocido",
+                "Nombre": t.name,
+                "NORAD": t.norad,
+                "Alt media (km)": round(t.alt_mean, 0),
+                "Inclinación (°)": round(t.incl, 2),
+                "Período (min)": round(t.period_min, 1),
+                "Alt instantánea (km)": round(t.alt0, 0),
+            })
+        df_all = pd.DataFrame(rows)
+
+        def _row_color(row: pd.Series) -> list[str]:
+            if row["Estado"].startswith("❓"):
+                return ["background-color:rgba(255,165,0,.1);color:#ffb300"] * len(row)
+            return [""] * len(row)
+
+        st.dataframe(df_all.style.apply(_row_color, axis=1),
+                     use_container_width=True, hide_index=True)
 
 
 def _page_cases() -> None:
