@@ -818,30 +818,36 @@ def _globe_figure(
     # Modo lite: muchos objetos → solo dots, sin trazas ni labels
     lite_mode = len(tracks) > 100 or any(not t.lats for t in tracks)
     if lite_mode:
-        # Render por batches de marcadores agrupados (mucho más rápido que un trace por objeto)
+        # Render por batches de marcadores agrupados (mucho más rápido)
         d_lat = [t.lat0 for t in tracks if t.known and t.norad != primary]
         d_lon = [t.lon0 for t in tracks if t.known and t.norad != primary]
-        d_txt = [f"<b>{t.name}</b><br>NORAD {t.norad}<br>Alt: {t.alt0:.0f} km · Incl: {t.incl:.1f}°"
+        d_cd  = [[t.norad, t.name, t.alt0, t.incl, t.period_min]
                  for t in tracks if t.known and t.norad != primary]
         u_lat = [t.lat0 for t in tracks if not t.known]
         u_lon = [t.lon0 for t in tracks if not t.known]
-        u_txt = [f"<b>❓ {t.name}</b><br>NORAD {t.norad}<br>Alt: {t.alt0:.0f} km"
+        u_cd  = [[t.norad, t.name, t.alt0, t.incl, t.period_min]
                  for t in tracks if not t.known]
         prim = [t for t in tracks if t.norad == primary]
+
+        # Hover template reutilizado
+        hov = ("<b>%{customdata[1]}</b><br>NORAD %{customdata[0]}"
+               "<br>Alt: %{customdata[2]:.0f} km · Incl: %{customdata[3]:.2f}°"
+               "<br>Período: %{customdata[4]:.1f} min<extra></extra>")
+
         if d_lat:
             fig.add_trace(go.Scattergeo(
                 lat=d_lat, lon=d_lon, mode="markers",
-                marker=dict(size=4, color="rgba(110,210,160,0.7)",
-                            line=dict(width=0)),
-                hovertext=d_txt, hovertemplate="%{hovertext}<extra></extra>",
+                marker=dict(size=8, color="rgba(110,255,180,0.95)",
+                            line=dict(width=1, color="rgba(255,255,255,0.4)")),
+                customdata=d_cd, hovertemplate=hov,
                 name="Catalogados", showlegend=False,
             ))
         if u_lat:
             fig.add_trace(go.Scattergeo(
                 lat=u_lat, lon=u_lon, mode="markers",
-                marker=dict(size=5, color="rgba(255,180,0,0.85)",
-                            symbol="diamond", line=dict(width=0)),
-                hovertext=u_txt, hovertemplate="%{hovertext}<extra></extra>",
+                marker=dict(size=9, color="rgba(255,200,40,1)",
+                            symbol="diamond", line=dict(width=1, color="rgba(255,255,255,0.5)")),
+                customdata=u_cd, hovertemplate=hov,
                 name="Sin catalogar", showlegend=False,
             ))
         if prim:
@@ -854,15 +860,14 @@ def _globe_figure(
                 ))
             fig.add_trace(go.Scattergeo(
                 lat=[t.lat0], lon=[t.lon0], mode="markers+text",
-                marker=dict(size=16, color="#ffd700", symbol="star",
-                            line=dict(width=1, color="white")),
+                marker=dict(size=18, color="#ffd700", symbol="star",
+                            line=dict(width=1.5, color="white")),
                 text=[t.name], textposition="top right",
-                textfont=dict(color="#ffd700", size=11),
-                name=t.name, showlegend=False,
-                hovertemplate=f"<b>{t.name}</b><br>NORAD {t.norad}<br>Alt: {t.alt0:.0f} km<extra></extra>",
+                textfont=dict(color="#ffd700", size=12),
+                customdata=[[t.norad, t.name, t.alt0, t.incl, t.period_min]],
+                hovertemplate=hov, name="Primary", showlegend=False,
             ))
-        # No procesamos extra_tracks ni el terminador en lite (overhead)
-        tracks_to_draw = []  # skip el for loop normal
+        tracks_to_draw = []
     else:
         tracks_to_draw = tracks
 
@@ -934,6 +939,7 @@ def _globe_figure(
             textposition="top right",
             textfont=dict(color="#ffd700" if is_primary else
                           ("#ffb300" if is_unknown else "rgba(255,255,255,0.85)"), size=10),
+            customdata=[[t.norad, t.name, t.alt0, t.incl, t.period_min]],
             name=t.name, showlegend=False, hovertemplate=hover,
         ))
 
@@ -986,48 +992,22 @@ def _globe_figure(
         for lon in range(0, 360, 3)
     ]
 
-    # Geo realista — tonos Earth from space (verdoso tierra, océano profundo, alta resolución)
+    # Geo realista — paleta Earth-from-space estilo Google Earth en vectorial
     t_label = f"T+{t0_offset//60}h {t0_offset%60:02d}m" if t0_offset else now_utc.strftime("%H:%M UTC")
-    _geo_realistic = dict(
-        projection=dict(type="orthographic"),
-        resolution=50,
-        showland=True,    landcolor="rgb(78,98,62)",       # verde-marrón vivo terreno
-        showocean=True,   oceancolor="rgb(8,32,82)",       # azul profundo natural
-        showlakes=True,   lakecolor="rgb(18,55,118)",
-        showrivers=True,  rivercolor="rgba(30,75,140,0.5)", riverwidth=0.5,
-        showcoastlines=True, coastlinecolor="rgba(220,235,200,0.7)", coastlinewidth=0.8,
-        showcountries=True,  countrycolor="rgba(180,200,150,0.4)", countrywidth=0.5,
-        showsubunits=True,   subunitcolor="rgba(150,170,130,0.18)", subunitwidth=0.3,
-        bgcolor="rgb(8,12,28)",
-    )
-    _geo_fallback = dict(
-        projection=dict(type="orthographic"),
-        showland=True,    landcolor="rgb(78,98,62)",
-        showocean=True,   oceancolor="rgb(8,32,82)",
-        showlakes=True,   lakecolor="rgb(18,55,118)",
-        showcoastlines=True, coastlinecolor="rgba(220,235,200,0.6)",
-        showcountries=True,  countrycolor="rgba(180,200,150,0.3)",
-        bgcolor="rgb(8,12,28)",
-    )
-    _geo_minimal = dict(
-        projection=dict(type="orthographic"),
-        showland=True,   landcolor="rgb(78,98,62)",
-        showocean=True,  oceancolor="rgb(8,32,82)",
-        showcoastlines=True,
-    )
-    # Aplica el más rico que funcione
-    _geo_to_use = _geo_minimal
-    for _g in (_geo_realistic, _geo_fallback, _geo_minimal):
-        try:
-            # Hacemos un test mínimo creando una figura aux
-            _test = go.Figure().update_layout(geo=_g)
-            _geo_to_use = _g
-            break
-        except Exception:
-            continue
 
     fig.update_layout(
-        geo=_geo_to_use,
+        geo=dict(
+            projection=dict(type="orthographic"),
+            resolution=50,                                       # alta definición costas
+            showland=True,    landcolor="rgb(85,110,68)",        # verde tierra vivo
+            showocean=True,   oceancolor="rgb(6,28,76)",         # océano profundo realista
+            showlakes=True,   lakecolor="rgb(16,52,112)",
+            showrivers=True,  rivercolor="rgba(50,90,160,0.55)", riverwidth=0.6,
+            showcoastlines=True, coastlinecolor="rgba(230,240,210,0.75)", coastlinewidth=0.9,
+            showcountries=True,  countrycolor="rgba(200,215,170,0.45)", countrywidth=0.6,
+            showsubunits=True,   subunitcolor="rgba(170,190,150,0.22)", subunitwidth=0.4,
+            bgcolor="rgb(6,10,24)",
+        ),
         paper_bgcolor="rgb(10,15,30)",
         height=760,
         margin=dict(l=0, r=0, t=40, b=0),
@@ -1384,6 +1364,17 @@ def _page_map() -> None:
         except Exception as exc:
             st.error(f"Error: {exc}"); return
 
+    # Diagnóstico visible
+    with col_globe:
+        n_blocks = active_tle.count("\n1 ")  # cuenta líneas que empiezan con "1 "
+        if ds_group != "stations":
+            if ds_tle is None:
+                st.error(f"❌ CelesTrak no respondió para grupo **{ds_group}**. Mostrando fallback de estaciones.")
+            elif len(track_list) == 0:
+                st.warning(f"⚠ Se descargaron {n_blocks} TLEs de **{ds_group}** pero ninguno propagó. Revisa el log.")
+            else:
+                st.success(f"✅ **{len(track_list)} objetos** activos de **{ds_group}** ({active_source})")
+
     # Proximity scan
     extra_tracks: list[SatTrack] = []
     if scan_prox:
@@ -1410,16 +1401,35 @@ def _page_map() -> None:
             else:
                 fig = _globe_figure(track_list, case, t0_offset,
                                     highlight=highlight, extra_tracks=extra_tracks)
-            st.plotly_chart(
+            event = st.plotly_chart(
                 fig, use_container_width=True,
                 config={"displayModeBar": True, "scrollZoom": True, "displaylogo": False},
+                on_select="rerun",
+                selection_mode=["points"],
+                key="globe_chart",
             )
         except Exception as exc:
             st.error(f"❌ {type(exc).__name__}: {exc}")
             import traceback
             st.code(traceback.format_exc(), language="python")
             return
-        st.caption(f"{tle_source}  ·  {n_min_steps} min de propagación  ·  {len(track_list)} objetos")
+        st.caption(f"{active_source}  ·  {len(track_list)} objetos  ·  modo {ds_mode}")
+
+        # ── Info del objeto clicado ──────────────────────────────────────────
+        sel_points = (event.selection or {}).get("points", []) if event else []
+        if sel_points:
+            p = sel_points[0]
+            cd = p.get("customdata", None)
+            if cd and len(cd) >= 5:
+                norad, name, alt, incl, per = cd[:5]
+                st.markdown(f"""
+**🎯 Objeto seleccionado:** `{name}`
+- **NORAD ID:** `{norad}`
+- **Altitud actual:** `{alt:.0f} km`
+- **Inclinación:** `{incl:.2f}°`
+- **Período orbital:** `{per:.1f} min` ({per/60:.2f} h)
+- **Velocidad orbital:** `{(2*math.pi*(EARTH_R+alt)/per/60):.2f} km/s`
+""")
 
         if search_q.strip():
             if search_matches:
