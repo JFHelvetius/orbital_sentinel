@@ -392,20 +392,12 @@ button[kind="secondary"]:hover {
   color: var(--accent-bri) !important;
 }
 
-/* ── Expanders ─────────────────────────────────────────────────────────── */
-.stExpander, .stExpander details {
-  background: var(--bg-card) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 8px !important;
+/* ── Expanders (mínimo, sin tocar el chevron) ──────────────────────────── */
+.stExpander {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: .8rem 0;
 }
-.stExpander summary {
-  background: var(--bg-card) !important;
-  color: var(--text-pri) !important;
-  font-size: .87rem !important;
-  font-weight: 500 !important;
-  padding: .8rem 1rem !important;
-}
-.stExpander summary:hover { background: var(--bg-elevated) !important; }
 
 /* ── DataFrame ─────────────────────────────────────────────────────────── */
 [data-testid="stDataFrame"] {
@@ -919,7 +911,7 @@ def _globe_figure(
         font=dict(color="#94a3b8", size=11),
         updatemenus=[dict(
             type="buttons", showactive=True,
-            y=0.03, x=0.02, xanchor="left", yanchor="bottom", direction="left",
+            y=1.0, x=1.0, xanchor="right", yanchor="top", direction="left",
             buttons=[
                 dict(label="▶ Rotar", method="animate",
                      args=[None, {"frame": {"duration": 40, "redraw": True},
@@ -1178,7 +1170,8 @@ def _page_map() -> None:
                     icon="❓",
                 )
 
-    # ── Tabla completa ────────────────────────────────────────────────────────
+    # ── Tabla completa (sin styling complejo que pueda solaparse) ────────────
+    st.markdown("&nbsp;")  # espacio antes del expander
     all_objs = track_list + extra_tracks
     with st.expander(f"📋 Todos los objetos detectados ({len(all_objs)})", expanded=False):
         prox_set = {t.norad for t in extra_tracks}
@@ -1186,24 +1179,15 @@ def _page_map() -> None:
         for t in sorted(all_objs, key=lambda x: (x.known, x.norad)):
             estado = "🔴 Proximidad" if t.norad in prox_set else ("✓" if t.known else "❓ Desconocido")
             rows.append({
-                "Estado": estado, "Nombre": t.name, "NORAD": t.norad,
+                "Estado": estado,
+                "Nombre": t.name,
+                "NORAD": t.norad,
                 "Alt media (km)": round(t.alt_mean, 0),
                 "Inclinación (°)": round(t.incl, 2),
                 "Período (min)": round(t.period_min, 1),
-                "Alt instantánea (km)": round(t.alt0, 0),
             })
-        df_all = pd.DataFrame(rows)
-
-        def _row_color(row: pd.Series) -> list[str]:
-            s = str(row["Estado"])
-            if "Proximidad" in s:
-                return ["background-color:rgba(0,210,200,.07);color:#00d2c8"] * len(row)
-            if s.startswith("❓"):
-                return ["background-color:rgba(255,165,0,.08);color:#ffb300"] * len(row)
-            return [""] * len(row)
-
-        st.dataframe(df_all.style.apply(_row_color, axis=1),
-                     use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True, height=400)
+    st.markdown("&nbsp;")  # espacio después
 
 
 def _page_cases() -> None:
