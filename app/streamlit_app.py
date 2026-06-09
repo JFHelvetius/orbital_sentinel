@@ -229,6 +229,22 @@ _CSS = """
 /* Ocultar header por defecto de Streamlit */
 #MainMenu, footer, header { visibility:hidden; }
 
+/* Atmósfera alrededor del globo */
+[data-testid="stPlotlyChart"] {
+    box-shadow:
+        0 0 0 1px rgba(20,80,220,.1),
+        0 0 35px rgba(20,80,220,.2),
+        0 0 80px rgba(10,50,180,.12),
+        0 0 150px rgba(5,30,130,.07);
+    border-radius: 8px;
+}
+
+/* Panel lateral de control */
+.ctrl-section { margin-bottom:.8rem; }
+.ctrl-title { font-size:.78rem; text-transform:uppercase; letter-spacing:.08em;
+              color:#4a5568; margin-bottom:.35rem; }
+.live-clock { font-family:monospace; font-size:.85rem; color:#4f9eff; }
+
 /* Búsqueda de satélites */
 .sat-search-wrap { position:relative; }
 .search-result-tag { display:inline-block; background:rgba(79,158,255,.12);
@@ -438,6 +454,45 @@ def _find_proximity_objects(
         return []
 
 
+def _subsolar_point(when: datetime) -> tuple[float, float]:
+    """Punto subsolar aproximado (lat°, lon°) para un datetime UTC."""
+    doy = when.timetuple().tm_yday
+    g   = math.radians(357.529 + 0.98560028 * doy)
+    lam = math.radians(280.459 + 0.98564736 * doy + 1.915 * math.sin(g) + 0.020 * math.sin(2*g))
+    e   = math.radians(23.439 - 0.0000004 * doy)
+    dec = math.degrees(math.asin(math.sin(e) * math.sin(lam)))
+    b   = math.radians(360 * (doy - 81) / 364)
+    eot = 9.87 * math.sin(2*b) - 7.53 * math.cos(b) - 1.5 * math.sin(b)  # minutos
+    t   = when.hour + when.minute / 60 + when.second / 3600
+    lon = -(t - 12) * 15 - eot / 4
+    lon = ((lon + 180) % 360) - 180
+    return dec, lon
+
+
+def _terminator(lat_s: float, lon_s: float, n: int = 120) -> tuple[list[float | None], list[float | None]]:
+    """Gran círculo a 90° del punto subsolar (frontera día/noche)."""
+    ls = math.radians(lat_s); lo = math.radians(lon_s)
+    sx = math.cos(ls) * math.cos(lo)
+    sy = math.cos(ls) * math.sin(lo)
+    sz = math.sin(ls)
+    ref = (0.0, 0.0, 1.0) if abs(sz) < 0.9 else (1.0, 0.0, 0.0)
+    ux = sy*ref[2] - sz*ref[1]; uy = sz*ref[0] - sx*ref[2]; uz = sx*ref[1] - sy*ref[0]
+    un = math.sqrt(ux*ux + uy*uy + uz*uz); ux /= un; uy /= un; uz /= un
+    vx = sy*uz - sz*uy; vy = sz*ux - sx*uz; vz = sx*uy - sy*ux
+    lats: list[float | None] = []; lons: list[float | None] = []; prev = None
+    for i in range(n + 1):
+        a  = 2 * math.pi * i / n
+        px = ux*math.cos(a) + vx*math.sin(a)
+        py = uy*math.cos(a) + vy*math.sin(a)
+        pz = uz*math.cos(a) + vz*math.sin(a)
+        lat = math.degrees(math.asin(max(-1.0, min(1.0, pz))))
+        lon = math.degrees(math.atan2(py, px))
+        if prev is not None and abs(lon - prev) > 180:
+            lats.append(None); lons.append(None)
+        lats.append(lat); lons.append(lon); prev = lon
+    return lats, lons
+
+
 def _parse_blocks(text: str) -> list[tuple[str,str,str]]:
     lines = [l.rstrip() for l in text.splitlines() if l.strip()]
     out = []
@@ -448,8 +503,8 @@ def _parse_blocks(text: str) -> list[tuple[str,str,str]]:
     return out
 
 @st.cache_data(show_spinner=False)
-def _tracks(tle_text: str, t0_offset_min: int = 0) -> list[SatTrack]:
-    """Propaga todas las trazas 90 min a partir de epoch + t0_offset_min."""
+def _tracks(tle_text: str, t0_offset_min: int = 0, n_min: int = 185) -> list[SatTrack]:
+    """Propaga todas las trazas n_min minutos (≈2 órbitas por defecto)."""
     blocks = _parse_blocks(tle_text)
     if not blocks:
         return []
@@ -473,7 +528,7 @@ def _tracks(tle_text: str, t0_offset_min: int = 0) -> list[SatTrack]:
         lons: list[float | None] = []
         prev_lon: float | None = None
 
-        for m in range(93):
+        for m in range(n_min):
             t  = epoch + timedelta(minutes=m)
             j1, j2 = _jday(t.year, t.month, t.day, t.hour, t.minute, t.second + t.microsecond / 1e6)
             e, r, _ = sat.sgp4(j1, j2)
@@ -627,29 +682,51 @@ def _globe_figure(
             hovertemplate=hover_ex,
         ))
 
-    # Frames de rotación automática (lon 0→357, paso 3°)
+    # ── Terminador día/noche ─────────────────────────────────────────────────
+    now_utc = datetime.now(timezone.utc)
+    lat_sun, lon_sun = _subsolar_point(now_utc)
+    t_lats, t_lons = _terminator(lat_sun, lon_sun)
+    fig.add_trace(go.Scattergeo(
+        lat=t_lats, lon=t_lons, mode="lines",
+        line=dict(width=1.5, color="rgba(255,220,80,0.55)", dash="dot"),
+        name="Terminador día/noche", showlegend=True, hoverinfo="skip",
+    ))
+    # Punto subsolar ☀
+    fig.add_trace(go.Scattergeo(
+        lat=[lat_sun], lon=[lon_sun], mode="markers+text",
+        marker=dict(size=14, color="rgba(255,220,60,0.9)", symbol="circle",
+                    line=dict(width=1.5, color="rgba(255,200,0,0.6)")),
+        text=["☀"], textposition="top center",
+        textfont=dict(size=14, color="rgba(255,220,60,0.9)"),
+        name="Punto subsolar", showlegend=True,
+        hovertemplate=(f"<b>☀ Punto subsolar</b><br>Lat: {lat_sun:.1f}°  Lon: {lon_sun:.1f}°"
+                       f"<br>{now_utc.strftime('%H:%M UTC')}<extra></extra>"),
+    ))
+
+    # ── Frames de rotación automática ────────────────────────────────────────
     frames = [
         go.Frame(layout=dict(geo=dict(projection=dict(rotation=dict(lon=lon)))), name=str(lon))
-        for lon in range(0, 360, 3)
+        for lon in range(0, 360, 2)
     ]
     fig.frames = frames
 
-    # Geo styling
+    # ── Geo: colores realistas "desde el espacio" ────────────────────────────
     for _geo in (
         dict(
             projection=dict(type="orthographic"),
-            showland=True,    landcolor="rgb(24,32,48)",
-            showocean=True,   oceancolor="rgb(4,10,28)",
-            showlakes=False,  showrivers=False,
-            showcoastlines=True, coastlinecolor="rgba(100,120,165,0.55)",
-            showcountries=True,  countrycolor="rgba(55,70,100,0.35)",
-            showgraticules=True, graticulecolor="rgba(40,60,110,0.18)",
-            bgcolor="rgb(3,6,18)",
+            showland=True,    landcolor="rgb(45,65,38)",    # verde-marrón natural
+            showocean=True,   oceancolor="rgb(5,28,80)",    # azul océano profundo real
+            showlakes=True,   lakecolor="rgb(10,45,100)",
+            showrivers=False,
+            showcoastlines=True, coastlinecolor="rgba(180,200,160,0.7)",
+            showcountries=True,  countrycolor="rgba(120,140,100,0.3)",
+            showgraticules=True, graticulecolor="rgba(60,90,140,0.18)",
+            bgcolor="rgb(2,5,15)",
         ),
-        dict(
+        dict(  # fallback mínimo
             projection=dict(type="orthographic"),
-            showland=True,   landcolor="rgb(24,32,48)",
-            showocean=True,  oceancolor="rgb(4,10,28)",
+            showland=True,   landcolor="rgb(45,65,38)",
+            showocean=True,  oceancolor="rgb(5,28,80)",
             showcoastlines=True, showcountries=True,
         ),
     ):
@@ -658,52 +735,37 @@ def _globe_figure(
         except Exception:
             continue
 
-    t_label = f"T+{t0_offset//60}h {t0_offset%60:02d}m" if t0_offset else "Época TLE"
+    t_label = f"T+{t0_offset//60}h {t0_offset%60:02d}m" if t0_offset else now_utc.strftime("%H:%M UTC")
     fig.update_layout(
-        paper_bgcolor="rgb(3,6,18)",
-        height=720,
-        margin=dict(l=0, r=160, t=44, b=0),
+        paper_bgcolor="rgb(2,5,15)",
+        height=740,
+        margin=dict(l=0, r=150, t=46, b=0),
         legend=dict(
-            bgcolor="rgba(4,8,22,0.93)", bordercolor="rgba(79,158,255,0.18)",
-            borderwidth=1, font=dict(color="#6a7a94", size=9),
-            x=1.01, y=0.98, xanchor="left", tracegroupgap=2,
+            bgcolor="rgba(3,7,20,0.94)", bordercolor="rgba(79,158,255,0.15)",
+            borderwidth=1, font=dict(color="#5a6a84", size=9),
+            x=1.01, y=0.99, xanchor="left", tracegroupgap=1,
         ),
         title=dict(
-            text=f"<b>Tráfico orbital  ·  {t_label}</b>"
-                 f"<br><span style='font-size:11px;color:#4a5568'>"
-                 f"Arrastra · zoom · hover · ▶ para rotar automáticamente</span>",
-            font=dict(color="#c0cce0", size=14), x=0.01, y=0.985,
+            text=f"<b>Vista orbital en tiempo real</b>"
+                 f"  <span style='font-size:11px;color:#3a4a60;font-family:monospace'>{t_label}</span>"
+                 f"<br><span style='font-size:10px;color:#2a3a50'>"
+                 f"Arrastra para rotar · rueda para zoom · hover para detalles · ▶ auto-rotar</span>",
+            font=dict(color="#b0bcd0", size=14), x=0.01, y=0.99,
         ),
         updatemenus=[dict(
-            type="buttons",
-            showactive=True,
-            y=0.01, x=0.01, xanchor="left", yanchor="bottom",
-            direction="left",
+            type="buttons", showactive=True,
+            y=0.01, x=0.01, xanchor="left", yanchor="bottom", direction="left",
             buttons=[
-                dict(
-                    label="▶  Auto-rotar",
-                    method="animate",
-                    args=[None, {
-                        "frame": {"duration": 45, "redraw": True},
-                        "fromcurrent": True,
-                        "transition": {"duration": 0},
-                        "mode": "immediate",
-                    }],
-                ),
-                dict(
-                    label="⏸  Parar",
-                    method="animate",
-                    args=[[None], {
-                        "frame": {"duration": 0},
-                        "mode": "immediate",
-                        "transition": {"duration": 0},
-                    }],
-                ),
+                dict(label="▶  Rotar",  method="animate",
+                     args=[None, {"frame": {"duration": 35, "redraw": True},
+                                  "fromcurrent": True, "transition": {"duration": 0},
+                                  "mode": "immediate"}]),
+                dict(label="⏸  Parar", method="animate",
+                     args=[[None], {"frame": {"duration": 0}, "mode": "immediate",
+                                    "transition": {"duration": 0}}]),
             ],
-            bgcolor="rgba(8,14,30,0.92)",
-            bordercolor="rgba(79,158,255,0.3)",
-            font=dict(color="#c0cce0", size=11),
-            pad=dict(r=8, t=6, b=6),
+            bgcolor="rgba(5,10,25,0.92)", bordercolor="rgba(79,158,255,0.25)",
+            font=dict(color="#b0bcd0", size=11), pad=dict(r=8, t=6, b=6),
         )],
     )
     return fig
@@ -818,163 +880,165 @@ def _page_map() -> None:
 
     selected = st.session_state["map_case"]
 
-    # ── Controles superiores: búsqueda + proyección ──────────────────────────
-    ctrl_a, ctrl_b = st.columns([3, 2])
-    with ctrl_a:
-        search_q = st.text_input(
-            "🔍 Buscar satélite",
-            placeholder="Nombre, NORAD ID o palabra clave…  Ej: ISS, HMU, 25544, debris",
-            key="map_search",
-        )
-    with ctrl_b:
-        t0_offset = st.slider(
-            "⏱ Proyección temporal",
-            min_value=0, max_value=1440, value=0, step=15,
-            format="%d min", key="map_t0",
-            help="Desplaza posiciones hacia adelante (máx 24 h).",
-        )
-
-    # ── Detección de proximidad ───────────────────────────────────────────────
-    scan_prox = st.toggle(
-        "🛰 Escanear objetos en órbita cercana (CelesTrak last-30-days)",
-        value=False, key="map_scan_prox",
-        help="Descarga los últimos 30 días de lanzamientos y detecta cuáles orbitan cerca de las estaciones rastreadas.",
-    )
-
-    # ── Carga datos ──────────────────────────────────────────────────────────
+    # ── Carga TLEs anticipada (no bloquea el layout) ──────────────────────────
     tle_text, tle_source = _fetch_live_tles()
+
+    # ── Layout: globo izquierda · panel control derecha ───────────────────────
+    col_globe, col_ctrl = st.columns([4, 1], gap="small")
+
+    with col_ctrl:
+        now_utc = datetime.now(timezone.utc)
+        st.markdown(f'<div class="live-clock">🕐 {now_utc.strftime("%H:%M:%S UTC")}</div>', unsafe_allow_html=True)
+        st.markdown('<div class="ctrl-title">Objeto principal</div>', unsafe_allow_html=True)
+        case_labels = {_CASE_META.get(c, {}).get("title", c): c for c in cases}
+        sel_label = st.radio("", list(case_labels.keys()), key="map_case_radio", label_visibility="collapsed")
+        selected = case_labels[sel_label]
+        st.session_state["map_case"] = selected
+
+        st.divider()
+        st.markdown('<div class="ctrl-title">Búsqueda</div>', unsafe_allow_html=True)
+        search_q = st.text_input("", placeholder="Nombre o NORAD…", key="map_search", label_visibility="collapsed")
+
+        st.markdown('<div class="ctrl-title">Proyección temporal</div>', unsafe_allow_html=True)
+        t0_offset = st.slider("", 0, 1440, 0, 15, key="map_t0", label_visibility="collapsed",
+                               format="%d min", help="Máx 24 h desde época TLE")
+        if t0_offset:
+            h, m = divmod(t0_offset, 60)
+            st.caption(f"T+{h}h {m:02d}m")
+
+        st.markdown('<div class="ctrl-title">Trazas orbitales</div>', unsafe_allow_html=True)
+        n_orbits = st.select_slider("", [1, 2, 3], value=2, key="map_orbits", label_visibility="collapsed")
+        st.caption(f"{n_orbits} órbita{'s' if n_orbits > 1 else ''} ≈ {n_orbits*92} min")
+
+        st.divider()
+        scan_prox = st.toggle("🛰 Detección proximidad", key="map_scan_prox",
+                               help="Escanea last-30-days de CelesTrak buscando objetos en órbita similar a las estaciones.")
+
+    # ── Propagación ───────────────────────────────────────────────────────────
+    blocks_ref = _parse_blocks(tle_text)
+    n_min_steps = 185
+    if blocks_ref:
+        sat0 = Satrec.twoline2rv(blocks_ref[0][1], blocks_ref[0][2])
+        p0 = (2 * math.pi / sat0.no_kozai) if sat0.no_kozai > 0 else 92
+        n_min_steps = int(p0 * n_orbits) + 5
+
     with st.spinner("Propagando órbitas…"):
         try:
-            track_list = _tracks(tle_text, t0_offset)
+            track_list = _tracks(tle_text, t0_offset, n_min_steps)
             case       = _load(selected)
         except Exception as exc:
             st.error(f"Error: {exc}"); return
 
-    # ── Proximity scan ────────────────────────────────────────────────────────
+    # Proximity scan
     extra_tracks: list[SatTrack] = []
     if scan_prox:
-        with st.spinner("Descargando lanzamientos recientes y buscando proximidades…"):
+        with st.spinner("Escaneando proximidades…"):
             extra_tle = _fetch_group_tles("last-30-days")
             if extra_tle:
                 extra_tracks = _find_proximity_objects(track_list, extra_tle)
 
-    # ── Búsqueda: calcular highlight set ─────────────────────────────────────
+    # Search highlight
     highlight: frozenset[int] | None = None
     search_matches: list[SatTrack] = []
     if search_q.strip():
         q = search_q.strip().lower()
-        search_matches = [
-            t for t in track_list + extra_tracks
-            if q in t.name.lower() or q in str(t.norad)
-        ]
+        search_matches = [t for t in track_list + extra_tracks
+                          if q in t.name.lower() or q in str(t.norad)]
         highlight = frozenset(t.norad for t in search_matches)
 
-    # ── Globe ─────────────────────────────────────────────────────────────────
-    st.plotly_chart(
-        _globe_figure(track_list, case, t0_offset, highlight=highlight, extra_tracks=extra_tracks),
-        use_container_width=True,
-        config={"displayModeBar": True, "scrollZoom": True, "displaylogo": False},
-    )
+    # ── Globe + resultados (columna izquierda) ────────────────────────────────
+    with col_globe:
+        st.plotly_chart(
+            _globe_figure(track_list, case, t0_offset, highlight=highlight, extra_tracks=extra_tracks),
+            use_container_width=True,
+            config={"displayModeBar": True, "scrollZoom": True, "displaylogo": False},
+        )
+        st.caption(f"{tle_source}  ·  {n_min_steps} min de propagación  ·  {len(track_list)} objetos")
 
-    # ── Resultados de búsqueda ────────────────────────────────────────────────
-    if search_q.strip():
-        if search_matches:
-            tags = []
-            for t in search_matches:
-                cls = "danger" if not t.known else ("unknown" if t.norad in {tt.norad for tt in extra_tracks} else "")
-                tags.append(f'<span class="search-result-tag {cls}">{t.name} · NORAD {t.norad} · {t.alt_mean:.0f} km · {t.incl:.1f}°</span>')
-            st.markdown("**Coincidencias:** " + "".join(tags), unsafe_allow_html=True)
-        else:
-            st.warning(f"No se encontró ningún objeto que coincida con «{search_q}».")
+        if search_q.strip():
+            if search_matches:
+                prox_norads = {tt.norad for tt in extra_tracks}
+                tags = "".join(
+                    f'<span class="search-result-tag {"unknown" if t.norad in prox_norads else ""}">'
+                    f'{t.name} · {t.norad} · {t.alt_mean:.0f} km · {t.incl:.1f}°</span>'
+                    for t in search_matches
+                )
+                st.markdown(tags, unsafe_allow_html=True)
+            else:
+                st.info(f"Sin resultados para «{search_q}»")
 
-    # ── Resultados de proximidad ──────────────────────────────────────────────
-    if extra_tracks:
-        st.markdown(f"""
-<div style="border:1px solid rgba(0,210,200,0.35); border-radius:10px;
-     background:rgba(0,210,200,0.05); padding:.8rem 1.2rem; margin:.6rem 0;">
-  <span style="color:#00d2c8;font-weight:700;">🛰 {len(extra_tracks)} objeto(s) detectado(s) en órbita cercana a estaciones</span>
-  <span style="color:#8892a4;font-size:.83rem;margin-left:.7rem;">(last-30-days · filtro ±8° incl · ±300 km alt)</span>
-</div>""", unsafe_allow_html=True)
-        prox_cols = st.columns(min(len(extra_tracks), 3))
-        for col, t in zip(prox_cols, extra_tracks):
-            with col:
-                st.markdown(f"""
-<div class="prox-badge" style="flex-direction:column;align-items:flex-start;">
-  <div class="pb-name">🔴 {t.name}</div>
-  <div class="pb-detail">NORAD {t.norad}</div>
-  <div class="pb-detail">Alt media: {t.alt_mean:.0f} km  ·  Incl: {t.incl:.1f}°</div>
-  <div class="pb-detail">Período: {t.period_min:.1f} min</div>
-</div>""", unsafe_allow_html=True)
-    st.caption(f"{tle_source}")
-
-    # ── Objetos no catalogados ────────────────────────────────────────────────
-    unknown_tracks = [t for t in track_list if not t.known]
-    if unknown_tracks:
-        st.markdown(f"""
-<div style="border:1px solid rgba(255,165,0,.4); border-radius:10px;
-            background:rgba(255,165,0,.06); padding:.8rem 1.2rem; margin:.8rem 0;">
-  <span style="color:#ffb300;font-weight:700;">❓ {len(unknown_tracks)} objeto(s) no catalogado(s) en este feed</span>
-  <span style="color:#8892a4;font-size:.85rem;margin-left:.8rem;">
-    Aparecen en el TLE de CelesTrak pero no en el catálogo local.
-  </span>
-</div>""", unsafe_allow_html=True)
-        unk_cols = st.columns(min(len(unknown_tracks), 4))
-        for col, t in zip(unk_cols, unknown_tracks):
-            with col:
-                st.markdown(f"""
-<div class="case-card" style="border-color:rgba(255,165,0,.3);">
-  <div class="cc-icon">❓</div>
-  <div class="cc-title" style="font-size:.95rem;">{t.name}</div>
-  <div class="cc-summary">NORAD {t.norad}</div>
-  <div class="cc-summary">Alt media: {t.alt_mean:.0f} km</div>
-  <div class="cc-summary">Incl: {t.incl:.1f}° · Per: {t.period_min:.1f} min</div>
-</div>""", unsafe_allow_html=True)
-
-    # ── Métricas de conjunciones ──────────────────────────────────────────────
+    # ── Panel control: stats + alertas ───────────────────────────────────────
     real_evs = [
         be for be in case.evidence_bundle.evidence_payloads
         if float(be.derived_evidence.honesty_payload.get("miss_distance_km", 0)) > 10
     ]
-    if real_evs:
-        st.markdown("**Acercamientos no cooperativos en este caso:**")
-        ev_cols = st.columns(max(len(real_evs), 1))
-        for col, be in zip(ev_cols, real_evs):
-            hp    = be.derived_evidence.honesty_payload
-            norad = int(hp.get("other_norad_cat_id", 0))
-            miss  = float(hp.get("miss_distance_km", 0))
-            tca   = be.derived_evidence.event_epoch.strftime("%Y-%m-%d  %H:%M UTC")
-            with col:
-                st.markdown(f"""
-<div class="conj-alert">
-  <div>
-    <div class="ca-name">⚠ {_label(norad)}</div>
-    <div class="ca-val">{miss:.2f} km</div>
-    <div class="ca-label">TCA · {tca}</div>
-  </div>
-</div>""", unsafe_allow_html=True)
-
-    # ── Stats chips ───────────────────────────────────────────────────────────
-    n_obj     = len(track_list)
+    unknown_tracks = [t for t in track_list if not t.known]
     n_unknown = len(unknown_tracks)
     n_real    = len(real_evs)
     n_ev      = case.evidence_bundle.n_evidence_payloads
-    st.markdown(f"""
-<div class="stat-row">
-  <div class="stat-chip"><span class="sv">{n_obj}</span><span class="sl">Objetos en feed</span></div>
-  <div class="stat-chip"><span class="sv" style="color:#ffb300">{n_unknown}</span><span class="sl">No catalogados</span></div>
-  <div class="stat-chip"><span class="sv">{n_ev}</span><span class="sl">Evidencias totales</span></div>
-  <div class="stat-chip"><span class="sv" style="color:#ff4757">{n_real}</span><span class="sl">Acercamientos reales</span></div>
-  <div class="stat-chip"><span class="sv" style="color:#2ed573">✓</span><span class="sl">Cadena verificada</span></div>
+
+    with col_ctrl:
+        st.divider()
+        st.markdown(f"""
+<div class="stat-row" style="flex-direction:column;gap:.4rem;">
+  <div class="stat-chip" style="flex-direction:row;justify-content:space-between;min-width:0;padding:.4rem .8rem;">
+    <span class="sl">Objetos</span><span class="sv" style="font-size:1rem;">{len(track_list)}</span>
+  </div>
+  <div class="stat-chip" style="flex-direction:row;justify-content:space-between;min-width:0;padding:.4rem .8rem;">
+    <span class="sl">Sin catalogar</span><span class="sv" style="font-size:1rem;color:#ffb300">{n_unknown}</span>
+  </div>
+  <div class="stat-chip" style="flex-direction:row;justify-content:space-between;min-width:0;padding:.4rem .8rem;">
+    <span class="sl">Evidencias</span><span class="sv" style="font-size:1rem;">{n_ev}</span>
+  </div>
+  <div class="stat-chip" style="flex-direction:row;justify-content:space-between;min-width:0;padding:.4rem .8rem;">
+    <span class="sl">Acercamientos</span><span class="sv" style="font-size:1rem;color:#ff4757">{n_real}</span>
+  </div>{"" if not extra_tracks else f'''
+  <div class="stat-chip" style="flex-direction:row;justify-content:space-between;min-width:0;padding:.4rem .8rem;border-color:rgba(0,210,200,.3);">
+    <span class="sl">Proximidad</span><span class="sv" style="font-size:1rem;color:#00d2c8">{len(extra_tracks)}</span>
+  </div>'''}
 </div>""", unsafe_allow_html=True)
 
-    # ── Tabla completa de objetos ─────────────────────────────────────────────
-    with st.expander(f"📋 Todos los objetos detectados en el feed ({n_obj})", expanded=False):
+        if real_evs:
+            st.markdown('<div class="ctrl-title" style="margin-top:.8rem;">⚠ Conjunciones</div>', unsafe_allow_html=True)
+            for be in real_evs:
+                hp    = be.derived_evidence.honesty_payload
+                norad = int(hp.get("other_norad_cat_id", 0))
+                miss  = float(hp.get("miss_distance_km", 0))
+                tca   = be.derived_evidence.event_epoch.strftime("%d %b %H:%M")
+                st.markdown(f"""
+<div class="conj-alert" style="flex-direction:column;align-items:flex-start;gap:.2rem;padding:.6rem .8rem;margin:.2rem 0;">
+  <div class="ca-name" style="font-size:.85rem;">⚠ {_label(norad)}</div>
+  <div class="ca-val" style="font-size:1.1rem;">{miss:.2f} km</div>
+  <div class="ca-label">{tca} UTC</div>
+</div>""", unsafe_allow_html=True)
+
+        if extra_tracks:
+            st.markdown(f'<div class="ctrl-title" style="margin-top:.8rem;">🛰 Proximidad ({len(extra_tracks)})</div>', unsafe_allow_html=True)
+            for t in extra_tracks[:6]:
+                st.markdown(f"""
+<div class="prox-badge" style="flex-direction:column;align-items:flex-start;padding:.4rem .7rem;margin:.2rem 0;">
+  <div class="pb-name" style="font-size:.82rem;">🔴 {t.name}</div>
+  <div class="pb-detail">{t.norad} · {t.alt_mean:.0f} km · {t.incl:.1f}°</div>
+</div>""", unsafe_allow_html=True)
+
+        if unknown_tracks:
+            st.markdown(f'<div class="ctrl-title" style="margin-top:.8rem;">❓ Sin catalogar ({n_unknown})</div>', unsafe_allow_html=True)
+            for t in unknown_tracks[:5]:
+                st.markdown(f"""
+<div style="border:1px solid rgba(255,165,0,.2);border-radius:6px;padding:.35rem .6rem;margin:.2rem 0;background:rgba(255,165,0,.05);">
+  <div style="color:#ffb300;font-size:.82rem;font-weight:600;">{t.name}</div>
+  <div style="color:#5a6a84;font-size:.75rem;">{t.norad} · {t.alt_mean:.0f} km · {t.incl:.1f}°</div>
+</div>""", unsafe_allow_html=True)
+
+    # ── Tabla completa ────────────────────────────────────────────────────────
+    all_objs = track_list + extra_tracks
+    with st.expander(f"📋 Todos los objetos detectados ({len(all_objs)})", expanded=False):
+        prox_set = {t.norad for t in extra_tracks}
         rows = []
-        for t in sorted(track_list, key=lambda x: (x.known, x.norad)):
+        for t in sorted(all_objs, key=lambda x: (x.known, x.norad)):
+            estado = "🔴 Proximidad" if t.norad in prox_set else ("✓" if t.known else "❓ Desconocido")
             rows.append({
-                "Estado": "✓ Catalogado" if t.known else "❓ Desconocido",
-                "Nombre": t.name,
-                "NORAD": t.norad,
+                "Estado": estado, "Nombre": t.name, "NORAD": t.norad,
                 "Alt media (km)": round(t.alt_mean, 0),
                 "Inclinación (°)": round(t.incl, 2),
                 "Período (min)": round(t.period_min, 1),
@@ -983,8 +1047,11 @@ def _page_map() -> None:
         df_all = pd.DataFrame(rows)
 
         def _row_color(row: pd.Series) -> list[str]:
-            if row["Estado"].startswith("❓"):
-                return ["background-color:rgba(255,165,0,.1);color:#ffb300"] * len(row)
+            s = str(row["Estado"])
+            if "Proximidad" in s:
+                return ["background-color:rgba(0,210,200,.07);color:#00d2c8"] * len(row)
+            if s.startswith("❓"):
+                return ["background-color:rgba(255,165,0,.08);color:#ffb300"] * len(row)
             return [""] * len(row)
 
         st.dataframe(df_all.style.apply(_row_color, axis=1),
