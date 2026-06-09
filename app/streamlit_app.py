@@ -590,10 +590,84 @@ def _fetch_live_tles() -> tuple[str, str]:
 _DATASETS = {
     "🏠 Estaciones (~25)":              ("stations",       "full"),
     "👁 Visibles a simple vista (~150)": ("visual",         "full"),
+    "🌦 Meteorológicos (~60)":          ("weather",        "full"),
+    "📡 GPS (~30)":                     ("gps-ops",        "full"),
+    "🛰 Iridium (~75)":                 ("iridium-NEXT",   "full"),
+    "📞 OneWeb (~650)":                 ("oneweb",         "lite"),
+    "🌐 Geoestacionarios (~600)":       ("geo",            "lite"),
     "🚀 Lanzamientos 30 días (~300)":   ("last-30-days",   "lite"),
     "📡 Starlink (~6000)":              ("starlink",       "lite"),
     "🌍 Activos LEO (~3000)":           ("active",         "lite"),
+    "💫 Cubesats (~1500)":              ("cubesat",        "lite"),
+    "🗑 Basura espacial / debris":      ("cosmos-1408-debris", "lite"),
 }
+
+
+def _plain_lang(name: str, norad: int, alt: float, incl: float, period_min: float) -> str:
+    """Descripción del objeto en lenguaje accesible para no técnicos."""
+    parts = [f"**🛰 {name}**  ·  identificador internacional NORAD `{norad}`"]
+
+    # Categoría por altitud
+    if alt < 700:
+        parts.append(
+            f"📍 **Órbita baja terrestre (LEO)** a **{alt:.0f} km** sobre el suelo. "
+            f"Es donde está la ISS, la mayoría de satélites de observación y Starlink. "
+            f"Para hacerte una idea: un avión comercial vuela a 12 km — esto está **{alt/12:.0f}× más alto**."
+        )
+    elif alt < 2000:
+        parts.append(
+            f"📍 **Órbita baja media** a **{alt:.0f} km**. Típico de constelaciones de comunicaciones."
+        )
+    elif alt < 30000:
+        parts.append(
+            f"📍 **Órbita media terrestre (MEO)** a **{alt:.0f} km**. "
+            f"Es donde están los satélites de GPS, Galileo, GLONASS y BeiDou — los que te ubican en el móvil."
+        )
+    elif 35000 <= alt <= 36500:
+        parts.append(
+            f"📍 **Órbita geoestacionaria** a **{alt:.0f} km**. "
+            f"Su período encaja con la rotación de la Tierra, así que **parece fijo en el cielo**. "
+            f"Aquí viven los satélites de TV, meteorología y comunicaciones intercontinentales."
+        )
+    else:
+        parts.append(f"📍 **Órbita alta** a **{alt:.0f} km**. Muy por encima de la mayoría de objetos.")
+
+    # Período
+    if period_min < 120:
+        suns_per_day = 1440 / period_min
+        parts.append(
+            f"⏱ Da una vuelta completa a la Tierra cada **{period_min:.0f} minutos**. "
+            f"Desde su perspectiva, vería **{suns_per_day:.0f} amaneceres y atardeceres cada día terrestre**."
+        )
+    elif period_min < 1500:
+        parts.append(f"⏱ Tarda **{period_min/60:.1f} horas** en completar una órbita.")
+    else:
+        parts.append(f"⏱ Su período orbital es de **{period_min/60:.1f} h** ({period_min/1440:.2f} días).")
+
+    # Velocidad
+    v_kms = 2 * math.pi * (EARTH_R + alt) / period_min / 60
+    parts.append(
+        f"⚡ Viaja a **{v_kms:.2f} km/s** ({v_kms*3600:.0f} km/h). "
+        f"Eso es aproximadamente **{v_kms/0.343:.0f} veces la velocidad del sonido**."
+    )
+
+    # Inclinación
+    if incl < 5:
+        parts.append(f"📐 Inclinación **{incl:.1f}°** — su órbita es casi paralela al ecuador.")
+    elif 80 <= incl <= 100:
+        parts.append(
+            f"📐 **Órbita polar** ({incl:.1f}°). Sobrevuela los polos Norte y Sur. "
+            f"Es ideal para fotografiar el planeta entero — usada por satélites de observación terrestre."
+        )
+    elif 50 < incl < 60:
+        parts.append(
+            f"📐 Inclinación **{incl:.1f}°**. Característica de la ISS y muchos satélites tripulados — "
+            f"pasa sobre la mayoría de zonas habitadas del planeta."
+        )
+    else:
+        parts.append(f"📐 Su órbita está inclinada **{incl:.1f}°** respecto al ecuador.")
+
+    return "\n\n".join(parts)
 
 
 @st.cache_data(show_spinner=False)
@@ -817,6 +891,8 @@ def _globe_figure(
     t0_offset: int = 0,
     highlight: frozenset[int] | None = None,
     extra_tracks: list[SatTrack] | None = None,
+    center_lon: float | None = None,
+    center_lat: float | None = None,
 ) -> go.Figure:
     real_norads: set[int] = set()
     for be in case.evidence_bundle.evidence_payloads:
@@ -1007,9 +1083,12 @@ def _globe_figure(
     # Geo realista — paleta Earth-from-space estilo Google Earth en vectorial
     t_label = f"T+{t0_offset//60}h {t0_offset%60:02d}m" if t0_offset else now_utc.strftime("%H:%M UTC")
 
+    _projection: dict[str, Any] = dict(type="orthographic")
+    if center_lon is not None:
+        _projection["rotation"] = dict(lon=center_lon, lat=(center_lat or 0), roll=0)
     fig.update_layout(
         geo=dict(
-            projection=dict(type="orthographic"),
+            projection=_projection,
             resolution=50,                                       # alta definición costas
             showland=True,    landcolor="rgb(85,110,68)",        # verde tierra vivo
             showocean=True,   oceancolor="rgb(6,28,76)",         # océano profundo realista
@@ -1410,6 +1489,26 @@ def _page_map() -> None:
                           if q in t.name.lower() or q in str(t.norad)]
         highlight = frozenset(t.norad for t in search_matches)
 
+    # ── Detectar focus actual (de tabla o de clic previo) ────────────────────
+    focus_norad: int | None = st.session_state.get("focus_norad")
+    focus_track: SatTrack | None = None
+    if focus_norad is not None:
+        focus_track = next(
+            (t for t in (track_list + extra_tracks) if t.norad == focus_norad),
+            None,
+        )
+        if focus_track is None:
+            # El objeto en focus no existe en este dataset → limpiamos
+            st.session_state.pop("focus_norad", None)
+            focus_norad = None
+
+    # Si hay focus, lo metemos en el highlight set para que se resalte
+    if focus_norad is not None:
+        if highlight is None:
+            highlight = frozenset({focus_norad})
+        else:
+            highlight = highlight | {focus_norad}
+
     # ── Globe + resultados (columna izquierda) ────────────────────────────────
     with col_globe:
         try:
@@ -1417,8 +1516,12 @@ def _page_map() -> None:
                 fig = _satellite_figure(track_list, case,
                                          highlight=highlight, extra_tracks=extra_tracks)
             else:
-                fig = _globe_figure(track_list, case, t0_offset,
-                                    highlight=highlight, extra_tracks=extra_tracks)
+                fig = _globe_figure(
+                    track_list, case, t0_offset,
+                    highlight=highlight, extra_tracks=extra_tracks,
+                    center_lon=(focus_track.lon0 if focus_track else None),
+                    center_lat=(focus_track.lat0 if focus_track else None),
+                )
             event = st.plotly_chart(
                 fig, use_container_width=True,
                 config={"displayModeBar": True, "scrollZoom": True, "displaylogo": False},
@@ -1433,21 +1536,40 @@ def _page_map() -> None:
             return
         st.caption(f"{active_source}  ·  {len(track_list)} objetos  ·  modo {ds_mode}")
 
-        # ── Info del objeto clicado ──────────────────────────────────────────
+        # ── Info del objeto clicado (en el globo o desde tabla) ──────────────
+        clicked_cd = None
         sel_points = (event.selection or {}).get("points", []) if event else []
         if sel_points:
-            p = sel_points[0]
-            cd = p.get("customdata", None)
-            if cd and len(cd) >= 5:
-                norad, name, alt, incl, per = cd[:5]
+            clicked_cd = sel_points[0].get("customdata")
+            if clicked_cd and len(clicked_cd) >= 5:
+                # Sincronizar el focus con el clic en globo
+                if clicked_cd[0] != focus_norad:
+                    st.session_state["focus_norad"] = int(clicked_cd[0])
+                    st.rerun()
+
+        # Si tenemos focus_track, mostramos plain-language
+        if focus_track is not None:
+            st.markdown("### 🎯 Objeto seleccionado")
+            st.markdown(_plain_lang(
+                focus_track.name, focus_track.norad,
+                focus_track.alt0, focus_track.incl, focus_track.period_min,
+            ))
+            with st.expander("📊 Datos técnicos avanzados"):
+                v = 2 * math.pi * (EARTH_R + focus_track.alt0) / focus_track.period_min / 60
                 st.markdown(f"""
-**🎯 Objeto seleccionado:** `{name}`
-- **NORAD ID:** `{norad}`
-- **Altitud actual:** `{alt:.0f} km`
-- **Inclinación:** `{incl:.2f}°`
-- **Período orbital:** `{per:.1f} min` ({per/60:.2f} h)
-- **Velocidad orbital:** `{(2*math.pi*(EARTH_R+alt)/per/60):.2f} km/s`
+- **NORAD ID:** `{focus_track.norad}`
+- **Latitud actual:** `{focus_track.lat0:.3f}°`
+- **Longitud actual:** `{focus_track.lon0:.3f}°`
+- **Altitud actual:** `{focus_track.alt0:.2f} km`
+- **Altitud media orbital:** `{focus_track.alt_mean:.2f} km`
+- **Inclinación:** `{focus_track.incl:.4f}°`
+- **Período orbital:** `{focus_track.period_min:.3f} min`
+- **Velocidad orbital:** `{v:.4f} km/s` ({v*3600:.0f} km/h)
+- **Catalogado en _NAMES local:** `{focus_track.known}`
 """)
+            if st.button("✕ Limpiar selección", key="clear_focus"):
+                st.session_state.pop("focus_norad", None)
+                st.rerun()
 
         if search_q.strip():
             if search_matches:
@@ -1510,17 +1632,18 @@ def _page_map() -> None:
                     icon="❓",
                 )
 
-    # ── Tabla completa (toggle limpio sin expander) ──────────────────────────
+    # ── Tabla completa (clicable: selecciona fila → centra en el globo) ──────
     st.divider()
     all_objs = track_list + extra_tracks
     show_table = st.toggle(
-        f"📋 Ver tabla completa — {len(all_objs)} objetos detectados",
+        f"📋 Ver tabla completa — {len(all_objs)} objetos · clic en fila para centrar el globo",
         key="map_show_table",
     )
     if show_table:
         prox_set = {t.norad for t in extra_tracks}
+        sorted_objs = sorted(all_objs, key=lambda x: (x.known, x.norad))
         rows = []
-        for t in sorted(all_objs, key=lambda x: (x.known, x.norad)):
+        for t in sorted_objs:
             estado = "🔴 Proximidad" if t.norad in prox_set else ("✓" if t.known else "❓ Desconocido")
             rows.append({
                 "Estado": estado,
@@ -1530,7 +1653,22 @@ def _page_map() -> None:
                 "Inclinación (°)": round(t.incl, 2),
                 "Período (min)": round(t.period_min, 1),
             })
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True, height=400)
+        table_event = st.dataframe(
+            pd.DataFrame(rows),
+            use_container_width=True,
+            hide_index=True,
+            height=420,
+            on_select="rerun",
+            selection_mode="single-row",
+            key="objects_table",
+        )
+        # Sincronizar selección de tabla con focus_norad
+        sel_rows = (table_event.selection or {}).get("rows", [])
+        if sel_rows:
+            new_focus = int(sorted_objs[sel_rows[0]].norad)
+            if new_focus != focus_norad:
+                st.session_state["focus_norad"] = new_focus
+                st.rerun()
 
 
 def _page_cases() -> None:
