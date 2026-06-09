@@ -593,6 +593,30 @@ def _fetch_live_tles() -> tuple[str, str]:
     return _TLE_STATIONS, "🟡 TLEs embebidos 2026-06-08 · CelesTrak no alcanzable"
 
 
+_MAJOR_CITIES = [
+    ("Madrid", 40.42, -3.70),       ("Nueva York", 40.71, -74.01),
+    ("Tokio", 35.69, 139.69),       ("Londres", 51.51, -0.13),
+    ("Sídney", -33.87, 151.21),     ("Ciudad de México", 19.43, -99.13),
+    ("Pekín", 39.90, 116.40),       ("El Cairo", 30.04, 31.24),
+    ("Moscú", 55.76, 37.62),        ("Bombay", 19.08, 72.88),
+    ("São Paulo", -23.55, -46.63),  ("Buenos Aires", -34.61, -58.40),
+    ("Lagos", 6.52, 3.38),          ("Ciudad del Cabo", -33.92, 18.42),
+    ("Nairobi", -1.29, 36.82),      ("Singapur", 1.35, 103.82),
+    ("Bangkok", 13.76, 100.50),     ("Seúl", 37.57, 126.98),
+    ("Dubái", 25.20, 55.27),        ("Estambul", 41.01, 28.98),
+    ("Berlín", 52.52, 13.41),       ("París", 48.86, 2.35),
+    ("Roma", 41.90, 12.50),         ("Los Ángeles", 34.05, -118.24),
+    ("Chicago", 41.88, -87.63),     ("Toronto", 43.65, -79.38),
+    ("Houston", 29.76, -95.37),     ("Miami", 25.76, -80.19),
+    ("Lima", -12.05, -77.05),       ("Bogotá", 4.71, -74.07),
+    ("Caracas", 10.48, -66.90),     ("Estocolmo", 59.33, 18.07),
+    ("Oslo", 59.91, 10.75),         ("Atenas", 37.98, 23.73),
+    ("Teherán", 35.69, 51.39),      ("Yakarta", -6.21, 106.85),
+    ("Hong Kong", 22.32, 114.17),   ("Nueva Delhi", 28.61, 77.21),
+    ("Riad", 24.71, 46.68),
+]
+
+
 _DATASETS = {
     "🏠 Estaciones (~25)":              ("stations",       "full"),
     "👁 Visibles a simple vista (~150)": ("visual",         "full"),
@@ -902,7 +926,14 @@ def _globe_figure(
     extra_tracks: list[SatTrack] | None = None,
     center_lon: float | None = None,
     center_lat: float | None = None,
+    layers: dict[str, bool] | None = None,
 ) -> go.Figure:
+    layers = layers or {}
+    show_cities    = layers.get("cities",    False)
+    show_countries = layers.get("countries", True)
+    show_subunits  = layers.get("subunits",  False)
+    show_rivers    = layers.get("rivers",    False)
+    show_lakes     = layers.get("lakes",     True)
     real_norads: set[int] = set()
     for be in case.evidence_bundle.evidence_payloads:
         hp = be.derived_evidence.honesty_payload
@@ -1099,21 +1130,36 @@ def _globe_figure(
     # Geo realista — paleta Earth-from-space estilo Google Earth en vectorial
     t_label = f"T+{t0_offset//60}h {t0_offset%60:02d}m" if t0_offset else now_utc.strftime("%H:%M UTC")
 
+    # Ciudades como trace (opcional)
+    if show_cities:
+        fig.add_trace(go.Scattergeo(
+            lat=[c[1] for c in _MAJOR_CITIES],
+            lon=[c[2] for c in _MAJOR_CITIES],
+            mode="markers+text",
+            marker=dict(size=4, color="rgba(255,200,140,0.95)",
+                        line=dict(width=0.5, color="rgba(0,0,0,0.4)")),
+            text=[c[0] for c in _MAJOR_CITIES],
+            textposition="top right",
+            textfont=dict(size=9, color="rgba(255,230,180,0.85)"),
+            name="Ciudades", showlegend=False, hoverinfo="text",
+            hovertext=[f"📍 {c[0]}" for c in _MAJOR_CITIES],
+        ))
+
     _projection: dict[str, Any] = dict(type="orthographic")
     if center_lon is not None:
         _projection["rotation"] = dict(lon=center_lon, lat=(center_lat or 0), roll=0)
     fig.update_layout(
         geo=dict(
             projection=_projection,
-            resolution=50,                                          # alta definición costas
-            showland=True,    landcolor="rgb(112,128,77)",          # verde-marrón Blue Marble
-            showocean=True,   oceancolor="rgb(11,42,98)",           # océano profundo NASA
-            showlakes=True,   lakecolor="rgb(22,68,128)",
-            showrivers=True,  rivercolor="rgba(70,130,200,0.5)", riverwidth=0.5,
-            showcoastlines=True, coastlinecolor="rgba(245,250,225,0.55)", coastlinewidth=0.6,
-            showcountries=True,  countrycolor="rgba(190,210,160,0.32)", countrywidth=0.5,
-            showsubunits=True,   subunitcolor="rgba(160,180,140,0.16)", subunitwidth=0.3,
-            bgcolor="rgb(2,4,12)",                                  # espacio casi negro
+            resolution=50,
+            showland=True,    landcolor="rgb(112,128,77)",
+            showocean=True,   oceancolor="rgb(11,42,98)",
+            showlakes=show_lakes,   lakecolor="rgb(22,68,128)",
+            showrivers=show_rivers, rivercolor="rgba(70,130,200,0.55)", riverwidth=0.6,
+            showcoastlines=True, coastlinecolor="rgba(245,250,225,0.6)", coastlinewidth=0.7,
+            showcountries=show_countries, countrycolor="rgba(220,235,180,0.4)", countrywidth=0.6,
+            showsubunits=show_subunits,   subunitcolor="rgba(180,200,150,0.22)", subunitwidth=0.4,
+            bgcolor="rgb(2,4,12)",
         ),
         paper_bgcolor="rgb(10,15,30)",
         height=760,
@@ -1417,8 +1463,19 @@ def _page_map() -> None:
 
         scan_prox = st.toggle(
             "🛰 Detección proximidad", key="map_scan_prox",
-            help="Escanea last-30-days de CelesTrak buscando objetos en órbita similar a las estaciones.",
+            help=("Una conjunción es un acercamiento entre dos objetos en órbita. "
+                  "Cuando dos satélites pasan a menos de unos km el uno del otro, "
+                  "puede haber riesgo de colisión. Esta opción escanea los lanzamientos "
+                  "de los últimos 30 días buscando objetos que orbitan cerca de las estaciones espaciales."),
         )
+
+        # ── Capas geográficas (toggle on/off) ───────────────────────────────
+        st.markdown("**🗺 Capas del globo**")
+        layer_cities    = st.toggle("Ciudades principales", value=False, key="lyr_cities")
+        layer_countries = st.toggle("Fronteras nacionales", value=True,  key="lyr_countries")
+        layer_subunits  = st.toggle("Estados/Provincias",   value=False, key="lyr_subunits")
+        layer_lakes     = st.toggle("Lagos",                value=True,  key="lyr_lakes")
+        layer_rivers    = st.toggle("Ríos",                 value=False, key="lyr_rivers")
 
         dataset_label = st.selectbox(
             "Dataset a rastrear",
@@ -1535,6 +1592,10 @@ def _page_map() -> None:
                     highlight=highlight, extra_tracks=extra_tracks,
                     center_lon=(center_track.lon0 if center_track else None),
                     center_lat=(center_track.lat0 if center_track else None),
+                    layers=dict(
+                        cities=layer_cities, countries=layer_countries,
+                        subunits=layer_subunits, lakes=layer_lakes, rivers=layer_rivers,
+                    ),
                 )
             event = st.plotly_chart(
                 fig, use_container_width=True,
@@ -1562,14 +1623,7 @@ def _page_map() -> None:
             st.session_state["focus_norads"] = sel_from_globe
             st.rerun()
 
-        # ── Plain language para todos los seleccionados (sin expander) ───────
-        if focus_tracks:
-            for ft in focus_tracks:
-                with st.container(border=True):
-                    st.markdown(_plain_lang(
-                        ft.name, ft.norad,
-                        ft.alt0, ft.incl, ft.period_min,
-                    ))
+        # La info plain-language está en col_ctrl (derecha), no aquí debajo.
 
         if search_q.strip():
             if search_matches:
@@ -1596,21 +1650,26 @@ def _page_map() -> None:
     with col_ctrl:
         st.divider()
 
-        # ── Panel selección múltiple (lista de objetos clicados) ─────────────
+        # ── Panel selección múltiple con info plain-language ─────────────────
         if focus_tracks:
             st.markdown(f"### 🎯 {len(focus_tracks)} seleccionado(s)")
-            for ft in focus_tracks:
-                row_a, row_b = st.columns([5, 1])
-                with row_a:
-                    st.markdown(f"**{ft.name}**  \n`{ft.norad}` · {ft.alt0:.0f} km · {ft.incl:.1f}°")
-                with row_b:
-                    if st.button("✕", key=f"unfocus_{ft.norad}", help="Deseleccionar"):
-                        focus_norads.discard(ft.norad)
-                        st.session_state["focus_norads"] = focus_norads
-                        st.rerun()
             if st.button("✕ Limpiar todos", key="clear_focus_all", use_container_width=True):
                 st.session_state["focus_norads"] = set()
                 st.rerun()
+            for ft in focus_tracks:
+                with st.container(border=True):
+                    header_a, header_b = st.columns([5, 1])
+                    with header_a:
+                        st.markdown(f"**{ft.name}**  \n`NORAD {ft.norad}`")
+                    with header_b:
+                        if st.button("✕", key=f"unfocus_{ft.norad}", help="Deseleccionar"):
+                            focus_norads.discard(ft.norad)
+                            st.session_state["focus_norads"] = focus_norads
+                            st.rerun()
+                    st.markdown(_plain_lang(
+                        ft.name, ft.norad,
+                        ft.alt0, ft.incl, ft.period_min,
+                    ))
             st.divider()
 
         st.metric("Objetos rastreados", len(track_list))
