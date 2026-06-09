@@ -416,10 +416,16 @@ button[kind="secondary"]:hover {
   font-weight: 600 !important;
 }
 
-/* ── Globo: marco mínimo (sin tocar el SVG interno) ────────────────────── */
+/* ── Globo: marco con halo atmosférico realista ────────────────────────── */
 [data-testid="stPlotlyChart"] {
   border: 1px solid var(--border);
   border-radius: 10px;
+  background: rgb(2,4,12);
+  box-shadow:
+    inset 0 0 80px rgba(60,120,200,0.06),
+    0 0 0 1px rgba(74,144,226,0.08),
+    0 0 40px rgba(30,90,200,0.18),
+    0 0 120px rgba(15,60,160,0.10);
 }
 
 /* ── Panel lateral de control ──────────────────────────────────────────── */
@@ -925,16 +931,23 @@ def _globe_figure(
         if d_lat:
             fig.add_trace(go.Scattergeo(
                 lat=d_lat, lon=d_lon, mode="markers",
-                marker=dict(size=8, color="rgba(110,255,180,0.95)",
-                            line=dict(width=1, color="rgba(255,255,255,0.4)")),
+                marker=dict(
+                    size=10, color="#3df278",
+                    line=dict(width=1.5, color="rgba(255,255,255,0.85)"),
+                    opacity=1.0,
+                ),
                 customdata=d_cd, hovertemplate=hov,
                 name="Catalogados", showlegend=False,
             ))
         if u_lat:
             fig.add_trace(go.Scattergeo(
                 lat=u_lat, lon=u_lon, mode="markers",
-                marker=dict(size=9, color="rgba(255,200,40,1)",
-                            symbol="diamond", line=dict(width=1, color="rgba(255,255,255,0.5)")),
+                marker=dict(
+                    size=11, color="#ffc428",
+                    symbol="diamond",
+                    line=dict(width=1.5, color="rgba(255,255,255,0.9)"),
+                    opacity=1.0,
+                ),
                 customdata=u_cd, hovertemplate=hov,
                 name="Sin catalogar", showlegend=False,
             ))
@@ -1089,15 +1102,15 @@ def _globe_figure(
     fig.update_layout(
         geo=dict(
             projection=_projection,
-            resolution=50,                                       # alta definición costas
-            showland=True,    landcolor="rgb(85,110,68)",        # verde tierra vivo
-            showocean=True,   oceancolor="rgb(6,28,76)",         # océano profundo realista
-            showlakes=True,   lakecolor="rgb(16,52,112)",
-            showrivers=True,  rivercolor="rgba(50,90,160,0.55)", riverwidth=0.6,
-            showcoastlines=True, coastlinecolor="rgba(230,240,210,0.75)", coastlinewidth=0.9,
-            showcountries=True,  countrycolor="rgba(200,215,170,0.45)", countrywidth=0.6,
-            showsubunits=True,   subunitcolor="rgba(170,190,150,0.22)", subunitwidth=0.4,
-            bgcolor="rgb(6,10,24)",
+            resolution=50,                                          # alta definición costas
+            showland=True,    landcolor="rgb(112,128,77)",          # verde-marrón Blue Marble
+            showocean=True,   oceancolor="rgb(11,42,98)",           # océano profundo NASA
+            showlakes=True,   lakecolor="rgb(22,68,128)",
+            showrivers=True,  rivercolor="rgba(70,130,200,0.5)", riverwidth=0.5,
+            showcoastlines=True, coastlinecolor="rgba(245,250,225,0.55)", coastlinewidth=0.6,
+            showcountries=True,  countrycolor="rgba(190,210,160,0.32)", countrywidth=0.5,
+            showsubunits=True,   subunitcolor="rgba(160,180,140,0.16)", subunitwidth=0.3,
+            bgcolor="rgb(2,4,12)",                                  # espacio casi negro
         ),
         paper_bgcolor="rgb(10,15,30)",
         height=760,
@@ -1536,40 +1549,20 @@ def _page_map() -> None:
             return
         st.caption(f"{active_source}  ·  {len(track_list)} objetos  ·  modo {ds_mode}")
 
-        # ── Info del objeto clicado (en el globo o desde tabla) ──────────────
-        clicked_cd = None
+        # ── Sincronizar clic en globo con focus ──────────────────────────────
         sel_points = (event.selection or {}).get("points", []) if event else []
         if sel_points:
-            clicked_cd = sel_points[0].get("customdata")
-            if clicked_cd and len(clicked_cd) >= 5:
-                # Sincronizar el focus con el clic en globo
-                if clicked_cd[0] != focus_norad:
-                    st.session_state["focus_norad"] = int(clicked_cd[0])
-                    st.rerun()
+            cd = sel_points[0].get("customdata")
+            if cd and len(cd) >= 5 and int(cd[0]) != focus_norad:
+                st.session_state["focus_norad"] = int(cd[0])
+                st.rerun()
 
-        # Si tenemos focus_track, mostramos plain-language
+        # ── Plain language debajo del globo (sin expander) ───────────────────
         if focus_track is not None:
-            st.markdown("### 🎯 Objeto seleccionado")
             st.markdown(_plain_lang(
                 focus_track.name, focus_track.norad,
                 focus_track.alt0, focus_track.incl, focus_track.period_min,
             ))
-            with st.expander("📊 Datos técnicos avanzados"):
-                v = 2 * math.pi * (EARTH_R + focus_track.alt0) / focus_track.period_min / 60
-                st.markdown(f"""
-- **NORAD ID:** `{focus_track.norad}`
-- **Latitud actual:** `{focus_track.lat0:.3f}°`
-- **Longitud actual:** `{focus_track.lon0:.3f}°`
-- **Altitud actual:** `{focus_track.alt0:.2f} km`
-- **Altitud media orbital:** `{focus_track.alt_mean:.2f} km`
-- **Inclinación:** `{focus_track.incl:.4f}°`
-- **Período orbital:** `{focus_track.period_min:.3f} min`
-- **Velocidad orbital:** `{v:.4f} km/s` ({v*3600:.0f} km/h)
-- **Catalogado en _NAMES local:** `{focus_track.known}`
-""")
-            if st.button("✕ Limpiar selección", key="clear_focus"):
-                st.session_state.pop("focus_norad", None)
-                st.rerun()
 
         if search_q.strip():
             if search_matches:
@@ -1595,6 +1588,24 @@ def _page_map() -> None:
 
     with col_ctrl:
         st.divider()
+
+        # ── Panel "Objeto seleccionado" (si hay focus) ───────────────────────
+        if focus_track is not None:
+            st.markdown("### 🎯 Objeto seleccionado")
+            v = 2 * math.pi * (EARTH_R + focus_track.alt0) / focus_track.period_min / 60
+            st.markdown(f"**{focus_track.name}** · NORAD `{focus_track.norad}`")
+            mc1, mc2 = st.columns(2)
+            with mc1:
+                st.metric("Altitud", f"{focus_track.alt0:.0f} km")
+                st.metric("Inclinación", f"{focus_track.incl:.1f}°")
+            with mc2:
+                st.metric("Período", f"{focus_track.period_min:.0f} min")
+                st.metric("Velocidad", f"{v:.1f} km/s")
+            if st.button("✕ Limpiar selección", key="clear_focus", use_container_width=True):
+                st.session_state.pop("focus_norad", None)
+                st.rerun()
+            st.divider()
+
         st.metric("Objetos rastreados", len(track_list))
         if n_unknown:
             st.metric("Sin catalogar", n_unknown)
