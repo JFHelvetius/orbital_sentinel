@@ -326,16 +326,30 @@ def _globe_figure(tracks: list[SatTrack], case: InvestigationCase) -> go.Figure:
             ),
         ))
 
-    fig.update_geos(
-        projection_type="orthographic",
+    _geo_full = dict(
+        projection=dict(type="orthographic"),
         showland=True,    landcolor="rgb(38,46,62)",
         showocean=True,   oceancolor="rgb(10,18,42)",
         showlakes=False,  showrivers=False,
-        showcoastlines=True, coastlinecolor="rgba(110,130,170,.6)",
-        showcountries=True,  countrycolor="rgba(70,85,115,.4)",
-        showgraticules=True, graticulecolor="rgba(60,80,130,.2)",
+        showcoastlines=True, coastlinecolor="rgba(110,130,170,0.6)",
+        showcountries=True,  countrycolor="rgba(70,85,115,0.4)",
+        showgraticules=True, graticulecolor="rgba(60,80,130,0.2)",
         bgcolor="rgb(7,11,24)",
     )
+    _geo_min = dict(
+        projection=dict(type="orthographic"),
+        showland=True,    landcolor="rgb(38,46,62)",
+        showocean=True,   oceancolor="rgb(10,18,42)",
+        showlakes=False,  showrivers=False,
+        showcoastlines=True,
+        showcountries=True,
+    )
+    for _geo in (_geo_full, _geo_min):
+        try:
+            fig.update_layout(geo=_geo)
+            break
+        except Exception:
+            continue
     fig.update_layout(
         paper_bgcolor="rgb(7,11,24)",
         height=580,
