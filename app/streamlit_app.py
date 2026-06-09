@@ -233,17 +233,15 @@ code, pre { font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace !impor
 }
 .hero-main { flex: 1; }
 .hero h1 {
-  font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace !important;
-  font-size: 1.5rem; font-weight: 700; letter-spacing: .08em;
-  margin: 0; text-transform: uppercase;
-  background: linear-gradient(90deg, #e8eef7 0%, var(--accent-bri) 100%);
+  font-size: 1.85rem; font-weight: 700; letter-spacing: -.02em;
+  margin: 0; font-family: 'Inter', sans-serif !important;
+  background: linear-gradient(135deg, #ffffff 0%, var(--accent-bri) 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 .hero-classification {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: .62rem; letter-spacing: .12em; text-transform: uppercase;
-  color: var(--text-ter); margin: .15rem 0 0; display: block;
+  font-size: .78rem; color: var(--text-sec);
+  margin: .25rem 0 0; display: block;
 }
 .hero-classification .live {
   color: var(--success); font-weight: 600;
@@ -639,6 +637,65 @@ def _fetch_live_tles() -> tuple[str, str]:
     return _TLE_STATIONS, "🟡 TLEs embebidos 2026-06-08 · CelesTrak no alcanzable"
 
 
+_COUNTRIES = [
+    ("España", 40.5, -3.7),         ("Francia", 46.6, 2.2),
+    ("Alemania", 51.0, 10.4),       ("Italia", 41.9, 12.6),
+    ("Reino Unido", 54.3, -2.0),    ("Portugal", 39.6, -8.0),
+    ("Noruega", 61.0, 9.0),         ("Suecia", 62.0, 17.5),
+    ("Finlandia", 64.5, 26.0),      ("Polonia", 52.0, 19.1),
+    ("Ucrania", 49.0, 32.0),        ("Rusia", 61.5, 90.0),
+    ("Turquía", 39.0, 35.2),        ("Grecia", 39.0, 22.0),
+    ("Estados Unidos", 39.8, -98.5),("Canadá", 60.0, -100.0),
+    ("México", 23.6, -102.5),       ("Colombia", 4.6, -74.3),
+    ("Venezuela", 6.4, -66.6),      ("Perú", -9.2, -75.0),
+    ("Bolivia", -16.3, -63.6),      ("Chile", -35.0, -71.5),
+    ("Argentina", -34.0, -64.0),    ("Brasil", -10.0, -55.0),
+    ("Uruguay", -33.0, -56.0),      ("Paraguay", -23.4, -58.4),
+    ("Marruecos", 31.8, -7.1),      ("Argelia", 28.0, 2.0),
+    ("Egipto", 26.8, 30.8),         ("Sudán", 14.0, 30.0),
+    ("Etiopía", 9.1, 40.5),         ("Kenia", -0.5, 37.5),
+    ("Sudáfrica", -28.0, 25.0),     ("Nigeria", 9.5, 7.5),
+    ("R.D. Congo", -2.0, 22.0),     ("Angola", -12.0, 18.0),
+    ("Madagascar", -19.0, 47.0),    ("Arabia Saudí", 24.0, 45.0),
+    ("Irán", 32.0, 54.0),           ("Iraq", 33.0, 44.0),
+    ("Pakistán", 30.4, 69.0),       ("India", 22.0, 79.0),
+    ("China", 35.0, 104.0),         ("Mongolia", 46.5, 104.0),
+    ("Japón", 36.0, 138.0),         ("Corea del Sur", 36.0, 128.0),
+    ("Tailandia", 15.9, 101.0),     ("Vietnam", 14.0, 108.0),
+    ("Filipinas", 13.0, 122.0),     ("Indonesia", -2.0, 118.0),
+    ("Australia", -25.0, 134.0),    ("Nueva Zelanda", -41.0, 173.0),
+]
+
+
+_US_STATES = [
+    ("California", 37.0, -119.5),   ("Texas", 31.5, -99.0),
+    ("Florida", 28.5, -82.5),       ("Nueva York", 43.0, -75.5),
+    ("Pensilvania", 41.0, -77.5),   ("Illinois", 40.0, -89.5),
+    ("Ohio", 40.3, -82.8),          ("Georgia", 32.5, -83.5),
+    ("Carolina N.", 35.5, -79.5),   ("Míchigan", 44.5, -85.0),
+    ("Virginia", 37.5, -78.5),      ("Washington", 47.5, -120.5),
+    ("Arizona", 34.0, -111.5),      ("Massachusetts", 42.3, -71.8),
+    ("Tennessee", 35.5, -86.5),     ("Indiana", 39.9, -86.3),
+    ("Misuri", 38.5, -92.5),        ("Wisconsin", 44.5, -89.5),
+    ("Colorado", 39.0, -105.5),     ("Minnesota", 46.0, -94.5),
+    ("Oregón", 44.0, -120.5),       ("Oklahoma", 35.5, -97.5),
+    ("Utah", 39.5, -111.5),         ("Nuevo México", 34.5, -106.0),
+    ("Nevada", 39.0, -117.0),       ("Kansas", 38.5, -98.5),
+    ("Alabama", 32.8, -86.8),       ("Luisiana", 31.0, -92.0),
+    ("Hawái", 20.5, -157.0),        ("Alaska", 64.0, -150.0),
+    ("Idaho", 44.0, -114.5),        ("Wyoming", 43.0, -107.5),
+    ("Montana", 47.0, -110.0),      ("Dakota N.", 47.5, -100.5),
+    ("Dakota S.", 44.5, -100.0),    ("Nebraska", 41.5, -99.5),
+    ("Iowa", 42.0, -93.5),          ("Kentucky", 37.5, -85.0),
+    ("Misisipi", 32.5, -89.5),      ("Arkansas", 34.7, -92.5),
+    ("Virginia O.", 38.5, -80.5),   ("Maine", 45.5, -69.0),
+    ("Vermont", 44.0, -72.7),       ("New Hampshire", 43.7, -71.6),
+    ("Connecticut", 41.5, -72.7),   ("Rhode Island", 41.7, -71.5),
+    ("Nueva Jersey", 40.2, -74.5),  ("Delaware", 38.9, -75.5),
+    ("Maryland", 39.0, -77.0),      ("Carolina S.", 33.9, -80.9),
+]
+
+
 _MAJOR_CITIES = [
     ("Madrid", 40.42, -3.70),       ("Nueva York", 40.71, -74.01),
     ("Tokio", 35.69, 139.69),       ("Londres", 51.51, -0.13),
@@ -975,11 +1032,13 @@ def _globe_figure(
     layers: dict[str, bool] | None = None,
 ) -> go.Figure:
     layers = layers or {}
-    show_cities    = layers.get("cities",    False)
-    show_countries = layers.get("countries", True)
-    show_subunits  = layers.get("subunits",  False)
-    show_rivers    = layers.get("rivers",    False)
-    show_lakes     = layers.get("lakes",     True)
+    show_cities        = layers.get("cities",        False)
+    show_country_names = layers.get("country_names", False)
+    show_countries     = layers.get("countries",     True)
+    show_state_names   = layers.get("state_names",   False)
+    show_subunits      = layers.get("subunits",      False)
+    show_rivers        = layers.get("rivers",        False)
+    show_lakes         = layers.get("lakes",         True)
     real_norads: set[int] = set()
     for be in case.evidence_bundle.evidence_payloads:
         hp = be.derived_evidence.honesty_payload
@@ -1187,7 +1246,29 @@ def _globe_figure(
     # Geo realista — paleta Earth-from-space estilo Google Earth en vectorial
     t_label = f"T+{t0_offset//60}h {t0_offset%60:02d}m" if t0_offset else now_utc.strftime("%H:%M UTC")
 
-    # Ciudades como trace (opcional)
+    # Nombres de países (sin marcador, solo texto centrado)
+    if show_country_names:
+        fig.add_trace(go.Scattergeo(
+            lat=[c[1] for c in _COUNTRIES],
+            lon=[c[2] for c in _COUNTRIES],
+            mode="text",
+            text=[c[0] for c in _COUNTRIES],
+            textfont=dict(size=10, color="rgba(255,250,220,0.92)", family="Inter"),
+            name="Países", showlegend=False, hoverinfo="skip",
+        ))
+
+    # Nombres de estados USA
+    if show_state_names:
+        fig.add_trace(go.Scattergeo(
+            lat=[s[1] for s in _US_STATES],
+            lon=[s[2] for s in _US_STATES],
+            mode="text",
+            text=[s[0] for s in _US_STATES],
+            textfont=dict(size=9, color="rgba(220,235,255,0.85)", family="Inter"),
+            name="Estados USA", showlegend=False, hoverinfo="skip",
+        ))
+
+    # Ciudades como trace
     if show_cities:
         fig.add_trace(go.Scattergeo(
             lat=[c[1] for c in _MAJOR_CITIES],
@@ -1526,13 +1607,15 @@ def _page_map() -> None:
                   "de los últimos 30 días buscando objetos que orbitan cerca de las estaciones espaciales."),
         )
 
-        # ── Capas geográficas (toggle on/off) ───────────────────────────────
+        # ── Capas geográficas ────────────────────────────────────────────────
         st.markdown("**🗺 Capas del globo**")
-        layer_cities    = st.toggle("Ciudades principales", value=False, key="lyr_cities")
-        layer_countries = st.toggle("Fronteras nacionales", value=True,  key="lyr_countries")
-        layer_subunits  = st.toggle("Estados/Provincias",   value=False, key="lyr_subunits")
-        layer_lakes     = st.toggle("Lagos",                value=True,  key="lyr_lakes")
-        layer_rivers    = st.toggle("Ríos",                 value=False, key="lyr_rivers")
+        layer_cities       = st.toggle("Ciudades principales", value=False, key="lyr_cities")
+        layer_country_names = st.toggle("Nombres de países",   value=False, key="lyr_country_names")
+        layer_countries    = st.toggle("Fronteras nacionales", value=True,  key="lyr_countries")
+        layer_state_names  = st.toggle("Nombres de estados (USA)", value=False, key="lyr_state_names")
+        layer_subunits     = st.toggle("Fronteras de estados", value=False, key="lyr_subunits")
+        layer_lakes        = st.toggle("Lagos",                value=True,  key="lyr_lakes")
+        layer_rivers       = st.toggle("Ríos",                 value=False, key="lyr_rivers")
 
         dataset_label = st.selectbox(
             "Dataset a rastrear",
@@ -1648,8 +1731,13 @@ def _page_map() -> None:
                     track_list, case, t0_offset,
                     highlight=highlight, extra_tracks=extra_tracks,
                     layers=dict(
-                        cities=layer_cities, countries=layer_countries,
-                        subunits=layer_subunits, lakes=layer_lakes, rivers=layer_rivers,
+                        cities=layer_cities,
+                        country_names=layer_country_names,
+                        countries=layer_countries,
+                        state_names=layer_state_names,
+                        subunits=layer_subunits,
+                        lakes=layer_lakes,
+                        rivers=layer_rivers,
                     ),
                 )
             event = st.plotly_chart(
@@ -2017,29 +2105,27 @@ def main() -> None:
     )
     st.markdown(_CSS, unsafe_allow_html=True)
 
-    # ── Hero científico ───────────────────────────────────────────────────────
+    # ── Hero profesional y accesible ──────────────────────────────────────────
     st.markdown("""
 <div class="hero">
   <div class="hero-row">
-    <div class="hero-icon">🛰</div>
+    <div class="hero-icon">🌍</div>
     <div class="hero-main">
-      <h1>ORBITAL SENTINEL</h1>
+      <h1>Orbital Sentinel</h1>
       <span class="hero-classification">
-        <span class="live">SYSTEM ACTIVE</span>
-        &nbsp;·&nbsp; SPACE SITUATIONAL AWARENESS PLATFORM
-        &nbsp;·&nbsp; UNCLASSIFIED / OPEN SOURCE
+        <span class="live">En vivo</span>
+        &nbsp;·&nbsp; Vigilancia del entorno orbital terrestre
       </span>
       <p class="hero-subtitle">
-        Real-time orbital reconnaissance &amp; cryptographic evidence chain. Propaga TLEs públicos
-        de <code>CelesTrak</code> con <code>SGP4</code>, detecta conjunciones y produce afirmaciones
-        verificables sobre el entorno orbital — sin IA, sin autoridad central, auditable offline.
+        Visualiza en tiempo real <b>miles de satélites</b> orbitando la Tierra, descubre cuáles pasan
+        cerca de las estaciones espaciales y verifica cada dato con una <b>cadena criptográfica
+        auditable</b>. Información pública. Sin inteligencia artificial. Sin intermediarios.
       </p>
       <div class="hero-meta">
-        <span class="hero-tag accent">v0.1.2</span>
-        <span class="hero-tag">SGP4 · IAU 1982</span>
-        <span class="hero-tag">SHA-256 chain</span>
+        <span class="hero-tag accent">Tiempo real</span>
+        <span class="hero-tag">Datos públicos · CelesTrak</span>
+        <span class="hero-tag">Código abierto</span>
         <span class="hero-tag accent">Apache 2.0</span>
-        <span class="hero-tag warn">Pre-release</span>
       </div>
     </div>
   </div>
