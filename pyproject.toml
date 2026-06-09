@@ -35,6 +35,9 @@ dev = [
     "pytest-cov >=5",
     "ruff >=0.4",
     "mypy >=1.10",
+    # matplotlib also lives in the 'viz' extra; the dev env needs it to
+    # exercise the plot_groundtrack tests under CI (ADR-0013 declared env).
+    "matplotlib >=3.7,<4",
 ]
 # Visualización 2D estática (groundtracks). Cubre el requisito de "visualización"
 # de Fase 1 según ADR-0000. ADR-0008 Cesium sigue vigente para 3D interactivo
