@@ -424,7 +424,7 @@ button[kind="secondary"]:hover {
 
 /* ── Globo: marco elegante con halo atmosférico sutil ──────────────────── */
 [data-testid="stPlotlyChart"] {
-  background: #0a0f1e !important;
+  background: rgb(10,15,30) !important;
   border: 1px solid var(--border) !important;
   border-radius: 10px !important;
   box-shadow:
@@ -432,15 +432,12 @@ button[kind="secondary"]:hover {
     0 0 0 1px rgba(74,144,226,.04),
     0 0 30px rgba(20,80,220,.08),
     0 0 80px rgba(10,50,180,.04);
-  overflow: hidden;
+  padding: 2px;
 }
-[data-testid="stPlotlyChart"] > div,
-[data-testid="stPlotlyChart"] iframe,
-[data-testid="stPlotlyChart"] .js-plotly-plot,
-[data-testid="stPlotlyChart"] .plot-container,
+[data-testid="stPlotlyChart"] .main-svg,
 [data-testid="stPlotlyChart"] .svg-container,
-[data-testid="stPlotlyChart"] .main-svg {
-  background: #0a0f1e !important;
+[data-testid="stPlotlyChart"] .plot-container {
+  background: rgb(10,15,30) !important;
 }
 
 /* ── Panel lateral de control ──────────────────────────────────────────── */
@@ -929,71 +926,63 @@ def _globe_figure(
     ]
     fig.frames = frames
 
-    # ── Geo: colores realistas pero visibles (no pitch black) ────────────────
-    for _geo in (
-        dict(
-            projection=dict(type="orthographic"),
-            resolution=50,
-            showland=True,    landcolor="rgb(58,82,52)",      # verde más visible
-            showocean=True,   oceancolor="rgb(14,42,98)",     # azul océano vivo
-            showlakes=True,   lakecolor="rgb(22,68,128)",
-            showrivers=False,
-            showcoastlines=True,  coastlinecolor="rgba(200,220,180,.65)",
-            showcountries=True,   countrycolor="rgba(180,200,160,.25)",
-            showsubunits=True,    subunitcolor="rgba(150,170,130,.15)",
-            showgraticules=True,  graticulecolor="rgba(100,130,180,.12)",
-            bgcolor="rgb(10,15,30)",
-        ),
-        dict(
-            projection=dict(type="orthographic"),
-            resolution=50,
-            showland=True,   landcolor="rgb(58,82,52)",
-            showocean=True,  oceancolor="rgb(14,42,98)",
-            showcoastlines=True, showcountries=True,
-        ),
-        dict(  # fallback mínimo
-            projection=dict(type="orthographic"),
-            showland=True,   landcolor="rgb(58,82,52)",
-            showocean=True,  oceancolor="rgb(14,42,98)",
-            showcoastlines=True,
-        ),
-    ):
+    # ── Geo: colores realistas, configuración mínima robusta ────────────────
+    _geo_full = dict(
+        projection=dict(type="orthographic"),
+        showland=True,    landcolor="rgb(58,82,52)",
+        showocean=True,   oceancolor="rgb(14,42,98)",
+        showlakes=True,   lakecolor="rgb(22,68,128)",
+        showrivers=False,
+        showcoastlines=True, coastlinecolor="rgba(200,220,180,.65)",
+        showcountries=True,  countrycolor="rgba(180,200,160,.25)",
+        bgcolor="rgb(10,15,30)",
+    )
+    _geo_min = dict(
+        projection=dict(type="orthographic"),
+        showland=True,   landcolor="rgb(58,82,52)",
+        showocean=True,  oceancolor="rgb(14,42,98)",
+        showcoastlines=True,
+    )
+    # Intenta full, luego minimal, luego solo proyección
+    for _geo in (_geo_full, _geo_min, dict(projection=dict(type="orthographic"))):
         try:
-            fig.update_layout(geo=_geo); break
+            fig.update_geos(**_geo)
+            break
         except Exception:
             continue
 
     t_label = f"T+{t0_offset//60}h {t0_offset%60:02d}m" if t0_offset else now_utc.strftime("%H:%M UTC")
     fig.update_layout(
         paper_bgcolor="rgb(10,15,30)",
-        height=740,
-        margin=dict(l=0, r=150, t=46, b=0),
+        plot_bgcolor="rgb(10,15,30)",
+        height=720,
+        margin=dict(l=10, r=10, t=50, b=10),
         legend=dict(
-            bgcolor="rgba(21,27,44,.92)", bordercolor="rgba(160,180,220,.15)",
-            borderwidth=1, font=dict(family="Inter", color="#94a3b8", size=10),
-            x=1.01, y=0.99, xanchor="left", tracegroupgap=1,
+            bgcolor="rgba(21,27,44,.85)", bordercolor="rgba(160,180,220,.15)",
+            borderwidth=1, font=dict(color="#94a3b8", size=10),
+            orientation="h", x=0.5, y=-0.02, xanchor="center", yanchor="top",
         ),
         title=dict(
             text=f"<b style='color:#e8eef7'>Vista orbital en tiempo real</b>"
-                 f"  <span style='font-size:11px;color:#5a6a84;font-family:monospace'>{t_label}</span>",
-            font=dict(family="Inter", color="#e8eef7", size=14), x=0.012, y=0.985,
+                 f"  <span style='font-size:11px;color:#5a6a84'>· {t_label}</span>",
+            font=dict(color="#e8eef7", size=14), x=0.012, y=0.97,
         ),
-        font=dict(family="Inter", color="#94a3b8", size=11),
+        font=dict(color="#94a3b8", size=11),
         updatemenus=[dict(
             type="buttons", showactive=True,
-            y=0.02, x=0.012, xanchor="left", yanchor="bottom", direction="left",
+            y=1.0, x=1.0, xanchor="right", yanchor="top", direction="left",
             buttons=[
-                dict(label="▶  Rotar",  method="animate",
+                dict(label="▶ Rotar", method="animate",
                      args=[None, {"frame": {"duration": 35, "redraw": True},
                                   "fromcurrent": True, "transition": {"duration": 0},
                                   "mode": "immediate"}]),
-                dict(label="⏸  Parar", method="animate",
+                dict(label="⏸", method="animate",
                      args=[[None], {"frame": {"duration": 0}, "mode": "immediate",
                                     "transition": {"duration": 0}}]),
             ],
             bgcolor="rgba(21,27,44,.95)", bordercolor="rgba(160,180,220,.18)",
-            font=dict(family="Inter", color="#e8eef7", size=11),
-            pad=dict(r=8, t=6, b=6),
+            font=dict(color="#e8eef7", size=11),
+            pad=dict(r=8, t=4, b=4),
         )],
     )
     return fig
