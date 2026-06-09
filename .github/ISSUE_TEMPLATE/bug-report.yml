@@ -1,0 +1,56 @@
+name: "🐛 Bug report"
+description: "Report a defect: silent failure, wrong hash, broken verifier, install issue."
+title: "[Bug] <one-line summary>"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bugs in this project have a higher bar than usual: the system claims cryptographic guarantees,
+        so a "silent failure" is a critical concern. Please be as precise as you can.
+
+  - type: input
+    id: version
+    attributes:
+      label: "Package version"
+      description: "Output of `pip show orbital-sentinel | grep Version`."
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: "Python version"
+      placeholder: "3.11.5"
+
+  - type: input
+    id: os
+    attributes:
+      label: "Operating system"
+      placeholder: "Ubuntu 22.04 / macOS 14 / Windows 11"
+
+  - type: textarea
+    id: self_verify
+    attributes:
+      label: "Output of `orbital-sentinel self-verify --strict`"
+      description: "Critical: if `is_valid: false`, you have a cryptographic regression and we need to know immediately."
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "Minimal reproduction"
+      description: "Shortest sequence of commands that triggers the bug."
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected behavior"
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: "Actual behavior"

@@ -1,0 +1,55 @@
+name: "📄 Submit a reference case"
+description: "Propose a new real-data InvestigationCase to be added to the reference set."
+title: "[Reference Case] <object/event> — <one-line description>"
+labels: ["reference-case"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Submitting a reference case
+
+        Reference cases are the actual content of this project. They demonstrate the
+        infrastructure on a real orbital question. Good reference cases are:
+
+        - **Concrete**: a specific real question (e.g., "approaches to ISS over 7 days").
+        - **Reproducible**: built from public TLEs (Celestrak today; other public sources welcome).
+        - **Honest**: do not overstate certainty; the system handles `is_apparent_not_confirmed` correctly.
+        - **Non-controversial sources**: TLE provenance must be cryptographically traceable.
+
+        See [`reference_cases/iss_conjunction_001/`](../../reference_cases/iss_conjunction_001/) for the canonical structure.
+
+  - type: input
+    id: norad
+    attributes:
+      label: "Primary NORAD ID(s)"
+      placeholder: "25544 (ISS) or comma-separated list"
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: "Question this case answers"
+      description: "One paragraph. What is the analytical question? Why is it interesting/important?"
+    validations:
+      required: true
+
+  - type: input
+    id: source_dataset
+    attributes:
+      label: "Celestrak dataset (or other source)"
+      placeholder: "stations / active / catnr-25544 / ..."
+
+  - type: textarea
+    id: case_id
+    attributes:
+      label: "case_id of the produced case (if already built)"
+      description: "If you have already built the case locally, paste its `case_id` and a link to the JSON files (gist, S3, IPFS, etc.). If not yet built, describe the proposal."
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: "Confirmations"
+      options:
+        - label: "All four verifiers (`verify-bundle`, `verify-investigation-case`, `verify-external-source-registry`, `self-verify`) return `is_valid: true` on my installation."
+        - label: "The case respects the project's no-AI, no-scoring, no-interpretation contract."

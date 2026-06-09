@@ -1,0 +1,68 @@
+name: "🔍 Independent audit report"
+description: "Publish an external audit of a published InvestigationCase."
+title: "[Audit] <case_id_prefix> — <one-line outcome>"
+labels: ["audit"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Submitting an independent audit
+
+        This is the **reviewer** role. Independent audits are how the project earns
+        public trust. See [`reference_cases/external_audit_demo/AUDIT_REPORT.md`](../../reference_cases/external_audit_demo/AUDIT_REPORT.md) for the canonical format.
+
+        An audit is most valuable when the auditor has **no relationship** with the case producer.
+
+  - type: input
+    id: case_id
+    attributes:
+      label: "Audited case_id"
+      placeholder: "c22942d172adb9543eca63caacde3a7861979ec473ad5df7c1b7be6f8a2b58a2"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: "Audit outcome"
+      options:
+        - PASS — all verifiers green, cryptographic chain intact
+        - PARTIAL — verifiers green but methodological concerns documented
+        - FAIL — at least one verifier rejected the artifact
+    validations:
+      required: true
+
+  - type: textarea
+    id: self_verify
+    attributes:
+      label: "Your `self-verify` output"
+      description: "Paste the JSON output of `orbital-sentinel self-verify --strict` from your machine."
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: case_verify
+    attributes:
+      label: "Your `verify-investigation-case` output"
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: source_verify
+    attributes:
+      label: "Your `verify-external-source-registry` output (if available)"
+      render: json
+
+  - type: textarea
+    id: refetch
+    attributes:
+      label: "Independent re-fetch of source URL (optional)"
+      description: "If you re-fetched the declared `source_url` and recomputed the SHA-256, paste your findings."
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: "Methodological notes / dissent intent"
+      description: "Free text. If your audit FAILED or you have concerns, do you intend to publish a `DissentLedger`?"

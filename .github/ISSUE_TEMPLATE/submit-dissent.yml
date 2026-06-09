@@ -1,0 +1,76 @@
+name: "🛰️ Submit dissent against a published case"
+description: "Formally disagree with a published InvestigationCase using a cryptographically verifiable DissentLedger."
+title: "[Dissent] <one-line summary>"
+labels: ["dissent"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Submitting a dissent
+
+        This is the **primary mechanism for independent reviewers to challenge a published case** (ADR-0041).
+        Dissent is a first-class artifact in this project. There is no hierarchy between the case author and you.
+
+        Before opening this issue you should have:
+
+        1. Verified your installation with `orbital-sentinel self-verify --strict`.
+        2. Verified the target case with `orbital-sentinel verify-investigation-case <case.json> --strict`.
+        3. Built a `DissentLedger` with `orbital-sentinel dissent-ledger ...` and verified it.
+
+        Dissent is most valuable when accompanied by the actual ledger JSON. Please attach or link it.
+
+  - type: input
+    id: target_case_id
+    attributes:
+      label: "Target case_id"
+      description: "The case_id of the InvestigationCase you are disputing."
+      placeholder: "c22942d172adb9543eca63caacde3a7861979ec473ad5df7c1b7be6f8a2b58a2"
+    validations:
+      required: true
+
+  - type: input
+    id: target_case_signature
+    attributes:
+      label: "Target case_signature"
+      description: "The case_signature at the time you reviewed it (proves you reviewed the unmodified version)."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: dissent_type
+    attributes:
+      label: "Dissent type (ADR-0041)"
+      description: "One of the five closed types defined by the contract."
+      options:
+        - factual_correction
+        - alternative_explanation
+        - missing_evidence
+        - methodological_objection
+        - scope_disagreement
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: "Rationale"
+      description: "Explain the basis for your dissent. Plain language; technical detail welcome but not required."
+    validations:
+      required: true
+
+  - type: textarea
+    id: ledger_attachment
+    attributes:
+      label: "DissentLedger JSON (paste or link)"
+      description: "Paste the `dissent_ledger.json` produced by `orbital-sentinel dissent-ledger`, or link to a public copy of it. This is the content-addressable artifact that gives your dissent cryptographic weight."
+      render: json
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: "Confirmations"
+      options:
+        - label: "I ran `verify-dissent-ledger --strict` on my ledger and it returned `is_valid: true`."
+          required: true
+        - label: "My dissent type's required fields (basis evidence or referenced alternative case) are populated per ADR-0041."
+          required: true

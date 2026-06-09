@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: General discussion
+    url: https://github.com/JFHelvetius/orbital_sentinel/discussions
+    about: Open-ended questions about the project, architecture, or the verifiability model.
