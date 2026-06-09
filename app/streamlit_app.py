@@ -721,18 +721,19 @@ _MAJOR_CITIES = [
 
 
 _DATASETS = {
-    "🏠 Estaciones (~25)":              ("stations",       "full"),
-    "👁 Visibles a simple vista (~150)": ("visual",         "full"),
-    "🌦 Meteorológicos (~60)":          ("weather",        "full"),
-    "📡 GPS (~30)":                     ("gps-ops",        "full"),
-    "🛰 Iridium NEXT (~75)":            ("iridium",        "full"),
-    "📞 OneWeb (~650)":                 ("oneweb",         "lite"),
-    "🌐 Geoestacionarios (~600)":       ("geo",            "lite"),
-    "🚀 Lanzamientos 30 días (~300)":   ("last-30-days",   "lite"),
-    "📡 Starlink (~6000)":              ("starlink",       "lite"),
-    "🌍 Activos LEO (~3000)":           ("active",         "lite"),
-    "💫 Cubesats (~1500)":              ("cubesat",        "lite"),
-    "🗑 Debris Cosmos 1408":            ("1982-092",       "lite"),
+    # Datasets que cargan rápido (recomendados)
+    "🏠 Estaciones (~25)":               ("stations",       "full"),
+    "👁 Visibles a simple vista (~150)":  ("visual",         "full"),
+    "🌦 Meteorológicos (~60)":           ("weather",        "full"),
+    "📡 GPS (~30)":                      ("gps-ops",        "full"),
+    "🛰 Iridium NEXT (~75)":             ("iridium",        "full"),
+    "🚀 Lanzamientos 30 días (~300)":    ("last-30-days",   "lite"),
+    "🌐 Geoestacionarios (~600)":        ("geo",            "lite"),
+    # Datasets grandes — pueden ser lentos o no cargar (CelesTrak rate-limit)
+    "📞 OneWeb (~650) ⚠️ lento":         ("oneweb",         "lite"),
+    "📡 Starlink (~6000) ⚠️ muy lento":   ("starlink",       "lite"),
+    "🌍 Activos LEO (~3000) ⚠️ muy lento":("active",         "lite"),
+    "💫 Cubesats (~1500) ⚠️ lento":      ("cubesat",        "lite"),
 }
 
 
@@ -841,49 +842,45 @@ def _positions_only(tle_text: str, t0_offset_min: int = 0) -> list[SatTrack]:
     return out
 
 
-@st.cache_data(ttl=1800, show_spinner=False)
+@st.cache_data(ttl=3600, show_spinner=False)
 def _fetch_group_tles(group: str) -> str | None:
-    """Descarga un grupo CelesTrak. Timeout generoso + reintentos.
+    """Descarga un grupo CelesTrak. Falla rápido, no se cuelga.
 
-    Datasets de query especiales (catnr, intdes, etc.) usan rutas distintas.
+    Probamos primero los .txt directos (más rápidos) y luego el API gp.php.
+    Timeout corto (20-30 s) y un solo intento por URL.
     """
-    # Si es un INTDES (formato YYYY-NNN), va por endpoint diferente
     if "-" in group and group[:4].isdigit():
         urls = [
             f"https://celestrak.org/NORAD/elements/gp.php?INTDES={group}&FORMAT=tle",
         ]
     else:
         urls = [
-            f"https://celestrak.org/NORAD/elements/gp.php?GROUP={group}&FORMAT=tle",
-            f"https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE={group}&FORMAT=tle",
-            f"https://celestrak.com/NORAD/elements/{group}.txt",
+            # Directos .txt primero (mucho más rápidos)
             f"https://celestrak.org/NORAD/elements/{group}.txt",
+            f"https://celestrak.com/NORAD/elements/{group}.txt",
+            # API gp.php como fallback
+            f"https://celestrak.org/NORAD/elements/gp.php?GROUP={group}&FORMAT=tle",
         ]
-    # Timeout generoso para todos (CelesTrak puede ser lento desde Streamlit Cloud)
-    timeout = 120 if group in {"active", "starlink", "cubesat"} else 60
+    # Timeout corto: prefiero fallar rápido a colgar la app
+    timeout = 30 if group in {"active", "starlink", "cubesat"} else 20
     last_err = None
-    for attempt in range(2):
-        for url in urls:
-            for verify in (True, False):
-                try:
-                    ctx = ssl.create_default_context()
-                    if not verify:
-                        ctx.check_hostname = False
-                        ctx.verify_mode = ssl.CERT_NONE
-                    req = urllib.request.Request(url, headers={
-                        **_HEADERS,
-                        "Accept": "text/plain, */*",
-                        "Accept-Encoding": "identity",
-                        "Connection": "close",
-                    })
-                    with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
-                        raw = r.read()
-                    text = raw.decode("utf-8", errors="replace")
-                    if text.strip() and text.count("1 ") >= 3:
-                        return text
-                except Exception as exc:
-                    last_err = f"{type(exc).__name__}: {str(exc)[:100]}  →  {url[:80]}"
-                    continue
+    for url in urls:
+        try:
+            ctx = ssl.create_default_context()
+            req = urllib.request.Request(url, headers={
+                **_HEADERS,
+                "Accept": "text/plain",
+                "Accept-Encoding": "identity",
+                "Connection": "close",
+            })
+            with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
+                raw = r.read()
+            text = raw.decode("utf-8", errors="replace")
+            if text.strip() and text.count("1 ") >= 3:
+                return text
+        except Exception as exc:
+            last_err = f"{type(exc).__name__}: {str(exc)[:100]}"
+            continue
     _fetch_group_tles.last_error = last_err  # type: ignore[attr-defined]
     return None
 
@@ -1677,22 +1674,24 @@ def _page_map() -> None:
         except Exception as exc:
             st.error(f"Error: {exc}"); return
 
-    # Diagnóstico visible
+    # Diagnóstico visible (compacto)
     with col_globe:
-        n_blocks = active_tle.count("\n1 ")
         if ds_group != "stations":
             if ds_tle is None:
-                err = getattr(_fetch_group_tles, "last_error", "timeout o red bloqueada")
-                st.error(
-                    f"❌ CelesTrak no respondió para **{ds_group}**.\n\n"
-                    f"Último error: `{err}`\n\n"
-                    f"Mostrando fallback de estaciones. "
-                    f"Datasets grandes (active, starlink) pueden tardar hasta 60 s — vuelve a intentar."
+                err = getattr(_fetch_group_tles, "last_error", "timeout")
+                st.warning(
+                    f"⚠ No se pudo descargar **{ds_group}** desde CelesTrak.  "
+                    f"Mostrando estaciones por defecto.  "
+                    f"Razón: `{err[:120]}`. Prueba un dataset más pequeño o vuelve a intentar."
                 )
             elif len(track_list) == 0:
-                st.warning(f"⚠ Se descargaron {n_blocks} TLEs de **{ds_group}** pero ninguno propagó.")
+                st.warning(f"⚠ Se descargaron TLEs de **{ds_group}** pero ninguno propagó.")
             else:
-                st.success(f"✅ **{len(track_list)} objetos** activos de **{ds_group}** ({active_source})")
+                st.success(
+                    f"✅ **{len(track_list)} objetos** de **{ds_group}**  ·  "
+                    f"_(cacheado 1 h)_",
+                    icon="🛰",
+                )
 
     # Proximity scan
     extra_tracks: list[SatTrack] = []
