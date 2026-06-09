@@ -779,6 +779,7 @@ def _globe_figure(
     highlight: frozenset[int] | None = None,
     extra_tracks: list[SatTrack] | None = None,
 ) -> go.Figure:
+    """Versión SIMPLIFICADA para diagnóstico — sin frames/botones/terminator."""
     real_norads: set[int] = set()
     for be in case.evidence_bundle.evidence_payloads:
         hp = be.derived_evidence.honesty_payload
@@ -789,208 +790,61 @@ def _globe_figure(
     fig = go.Figure()
 
     for t in tracks:
-        is_primary  = (t.norad == primary)
-        is_real     = (t.norad in real_norads)
-        is_unknown  = not t.known and not is_primary and not is_real
-        is_iss_dock = (t.norad in _ISS_DOCK and not is_primary and not is_unknown)
-        is_css_dock = (t.norad in _CSS_DOCK and not is_primary and not is_unknown)
+        is_primary = (t.norad == primary)
+        is_real    = (t.norad in real_norads)
+        is_unknown = not t.known and not is_primary and not is_real
 
         if is_primary:
-            lc, mc, lw, ms, sym = "#ffd700", "#ffd700", 2.5, 18, "star"
+            color = "#ffd700"; size = 14; sym = "star"; lw = 2.2
         elif is_real:
-            lc, mc, lw, ms, sym = "#ff3547", "#ff3547", 2.2, 15, "x"
+            color = "#ff3547"; size = 12; sym = "x"; lw = 2.0
         elif is_unknown:
-            lc, mc, lw, ms, sym = "rgba(255,165,0,0.5)", "rgba(255,185,0,0.95)", 1.4, 11, "diamond"
-        elif is_iss_dock:
-            lc, mc, lw, ms, sym = "rgba(79,158,255,0.3)", "rgba(79,158,255,0.65)", 1.0, 7, "circle"
-        elif is_css_dock:
-            lc, mc, lw, ms, sym = "rgba(255,100,100,0.3)", "rgba(255,120,100,0.65)", 1.0, 7, "circle"
+            color = "rgba(255,180,0,0.85)"; size = 9; sym = "diamond"; lw = 1.2
         else:
-            lc, mc, lw, ms, sym = "rgba(80,180,120,0.25)", "rgba(110,210,140,0.6)", 0.8, 6, "circle"
+            color = "rgba(100,200,160,0.55)"; size = 6; sym = "circle"; lw = 1.0
 
-        # Glow rings para objetos importantes
-        if is_primary:
-            for gs, ga in ((36, 0.03), (28, 0.07), (22, 0.12)):
-                fig.add_trace(go.Scattergeo(
-                    lat=[t.lat0], lon=[t.lon0], mode="markers",
-                    marker=dict(size=gs, color=f"rgba(255,215,0,{ga})", symbol="circle"),
-                    showlegend=False, hoverinfo="skip",
-                ))
-        elif is_real:
-            for gs, ga in ((30, 0.04), (22, 0.09)):
-                fig.add_trace(go.Scattergeo(
-                    lat=[t.lat0], lon=[t.lon0], mode="markers",
-                    marker=dict(size=gs, color=f"rgba(255,53,71,{ga})", symbol="circle"),
-                    showlegend=False, hoverinfo="skip",
-                ))
-
-        # Hover enriquecido
-        badges = []
-        if is_unknown: badges.append("⚠ NO CATALOGADO localmente")
-        if is_real:    badges.append("⚠ Acercamiento no cooperativo")
-        badge_html = "".join(f"<br><b>{b}</b>" for b in badges)
-        hover = (
-            f"<b>{'❓ ' if is_unknown else ''}{t.name}</b>"
-            f"<br>NORAD {t.norad}"
-            f"<br>─────────────────"
-            f"<br>Alt actual: <b>{t.alt0:.0f} km</b>"
-            f"<br>Alt media: {t.alt_mean:.0f} km"
-            f"<br>Inclinación: {t.incl:.2f}°"
-            f"<br>Período: {t.period_min:.1f} min  ({t.period_min/60:.2f} h)"
-            + badge_html
-            + "<extra></extra>"
-        )
-
-        # Si hay búsqueda activa, atenuar objetos que no coinciden
-        dim = highlight is not None and t.norad not in highlight
-        if dim:
-            lc = lc.replace("0.3", "0.06").replace("0.35", "0.06").replace("0.25", "0.04")
-            mc = mc.replace("0.7", "0.12").replace("0.65", "0.1").replace("0.6", "0.08").replace("0.9", "0.15")
-            lw = max(lw * 0.4, 0.3)
-            ms = max(ms - 3, 3)
-
-        show_txt = (is_primary or is_real or is_unknown) and not dim
         fig.add_trace(go.Scattergeo(
             lat=t.lats, lon=t.lons, mode="lines",
-            line=dict(width=lw, color=lc),
-            name=t.name, showlegend=not dim, hoverinfo="skip",
+            line=dict(width=lw, color=color),
+            name=t.name, showlegend=False, hoverinfo="skip",
         ))
         fig.add_trace(go.Scattergeo(
-            lat=[t.lat0], lon=[t.lon0],
-            mode="markers+text" if show_txt else "markers",
-            marker=dict(size=ms, color=mc, symbol=sym,
-                        line=dict(width=1.5 if show_txt else 0.5, color="rgba(255,255,255,0.4)")),
-            text=[("❓ " if is_unknown else "") + t.name] if show_txt else [],
-            textposition="top right",
-            textfont=dict(
-                color="#ffb300" if is_unknown else ("#ffd700" if is_primary else "rgba(255,255,255,0.9)"),
-                size=11, family="monospace",
+            lat=[t.lat0], lon=[t.lon0], mode="markers",
+            marker=dict(size=size, color=color, symbol=sym),
+            name=t.name, showlegend=False,
+            hovertemplate=(
+                f"<b>{t.name}</b><br>NORAD {t.norad}"
+                f"<br>Alt: {t.alt0:.0f} km · Incl: {t.incl:.1f}°"
+                "<extra></extra>"
             ),
-            name=t.name, showlegend=False,
-            hovertemplate=hover,
         ))
 
-    # Objetos de proximidad extra (last-30-days, etc.)
     for t in (extra_tracks or []):
-        hover_ex = (
-            f"<b>🔴 {t.name}</b><br>NORAD {t.norad}"
-            f"<br>Alt media: {t.alt_mean:.0f} km  ·  Incl: {t.incl:.2f}°"
-            f"<br>Período: {t.period_min:.1f} min"
-            f"<br><b>⚠ Detectado en órbita cercana a estación</b>"
-            "<extra></extra>"
-        )
-        for gs, ga in ((26, 0.05), (18, 0.1)):
-            fig.add_trace(go.Scattergeo(
-                lat=[t.lat0], lon=[t.lon0], mode="markers",
-                marker=dict(size=gs, color=f"rgba(0,210,200,{ga})", symbol="circle"),
-                showlegend=False, hoverinfo="skip",
-            ))
         fig.add_trace(go.Scattergeo(
             lat=t.lats, lon=t.lons, mode="lines",
-            line=dict(width=1.2, color="rgba(0,210,200,0.4)"),
-            name=t.name, showlegend=True, hoverinfo="skip",
+            line=dict(width=1.2, color="rgba(0,210,200,0.5)"),
+            name=t.name, showlegend=False, hoverinfo="skip",
         ))
         fig.add_trace(go.Scattergeo(
-            lat=[t.lat0], lon=[t.lon0], mode="markers+text",
-            marker=dict(size=10, color="rgba(0,210,200,0.9)", symbol="triangle-up",
-                        line=dict(width=1, color="white")),
-            text=[t.name], textposition="top right",
-            textfont=dict(color="#00d2c8", size=10, family="monospace"),
+            lat=[t.lat0], lon=[t.lon0], mode="markers",
+            marker=dict(size=10, color="rgba(0,210,200,0.9)", symbol="triangle-up"),
             name=t.name, showlegend=False,
-            hovertemplate=hover_ex,
+            hovertemplate=f"<b>🔴 {t.name}</b><br>Proximidad detectada<extra></extra>",
         ))
 
-    # ── Terminador día/noche (opcional, no rompe si falla) ───────────────────
-    now_utc = datetime.now(timezone.utc)
-    try:
-        lat_sun, lon_sun = _subsolar_point(now_utc)
-        t_lats, t_lons = _terminator(lat_sun, lon_sun)
-        fig.add_trace(go.Scattergeo(
-            lat=t_lats, lon=t_lons, mode="lines",
-            line=dict(width=1.5, color="rgba(255,220,80,0.55)", dash="dot"),
-            name="Terminador día/noche", showlegend=True, hoverinfo="skip",
-        ))
-        fig.add_trace(go.Scattergeo(
-            lat=[lat_sun], lon=[lon_sun], mode="markers+text",
-            marker=dict(size=14, color="rgba(255,220,60,0.9)", symbol="circle",
-                        line=dict(width=1.5, color="rgba(255,200,0,0.6)")),
-            text=["☀"], textposition="top center",
-            textfont=dict(size=14, color="rgba(255,220,60,0.9)"),
-            name="Punto subsolar", showlegend=True,
-            hovertemplate=(f"<b>☀ Punto subsolar</b><br>Lat: {lat_sun:.1f}°  Lon: {lon_sun:.1f}°"
-                           f"<br>{now_utc.strftime('%H:%M UTC')}<extra></extra>"),
-        ))
-    except Exception:
-        pass
-
-    # ── Frames de rotación automática ────────────────────────────────────────
-    frames = [
-        go.Frame(layout=dict(geo=dict(projection=dict(rotation=dict(lon=lon)))), name=str(lon))
-        for lon in range(0, 360, 2)
-    ]
-    fig.frames = frames
-
-    # ── Geo: misma estructura de fallback que la versión que funcionaba ──────
-    _geo_full = dict(
-        projection=dict(type="orthographic"),
-        showland=True,    landcolor="rgb(58,82,52)",
-        showocean=True,   oceancolor="rgb(14,42,98)",
-        showlakes=True,   lakecolor="rgb(22,68,128)",
-        showrivers=False,
-        showcoastlines=True, coastlinecolor="rgba(200,220,180,.65)",
-        showcountries=True,  countrycolor="rgba(180,200,160,.25)",
-        bgcolor="rgb(10,15,30)",
-    )
-    _geo_min = dict(
-        projection=dict(type="orthographic"),
-        showland=True,   landcolor="rgb(58,82,52)",
-        showocean=True,  oceancolor="rgb(14,42,98)",
-        showcoastlines=True,
-    )
-    for _geo in (_geo_full, _geo_min):
-        try:
-            fig.update_layout(geo=_geo)
-            break
-        except Exception:
-            continue
-
-    t_label = f"T+{t0_offset//60}h {t0_offset%60:02d}m" if t0_offset else now_utc.strftime("%H:%M UTC")
     fig.update_layout(
+        geo=dict(
+            projection=dict(type="orthographic"),
+            showland=True,    landcolor="rgb(58,82,52)",
+            showocean=True,   oceancolor="rgb(14,42,98)",
+            showcoastlines=True,
+            showcountries=True,
+            bgcolor="rgb(10,15,30)",
+        ),
         paper_bgcolor="rgb(10,15,30)",
-        height=680,
-        margin=dict(l=10, r=180, t=46, b=20),
-        legend=dict(
-            bgcolor="rgba(21,27,44,.85)",
-            bordercolor="rgba(160,180,220,.15)",
-            borderwidth=1,
-            font=dict(color="#94a3b8", size=10),
-            x=1.01, y=0.99, xanchor="left", yanchor="top",
-            tracegroupgap=1,
-        ),
-        title=dict(
-            text=f"<b style='color:#e8eef7'>Vista orbital</b>"
-                 f"  <span style='font-size:11px;color:#5a6a84'>· {t_label}</span>",
-            font=dict(color="#e8eef7", size=14),
-            x=0.02, y=0.97,
-        ),
-        font=dict(color="#94a3b8", size=11),
-        updatemenus=[dict(
-            type="buttons", showactive=True,
-            y=0.04, x=0.02, xanchor="left", yanchor="bottom", direction="left",
-            buttons=[
-                dict(label="▶ Rotar", method="animate",
-                     args=[None, {"frame": {"duration": 40, "redraw": True},
-                                  "fromcurrent": True, "transition": {"duration": 0},
-                                  "mode": "immediate"}]),
-                dict(label="⏸", method="animate",
-                     args=[[None], {"frame": {"duration": 0}, "mode": "immediate",
-                                    "transition": {"duration": 0}}]),
-            ],
-            bgcolor="rgba(21,27,44,.95)",
-            bordercolor="rgba(160,180,220,.18)",
-            font=dict(color="#e8eef7", size=11),
-            pad=dict(r=8, t=4, b=4),
-        )],
+        height=640,
+        margin=dict(l=0, r=0, t=10, b=0),
+        showlegend=False,
     )
     return fig
 
