@@ -900,26 +900,28 @@ def _globe_figure(
             hovertemplate=hover_ex,
         ))
 
-    # ── Terminador día/noche ─────────────────────────────────────────────────
+    # ── Terminador día/noche (opcional, no rompe si falla) ───────────────────
     now_utc = datetime.now(timezone.utc)
-    lat_sun, lon_sun = _subsolar_point(now_utc)
-    t_lats, t_lons = _terminator(lat_sun, lon_sun)
-    fig.add_trace(go.Scattergeo(
-        lat=t_lats, lon=t_lons, mode="lines",
-        line=dict(width=1.5, color="rgba(255,220,80,0.55)", dash="dot"),
-        name="Terminador día/noche", showlegend=True, hoverinfo="skip",
-    ))
-    # Punto subsolar ☀
-    fig.add_trace(go.Scattergeo(
-        lat=[lat_sun], lon=[lon_sun], mode="markers+text",
-        marker=dict(size=14, color="rgba(255,220,60,0.9)", symbol="circle",
-                    line=dict(width=1.5, color="rgba(255,200,0,0.6)")),
-        text=["☀"], textposition="top center",
-        textfont=dict(size=14, color="rgba(255,220,60,0.9)"),
-        name="Punto subsolar", showlegend=True,
-        hovertemplate=(f"<b>☀ Punto subsolar</b><br>Lat: {lat_sun:.1f}°  Lon: {lon_sun:.1f}°"
-                       f"<br>{now_utc.strftime('%H:%M UTC')}<extra></extra>"),
-    ))
+    try:
+        lat_sun, lon_sun = _subsolar_point(now_utc)
+        t_lats, t_lons = _terminator(lat_sun, lon_sun)
+        fig.add_trace(go.Scattergeo(
+            lat=t_lats, lon=t_lons, mode="lines",
+            line=dict(width=1.5, color="rgba(255,220,80,0.55)", dash="dot"),
+            name="Terminador día/noche", showlegend=True, hoverinfo="skip",
+        ))
+        fig.add_trace(go.Scattergeo(
+            lat=[lat_sun], lon=[lon_sun], mode="markers+text",
+            marker=dict(size=14, color="rgba(255,220,60,0.9)", symbol="circle",
+                        line=dict(width=1.5, color="rgba(255,200,0,0.6)")),
+            text=["☀"], textposition="top center",
+            textfont=dict(size=14, color="rgba(255,220,60,0.9)"),
+            name="Punto subsolar", showlegend=True,
+            hovertemplate=(f"<b>☀ Punto subsolar</b><br>Lat: {lat_sun:.1f}°  Lon: {lon_sun:.1f}°"
+                           f"<br>{now_utc.strftime('%H:%M UTC')}<extra></extra>"),
+        ))
+    except Exception:
+        pass
 
     # ── Frames de rotación automática ────────────────────────────────────────
     frames = [
@@ -928,7 +930,7 @@ def _globe_figure(
     ]
     fig.frames = frames
 
-    # ── Geo: colores realistas, configuración mínima robusta ────────────────
+    # ── Geo: misma estructura de fallback que la versión que funcionaba ──────
     _geo_full = dict(
         projection=dict(type="orthographic"),
         showland=True,    landcolor="rgb(58,82,52)",
@@ -945,10 +947,9 @@ def _globe_figure(
         showocean=True,  oceancolor="rgb(14,42,98)",
         showcoastlines=True,
     )
-    # Intenta full, luego minimal, luego solo proyección
-    for _geo in (_geo_full, _geo_min, dict(projection=dict(type="orthographic"))):
+    for _geo in (_geo_full, _geo_min):
         try:
-            fig.update_geos(**_geo)
+            fig.update_layout(geo=_geo)
             break
         except Exception:
             continue
@@ -956,33 +957,37 @@ def _globe_figure(
     t_label = f"T+{t0_offset//60}h {t0_offset%60:02d}m" if t0_offset else now_utc.strftime("%H:%M UTC")
     fig.update_layout(
         paper_bgcolor="rgb(10,15,30)",
-        plot_bgcolor="rgb(10,15,30)",
-        height=720,
-        margin=dict(l=10, r=10, t=50, b=10),
+        height=680,
+        margin=dict(l=10, r=180, t=46, b=20),
         legend=dict(
-            bgcolor="rgba(21,27,44,.85)", bordercolor="rgba(160,180,220,.15)",
-            borderwidth=1, font=dict(color="#94a3b8", size=10),
-            orientation="h", x=0.5, y=-0.02, xanchor="center", yanchor="top",
+            bgcolor="rgba(21,27,44,.85)",
+            bordercolor="rgba(160,180,220,.15)",
+            borderwidth=1,
+            font=dict(color="#94a3b8", size=10),
+            x=1.01, y=0.99, xanchor="left", yanchor="top",
+            tracegroupgap=1,
         ),
         title=dict(
-            text=f"<b style='color:#e8eef7'>Vista orbital en tiempo real</b>"
+            text=f"<b style='color:#e8eef7'>Vista orbital</b>"
                  f"  <span style='font-size:11px;color:#5a6a84'>· {t_label}</span>",
-            font=dict(color="#e8eef7", size=14), x=0.012, y=0.97,
+            font=dict(color="#e8eef7", size=14),
+            x=0.02, y=0.97,
         ),
         font=dict(color="#94a3b8", size=11),
         updatemenus=[dict(
             type="buttons", showactive=True,
-            y=1.0, x=1.0, xanchor="right", yanchor="top", direction="left",
+            y=0.04, x=0.02, xanchor="left", yanchor="bottom", direction="left",
             buttons=[
                 dict(label="▶ Rotar", method="animate",
-                     args=[None, {"frame": {"duration": 35, "redraw": True},
+                     args=[None, {"frame": {"duration": 40, "redraw": True},
                                   "fromcurrent": True, "transition": {"duration": 0},
                                   "mode": "immediate"}]),
                 dict(label="⏸", method="animate",
                      args=[[None], {"frame": {"duration": 0}, "mode": "immediate",
                                     "transition": {"duration": 0}}]),
             ],
-            bgcolor="rgba(21,27,44,.95)", bordercolor="rgba(160,180,220,.18)",
+            bgcolor="rgba(21,27,44,.95)",
+            bordercolor="rgba(160,180,220,.18)",
             font=dict(color="#e8eef7", size=11),
             pad=dict(r=8, t=4, b=4),
         )],
@@ -1108,30 +1113,37 @@ def _page_map() -> None:
     with col_ctrl:
         now_utc = datetime.now(timezone.utc)
         st.markdown(f'<div class="live-clock">🕐 {now_utc.strftime("%H:%M:%S UTC")}</div>', unsafe_allow_html=True)
-        st.markdown('<div class="ctrl-title">Objeto principal</div>', unsafe_allow_html=True)
+
         case_labels = {_CASE_META.get(c, {}).get("title", c): c for c in cases}
-        sel_label = st.radio("", list(case_labels.keys()), key="map_case_radio", label_visibility="collapsed")
+        sel_label = st.radio(
+            "Objeto principal", list(case_labels.keys()),
+            key="map_case_radio", label_visibility="visible",
+        )
         selected = case_labels[sel_label]
         st.session_state["map_case"] = selected
 
-        st.divider()
-        st.markdown('<div class="ctrl-title">Búsqueda</div>', unsafe_allow_html=True)
-        search_q = st.text_input("", placeholder="Nombre o NORAD…", key="map_search", label_visibility="collapsed")
+        search_q = st.text_input(
+            "Buscar", placeholder="Nombre o NORAD…",
+            key="map_search", label_visibility="visible",
+        )
 
-        st.markdown('<div class="ctrl-title">Proyección temporal</div>', unsafe_allow_html=True)
-        t0_offset = st.slider("", 0, 1440, 0, 15, key="map_t0", label_visibility="collapsed",
-                               format="%d min", help="Máx 24 h desde época TLE")
+        t0_offset = st.slider(
+            "Proyección temporal", 0, 1440, 0, 15,
+            key="map_t0", format="%d min", help="Máx 24 h desde época TLE",
+        )
         if t0_offset:
             h, m = divmod(t0_offset, 60)
             st.caption(f"T+{h}h {m:02d}m")
 
-        st.markdown('<div class="ctrl-title">Trazas orbitales</div>', unsafe_allow_html=True)
-        n_orbits = st.select_slider("", [1, 2, 3], value=2, key="map_orbits", label_visibility="collapsed")
+        n_orbits = st.select_slider(
+            "Trazas orbitales", [1, 2, 3], value=2, key="map_orbits",
+        )
         st.caption(f"{n_orbits} órbita{'s' if n_orbits > 1 else ''} ≈ {n_orbits*92} min")
 
-        st.divider()
-        scan_prox = st.toggle("🛰 Detección proximidad", key="map_scan_prox",
-                               help="Escanea last-30-days de CelesTrak buscando objetos en órbita similar a las estaciones.")
+        scan_prox = st.toggle(
+            "🛰 Detección proximidad", key="map_scan_prox",
+            help="Escanea last-30-days de CelesTrak buscando objetos en órbita similar a las estaciones.",
+        )
 
     # ── Propagación ───────────────────────────────────────────────────────────
     blocks_ref = _parse_blocks(tle_text)
@@ -1167,11 +1179,19 @@ def _page_map() -> None:
 
     # ── Globe + resultados (columna izquierda) ────────────────────────────────
     with col_globe:
-        st.plotly_chart(
-            _globe_figure(track_list, case, t0_offset, highlight=highlight, extra_tracks=extra_tracks),
-            use_container_width=True,
-            config={"displayModeBar": True, "scrollZoom": True, "displaylogo": False},
-        )
+        try:
+            fig = _globe_figure(track_list, case, t0_offset,
+                                highlight=highlight, extra_tracks=extra_tracks)
+            st.plotly_chart(
+                fig,
+                use_container_width=True,
+                config={"displayModeBar": True, "scrollZoom": True, "displaylogo": False},
+            )
+        except Exception as exc:
+            st.error(f"Error al construir el globo: `{type(exc).__name__}: {exc}`")
+            import traceback
+            st.code(traceback.format_exc(), language="python")
+            return
         st.caption(f"{tle_source}  ·  {n_min_steps} min de propagación  ·  {len(track_list)} objetos")
 
         if search_q.strip():
