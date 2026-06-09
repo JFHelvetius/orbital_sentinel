@@ -1370,7 +1370,7 @@ def main() -> None:
     st.markdown(f"""
 <div class="hero">
   <div>
-    <h1>Orbital Sentinel <span class="pill">BUILD 02cdcc2 · {_build} UTC</span></h1>
+    <h1>Orbital Sentinel <span class="pill" style="background:#ef4444;color:white;border-color:#ef4444;">MINIMAL-DIAGNOSTIC-V3 · {_build}</span></h1>
     <p>Infraestructura verificable para afirmaciones sobre el entorno orbital · Datos públicos · Sin IA · Sin autoridad central</p>
   </div>
 </div>""", unsafe_allow_html=True)
