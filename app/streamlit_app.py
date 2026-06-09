@@ -716,35 +716,38 @@ def _positions_only(tle_text: str, t0_offset_min: int = 0) -> list[SatTrack]:
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def _fetch_group_tles(group: str) -> str | None:
-    """Descarga un grupo CelesTrak. Timeout adaptativo según tamaño esperado."""
-    # Datasets grandes necesitan más tiempo
-    timeout = 60 if group in {"active", "starlink", "oneweb"} else 25
-    last_err = None
-    for url in (
+    """Descarga un grupo CelesTrak. Timeout adaptativo + reintentos."""
+    timeout = 90 if group in {"active", "starlink", "cubesat"} else (
+        60 if group in {"oneweb", "geo", "last-30-days"} else 30
+    )
+    urls = [
         f"https://celestrak.org/NORAD/elements/gp.php?GROUP={group}&FORMAT=tle",
+        f"https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE={group}&FORMAT=tle",
         f"https://celestrak.com/NORAD/elements/{group}.txt",
         f"https://celestrak.org/NORAD/elements/{group}.txt",
-    ):
-        for verify in (True, False):
-            try:
-                ctx = ssl.create_default_context()
-                if not verify:
-                    ctx.check_hostname = False
-                    ctx.verify_mode = ssl.CERT_NONE
-                req = urllib.request.Request(url, headers={
-                    **_HEADERS,
-                    "Accept": "text/plain, */*",
-                    "Accept-Encoding": "identity",
-                })
-                with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
-                    raw = r.read()
-                text = raw.decode("utf-8", errors="replace")
-                if text.strip() and text.count("1 ") >= 3:
-                    return text
-            except Exception as exc:
-                last_err = f"{type(exc).__name__}: {exc} ({url[:60]}…)"
-                continue
-    # Si fallaron todos los intentos, lo guardamos como atributo de la función
+    ]
+    last_err = None
+    for attempt in range(2):  # 2 intentos para los timeouts intermitentes
+        for url in urls:
+            for verify in (True, False):
+                try:
+                    ctx = ssl.create_default_context()
+                    if not verify:
+                        ctx.check_hostname = False
+                        ctx.verify_mode = ssl.CERT_NONE
+                    req = urllib.request.Request(url, headers={
+                        **_HEADERS,
+                        "Accept": "text/plain, */*",
+                        "Accept-Encoding": "identity",
+                    })
+                    with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
+                        raw = r.read()
+                    text = raw.decode("utf-8", errors="replace")
+                    if text.strip() and text.count("1 ") >= 3:
+                        return text
+                except Exception as exc:
+                    last_err = f"{type(exc).__name__}: {str(exc)[:80]}"
+                    continue
     _fetch_group_tles.last_error = last_err  # type: ignore[attr-defined]
     return None
 
@@ -1502,25 +1505,23 @@ def _page_map() -> None:
                           if q in t.name.lower() or q in str(t.norad)]
         highlight = frozenset(t.norad for t in search_matches)
 
-    # ── Detectar focus actual (de tabla o de clic previo) ────────────────────
-    focus_norad: int | None = st.session_state.get("focus_norad")
-    focus_track: SatTrack | None = None
-    if focus_norad is not None:
-        focus_track = next(
-            (t for t in (track_list + extra_tracks) if t.norad == focus_norad),
-            None,
-        )
-        if focus_track is None:
-            # El objeto en focus no existe en este dataset → limpiamos
-            st.session_state.pop("focus_norad", None)
-            focus_norad = None
-
-    # Si hay focus, lo metemos en el highlight set para que se resalte
-    if focus_norad is not None:
-        if highlight is None:
-            highlight = frozenset({focus_norad})
+    # ── Focus múltiple: set de NORADs seleccionados ──────────────────────────
+    focus_norads: set[int] = set(st.session_state.get("focus_norads", set()))
+    focus_tracks: list[SatTrack] = []
+    for nid in list(focus_norads):
+        t = next((t for t in (track_list + extra_tracks) if t.norad == nid), None)
+        if t is None:
+            focus_norads.discard(nid)  # filtrar los que ya no existen
         else:
-            highlight = highlight | {focus_norad}
+            focus_tracks.append(t)
+    st.session_state["focus_norads"] = focus_norads
+
+    # Highlight = unión de focus + búsqueda
+    if focus_norads:
+        highlight = frozenset(focus_norads) if highlight is None else (highlight | focus_norads)
+
+    # Centro del globo: el primero del focus
+    center_track = focus_tracks[0] if focus_tracks else None
 
     # ── Globe + resultados (columna izquierda) ────────────────────────────────
     with col_globe:
@@ -1532,8 +1533,8 @@ def _page_map() -> None:
                 fig = _globe_figure(
                     track_list, case, t0_offset,
                     highlight=highlight, extra_tracks=extra_tracks,
-                    center_lon=(focus_track.lon0 if focus_track else None),
-                    center_lat=(focus_track.lat0 if focus_track else None),
+                    center_lon=(center_track.lon0 if center_track else None),
+                    center_lat=(center_track.lat0 if center_track else None),
                 )
             event = st.plotly_chart(
                 fig, use_container_width=True,
@@ -1549,20 +1550,26 @@ def _page_map() -> None:
             return
         st.caption(f"{active_source}  ·  {len(track_list)} objetos  ·  modo {ds_mode}")
 
-        # ── Sincronizar clic en globo con focus ──────────────────────────────
+        # ── Sincronizar clic en globo → focus_norads ──────────────────────────
         sel_points = (event.selection or {}).get("points", []) if event else []
-        if sel_points:
-            cd = sel_points[0].get("customdata")
-            if cd and len(cd) >= 5 and int(cd[0]) != focus_norad:
-                st.session_state["focus_norad"] = int(cd[0])
-                st.rerun()
+        sel_from_globe: set[int] = set()
+        for p in sel_points:
+            cd = p.get("customdata")
+            if cd and len(cd) >= 5:
+                sel_from_globe.add(int(cd[0]))
+        # Si el globo dice algo distinto a lo que tenemos guardado, actualizamos
+        if sel_from_globe and sel_from_globe != focus_norads:
+            st.session_state["focus_norads"] = sel_from_globe
+            st.rerun()
 
-        # ── Plain language debajo del globo (sin expander) ───────────────────
-        if focus_track is not None:
-            st.markdown(_plain_lang(
-                focus_track.name, focus_track.norad,
-                focus_track.alt0, focus_track.incl, focus_track.period_min,
-            ))
+        # ── Plain language para todos los seleccionados (sin expander) ───────
+        if focus_tracks:
+            for ft in focus_tracks:
+                with st.container(border=True):
+                    st.markdown(_plain_lang(
+                        ft.name, ft.norad,
+                        ft.alt0, ft.incl, ft.period_min,
+                    ))
 
         if search_q.strip():
             if search_matches:
@@ -1589,20 +1596,20 @@ def _page_map() -> None:
     with col_ctrl:
         st.divider()
 
-        # ── Panel "Objeto seleccionado" (si hay focus) ───────────────────────
-        if focus_track is not None:
-            st.markdown("### 🎯 Objeto seleccionado")
-            v = 2 * math.pi * (EARTH_R + focus_track.alt0) / focus_track.period_min / 60
-            st.markdown(f"**{focus_track.name}** · NORAD `{focus_track.norad}`")
-            mc1, mc2 = st.columns(2)
-            with mc1:
-                st.metric("Altitud", f"{focus_track.alt0:.0f} km")
-                st.metric("Inclinación", f"{focus_track.incl:.1f}°")
-            with mc2:
-                st.metric("Período", f"{focus_track.period_min:.0f} min")
-                st.metric("Velocidad", f"{v:.1f} km/s")
-            if st.button("✕ Limpiar selección", key="clear_focus", use_container_width=True):
-                st.session_state.pop("focus_norad", None)
+        # ── Panel selección múltiple (lista de objetos clicados) ─────────────
+        if focus_tracks:
+            st.markdown(f"### 🎯 {len(focus_tracks)} seleccionado(s)")
+            for ft in focus_tracks:
+                row_a, row_b = st.columns([5, 1])
+                with row_a:
+                    st.markdown(f"**{ft.name}**  \n`{ft.norad}` · {ft.alt0:.0f} km · {ft.incl:.1f}°")
+                with row_b:
+                    if st.button("✕", key=f"unfocus_{ft.norad}", help="Deseleccionar"):
+                        focus_norads.discard(ft.norad)
+                        st.session_state["focus_norads"] = focus_norads
+                        st.rerun()
+            if st.button("✕ Limpiar todos", key="clear_focus_all", use_container_width=True):
+                st.session_state["focus_norads"] = set()
                 st.rerun()
             st.divider()
 
@@ -1670,15 +1677,15 @@ def _page_map() -> None:
             hide_index=True,
             height=420,
             on_select="rerun",
-            selection_mode="single-row",
+            selection_mode="multi-row",
             key="objects_table",
         )
-        # Sincronizar selección de tabla con focus_norad
+        # Sincronizar tabla → focus_norads (REEMPLAZA con lo seleccionado)
         sel_rows = (table_event.selection or {}).get("rows", [])
         if sel_rows:
-            new_focus = int(sorted_objs[sel_rows[0]].norad)
-            if new_focus != focus_norad:
-                st.session_state["focus_norad"] = new_focus
+            new_focus = {int(sorted_objs[i].norad) for i in sel_rows}
+            if new_focus != focus_norads:
+                st.session_state["focus_norads"] = new_focus
                 st.rerun()
 
 
