@@ -1033,20 +1033,55 @@ def _page_map() -> None:
 
     # ── Globe + resultados (columna izquierda) ────────────────────────────────
     with col_globe:
+        # DIAGNÓSTICO: información explícita antes del chart
+        st.info(
+            f"🔬 Diagnóstico — track_list: **{len(track_list)} objetos**  ·  "
+            f"primary: **{case.evidence_bundle.object_id}**  ·  "
+            f"plotly version: **{go.__module__}**"
+        )
+
+        # Test 1: figura ultra-mínima (sin geo)
+        st.markdown("**Test 1**: scatter trivial (sin geo)")
+        try:
+            test_fig = go.Figure(data=go.Scatter(x=[1,2,3], y=[1,4,9], mode="lines+markers"))
+            test_fig.update_layout(height=200, paper_bgcolor="rgb(10,15,30)",
+                                    plot_bgcolor="rgb(10,15,30)",
+                                    font=dict(color="white"))
+            st.plotly_chart(test_fig, use_container_width=True)
+        except Exception as exc:
+            st.error(f"❌ Falló scatter trivial: {type(exc).__name__}: {exc}")
+
+        # Test 2: scattergeo con projection orthographic
+        st.markdown("**Test 2**: scattergeo orthographic vacío")
+        try:
+            t2 = go.Figure(data=go.Scattergeo(lat=[0, 30, 60], lon=[0, 30, 60], mode="markers"))
+            t2.update_layout(
+                geo=dict(projection_type="orthographic", showland=True,
+                         landcolor="rgb(58,82,52)", oceancolor="rgb(14,42,98)",
+                         showocean=True, bgcolor="rgb(10,15,30)"),
+                paper_bgcolor="rgb(10,15,30)", height=400,
+                margin=dict(l=0, r=0, t=10, b=0),
+            )
+            st.plotly_chart(t2, use_container_width=True)
+        except Exception as exc:
+            st.error(f"❌ Falló scattergeo orthographic: {type(exc).__name__}: {exc}")
+            import traceback; st.code(traceback.format_exc())
+
+        # Test 3: globo completo
+        st.markdown("**Test 3**: _globe_figure (versión minimal)")
         try:
             fig = _globe_figure(track_list, case, t0_offset,
                                 highlight=highlight, extra_tracks=extra_tracks)
             st.plotly_chart(
-                fig,
-                use_container_width=True,
+                fig, use_container_width=True,
                 config={"displayModeBar": True, "scrollZoom": True, "displaylogo": False},
             )
         except Exception as exc:
-            st.error(f"Error al construir el globo: `{type(exc).__name__}: {exc}`")
+            st.error(f"❌ Falló _globe_figure: `{type(exc).__name__}: {exc}`")
             import traceback
             st.code(traceback.format_exc(), language="python")
             return
-        st.caption(f"{tle_source}  ·  {n_min_steps} min de propagación  ·  {len(track_list)} objetos")
+        st.caption(f"{tle_source}  ·  {n_min_steps} min  ·  {len(track_list)} objetos")
 
         if search_q.strip():
             if search_matches:
