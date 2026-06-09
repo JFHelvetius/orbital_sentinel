@@ -12,6 +12,7 @@ Streamlit Cloud: importa orbital_sentinel desde src/ del repo clonado.
 from __future__ import annotations
 
 import math
+import ssl
 import sys
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -313,22 +314,32 @@ def _epoch_dt(sat: Satrec) -> datetime:
     jd = sat.jdsatepoch + sat.jdsatepochF
     return datetime(2000,1,1,12,tzinfo=timezone.utc) + timedelta(days=jd-2451545.0)
 
-_CELESTRAK_URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle"
+_CELESTRAK_URLS = [
+    "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle",
+    "https://celestrak.com/NORAD/elements/stations.txt",
+]
+_HEADERS = {"User-Agent": "orbital-sentinel/0.1 (github.com/JFHelvetius/orbital_sentinel)"}
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def _fetch_live_tles() -> tuple[str, str]:
-    """Descarga TLEs de CelesTrak (caché 1 h). Devuelve (tle_text, etiqueta_fuente)."""
-    try:
-        req = urllib.request.Request(_CELESTRAK_URL, headers={"User-Agent": "orbital-sentinel/0.1"})
-        with urllib.request.urlopen(req, timeout=8) as r:
-            text = r.read().decode("utf-8")
-        if text.strip() and "1 " in text:
-            ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-            return text, f"CelesTrak live · {ts}"
-    except Exception:
-        pass
-    return _TLE_STATIONS, "TLEs de referencia embebidos (sin conexión con CelesTrak)"
+    """Descarga TLEs de CelesTrak (caché 1 h). Prueba múltiples URLs y SSL."""
+    for url in _CELESTRAK_URLS:
+        for verify_ssl in (True, False):
+            try:
+                ctx = ssl.create_default_context()
+                if not verify_ssl:
+                    ctx.check_hostname = False
+                    ctx.verify_mode = ssl.CERT_NONE
+                req = urllib.request.Request(url, headers=_HEADERS)
+                with urllib.request.urlopen(req, timeout=12, context=ctx) as r:
+                    text = r.read().decode("utf-8")
+                if text.strip() and text.count("1 ") >= 5:
+                    ts = datetime.now(timezone.utc).strftime("%d %b %Y %H:%M UTC")
+                    return text, f"🟢 CelesTrak live · {ts}"
+            except Exception:
+                continue
+    return _TLE_STATIONS, "🟡 TLEs embebidos 2026-06-08 · CelesTrak no alcanzable"
 
 
 def _parse_blocks(text: str) -> list[tuple[str,str,str]]:
@@ -392,7 +403,7 @@ def _tracks(tle_text: str, t0_offset_min: int = 0) -> list[SatTrack]:
     return result
 
 
-def _globe_figure(tracks: list[SatTrack], case: InvestigationCase) -> go.Figure:
+def _globe_figure(tracks: list[SatTrack], case: InvestigationCase, t0_offset: int = 0) -> go.Figure:
     real_norads: set[int] = set()
     for be in case.evidence_bundle.evidence_payloads:
         hp = be.derived_evidence.honesty_payload
@@ -410,27 +421,48 @@ def _globe_figure(tracks: list[SatTrack], case: InvestigationCase) -> go.Figure:
         is_css_dock = (t.norad in _CSS_DOCK and not is_primary and not is_unknown)
 
         if is_primary:
-            lc, mc, lw, ms, sym = "#ffd700", "#ffd700", 2.5, 16, "star"
+            lc, mc, lw, ms, sym = "#ffd700", "#ffd700", 2.5, 18, "star"
         elif is_real:
-            lc, mc, lw, ms, sym = "#ff4757", "#ff4757", 2.0, 14, "x"
+            lc, mc, lw, ms, sym = "#ff3547", "#ff3547", 2.2, 15, "x"
         elif is_unknown:
-            lc, mc, lw, ms, sym = "rgba(255,165,0,.45)", "rgba(255,180,0,.9)", 1.2, 10, "diamond"
+            lc, mc, lw, ms, sym = "rgba(255,165,0,0.5)", "rgba(255,185,0,0.95)", 1.4, 11, "diamond"
         elif is_iss_dock:
-            lc, mc, lw, ms, sym = "rgba(79,158,255,.35)", "rgba(79,158,255,.7)", 1.0, 7, "circle"
+            lc, mc, lw, ms, sym = "rgba(79,158,255,0.3)", "rgba(79,158,255,0.65)", 1.0, 7, "circle"
         elif is_css_dock:
-            lc, mc, lw, ms, sym = "rgba(255,107,107,.35)", "rgba(255,107,107,.7)", 1.0, 7, "circle"
+            lc, mc, lw, ms, sym = "rgba(255,100,100,0.3)", "rgba(255,120,100,0.65)", 1.0, 7, "circle"
         else:
-            lc, mc, lw, ms, sym = "rgba(100,200,120,.3)", "rgba(130,220,140,.65)", 1.0, 7, "circle"
+            lc, mc, lw, ms, sym = "rgba(80,180,120,0.25)", "rgba(110,210,140,0.6)", 0.8, 6, "circle"
+
+        # Glow rings para objetos importantes
+        if is_primary:
+            for gs, ga in ((36, 0.03), (28, 0.07), (22, 0.12)):
+                fig.add_trace(go.Scattergeo(
+                    lat=[t.lat0], lon=[t.lon0], mode="markers",
+                    marker=dict(size=gs, color=f"rgba(255,215,0,{ga})", symbol="circle"),
+                    showlegend=False, hoverinfo="skip",
+                ))
+        elif is_real:
+            for gs, ga in ((30, 0.04), (22, 0.09)):
+                fig.add_trace(go.Scattergeo(
+                    lat=[t.lat0], lon=[t.lon0], mode="markers",
+                    marker=dict(size=gs, color=f"rgba(255,53,71,{ga})", symbol="circle"),
+                    showlegend=False, hoverinfo="skip",
+                ))
 
         # Hover enriquecido
-        unknown_tag = "<br><b>⚠ NO CATALOGADO localmente</b>" if is_unknown else ""
-        real_tag    = "<br><b>⚠ Acercamiento no cooperativo</b>" if is_real else ""
+        badges = []
+        if is_unknown: badges.append("⚠ NO CATALOGADO localmente")
+        if is_real:    badges.append("⚠ Acercamiento no cooperativo")
+        badge_html = "".join(f"<br><b>{b}</b>" for b in badges)
         hover = (
             f"<b>{'❓ ' if is_unknown else ''}{t.name}</b>"
             f"<br>NORAD {t.norad}"
-            f"<br>Alt inst: {t.alt0:.0f} km  ·  Alt media: {t.alt_mean:.0f} km"
-            f"<br>Incl: {t.incl:.2f}°  ·  Período: {t.period_min:.1f} min"
-            + unknown_tag + real_tag
+            f"<br>─────────────────"
+            f"<br>Alt actual: <b>{t.alt0:.0f} km</b>"
+            f"<br>Alt media: {t.alt_mean:.0f} km"
+            f"<br>Inclinación: {t.incl:.2f}°"
+            f"<br>Período: {t.period_min:.1f} min  ({t.period_min/60:.2f} h)"
+            + badge_html
             + "<extra></extra>"
         )
 
@@ -444,51 +476,95 @@ def _globe_figure(tracks: list[SatTrack], case: InvestigationCase) -> go.Figure:
             lat=[t.lat0], lon=[t.lon0],
             mode="markers+text" if show_txt else "markers",
             marker=dict(size=ms, color=mc, symbol=sym,
-                        line=dict(width=1.5 if show_txt else 0, color="white")),
+                        line=dict(width=1.5 if show_txt else 0.5, color="rgba(255,255,255,0.4)")),
             text=[("❓ " if is_unknown else "") + t.name] if show_txt else [],
             textposition="top right",
-            textfont=dict(color="#ffb300" if is_unknown else "white", size=11),
+            textfont=dict(
+                color="#ffb300" if is_unknown else ("#ffd700" if is_primary else "rgba(255,255,255,0.9)"),
+                size=11, family="monospace",
+            ),
             name=t.name, showlegend=False,
             hovertemplate=hover,
         ))
 
-    _geo_full = dict(
-        projection=dict(type="orthographic"),
-        showland=True,    landcolor="rgb(38,46,62)",
-        showocean=True,   oceancolor="rgb(10,18,42)",
-        showlakes=False,  showrivers=False,
-        showcoastlines=True, coastlinecolor="rgba(110,130,170,0.6)",
-        showcountries=True,  countrycolor="rgba(70,85,115,0.4)",
-        showgraticules=True, graticulecolor="rgba(60,80,130,0.2)",
-        bgcolor="rgb(7,11,24)",
-    )
-    _geo_min = dict(
-        projection=dict(type="orthographic"),
-        showland=True,    landcolor="rgb(38,46,62)",
-        showocean=True,   oceancolor="rgb(10,18,42)",
-        showlakes=False,  showrivers=False,
-        showcoastlines=True,
-        showcountries=True,
-    )
-    for _geo in (_geo_full, _geo_min):
+    # Frames de rotación automática (lon 0→357, paso 3°)
+    frames = [
+        go.Frame(layout=dict(geo=dict(projection=dict(rotation=dict(lon=lon)))), name=str(lon))
+        for lon in range(0, 360, 3)
+    ]
+    fig.frames = frames
+
+    # Geo styling
+    for _geo in (
+        dict(
+            projection=dict(type="orthographic"),
+            showland=True,    landcolor="rgb(24,32,48)",
+            showocean=True,   oceancolor="rgb(4,10,28)",
+            showlakes=False,  showrivers=False,
+            showcoastlines=True, coastlinecolor="rgba(100,120,165,0.55)",
+            showcountries=True,  countrycolor="rgba(55,70,100,0.35)",
+            showgraticules=True, graticulecolor="rgba(40,60,110,0.18)",
+            bgcolor="rgb(3,6,18)",
+        ),
+        dict(
+            projection=dict(type="orthographic"),
+            showland=True,   landcolor="rgb(24,32,48)",
+            showocean=True,  oceancolor="rgb(4,10,28)",
+            showcoastlines=True, showcountries=True,
+        ),
+    ):
         try:
-            fig.update_layout(geo=_geo)
-            break
+            fig.update_layout(geo=_geo); break
         except Exception:
             continue
+
+    t_label = f"T+{t0_offset//60}h {t0_offset%60:02d}m" if t0_offset else "Época TLE"
     fig.update_layout(
-        paper_bgcolor="rgb(7,11,24)",
-        height=580,
-        margin=dict(l=0, r=0, t=36, b=0),
+        paper_bgcolor="rgb(3,6,18)",
+        height=720,
+        margin=dict(l=0, r=160, t=44, b=0),
         legend=dict(
-            bgcolor="rgba(10,15,35,.9)", bordercolor="rgba(79,158,255,.2)",
-            borderwidth=1, font=dict(color="#8892a4", size=10),
-            x=1.01, y=1, xanchor="left",
+            bgcolor="rgba(4,8,22,0.93)", bordercolor="rgba(79,158,255,0.18)",
+            borderwidth=1, font=dict(color="#6a7a94", size=9),
+            x=1.01, y=0.98, xanchor="left", tracegroupgap=2,
         ),
         title=dict(
-            text="Posiciones en época TLE  ·  trazas 90 min  ·  arrastra para rotar",
-            font=dict(color="#8892a4", size=12), x=0.01,
+            text=f"<b>Tráfico orbital  ·  {t_label}</b>"
+                 f"<br><span style='font-size:11px;color:#4a5568'>"
+                 f"Arrastra · zoom · hover · ▶ para rotar automáticamente</span>",
+            font=dict(color="#c0cce0", size=14), x=0.01, y=0.985,
         ),
+        updatemenus=[dict(
+            type="buttons",
+            showactive=True,
+            y=0.01, x=0.01, xanchor="left", yanchor="bottom",
+            direction="left",
+            buttons=[
+                dict(
+                    label="▶  Auto-rotar",
+                    method="animate",
+                    args=[None, {
+                        "frame": {"duration": 45, "redraw": True},
+                        "fromcurrent": True,
+                        "transition": {"duration": 0},
+                        "mode": "immediate",
+                    }],
+                ),
+                dict(
+                    label="⏸  Parar",
+                    method="animate",
+                    args=[[None], {
+                        "frame": {"duration": 0},
+                        "mode": "immediate",
+                        "transition": {"duration": 0},
+                    }],
+                ),
+            ],
+            bgcolor="rgba(8,14,30,0.92)",
+            bordercolor="rgba(79,158,255,0.3)",
+            font=dict(color="#c0cce0", size=11),
+            pad=dict(r=8, t=6, b=6),
+        )],
     )
     return fig
 
@@ -626,11 +702,11 @@ def _page_map() -> None:
 
     # ── Globe ─────────────────────────────────────────────────────────────────
     st.plotly_chart(
-        _globe_figure(track_list, case),
+        _globe_figure(track_list, case, t0_offset),
         use_container_width=True,
-        config={"displayModeBar": True, "scrollZoom": False},
+        config={"displayModeBar": True, "scrollZoom": True, "displaylogo": False},
     )
-    st.caption(f"📡 {tle_source} · trazas 90 min · arrastra para rotar · hover para detalles")
+    st.caption(f"{tle_source}")
 
     # ── Objetos no catalogados ────────────────────────────────────────────────
     unknown_tracks = [t for t in track_list if not t.known]
