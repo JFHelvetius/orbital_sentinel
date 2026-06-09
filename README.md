@@ -11,6 +11,8 @@ Orbital Sentinel is open-source software that lets anyone — without privileged
 
 It is not a satellite tracker, not a visualization tool, not a dashboard. It is a **content-addressable provenance chain** that ties every conclusion back to the original public bytes that produced it.
 
+> **New here?** Start with the essay [Why I Can't Trust What's Happening in Orbit](docs/why-this-exists.md) — a 5-minute read explaining the problem, the design, and what you can do with it today.
+
 ```bash
 pip install orbital-sentinel
 orbital-sentinel self-verify --strict
