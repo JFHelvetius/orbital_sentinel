@@ -211,28 +211,74 @@ p, span, div, label { color: var(--text-pri); }
 hr, [data-testid="stMarkdownContainer"] hr { border-color: var(--border) !important; opacity:.6; }
 code, pre { font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace !important; }
 
-/* ── Hero refinado ─────────────────────────────────────────────────────── */
+/* ── Hero científico/aeroespacial ──────────────────────────────────────── */
 .hero {
-  padding: 1.4rem 0 1.2rem;
-  border-bottom: 1px solid var(--border-soft);
+  position: relative;
+  padding: 1.6rem 1.8rem 1.4rem;
   margin-bottom: 1.3rem;
-  display: flex; align-items: baseline; gap: 1.2rem;
+  background: linear-gradient(135deg, rgba(74,144,226,.05) 0%, rgba(74,144,226,0) 50%);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
 }
+.hero::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--accent-bri), var(--accent), transparent);
+}
+.hero-row { display: flex; align-items: center; gap: 1.2rem; }
+.hero-icon {
+  font-size: 2.4rem;
+  filter: drop-shadow(0 0 12px rgba(74,144,226,.4));
+  line-height: 1;
+}
+.hero-main { flex: 1; }
 .hero h1 {
-  font-size: 1.65rem; font-weight: 700; letter-spacing:-.02em; margin: 0;
-  color: var(--text-pri);
+  font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace !important;
+  font-size: 1.5rem; font-weight: 700; letter-spacing: .08em;
+  margin: 0; text-transform: uppercase;
+  background: linear-gradient(90deg, #e8eef7 0%, var(--accent-bri) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
-.hero h1 .pill {
-  display:inline-block; font-size:.65rem; font-weight:600;
-  background:rgba(74,144,226,.12); color:var(--accent-bri);
-  border:1px solid rgba(74,144,226,.25); border-radius:4px;
-  padding:.15rem .5rem; margin-left:.6rem; letter-spacing:.05em;
-  text-transform:uppercase; vertical-align:middle;
+.hero-classification {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .62rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-ter); margin: .15rem 0 0; display: block;
 }
-.hero p {
-  color: var(--text-sec); font-size: .82rem; margin: 0;
-  letter-spacing: .005em;
+.hero-classification .live {
+  color: var(--success); font-weight: 600;
+  padding: 0 .35rem; background: rgba(16,185,129,.1);
+  border: 1px solid rgba(16,185,129,.3); border-radius: 3px;
+  display: inline-flex; align-items: center; gap: .25rem;
 }
+.hero-classification .live::before {
+  content: ''; width: .35rem; height: .35rem; border-radius: 50%;
+  background: var(--success); box-shadow: 0 0 6px var(--success);
+  animation: pulse 2s ease-in-out infinite;
+}
+.hero-subtitle {
+  color: var(--text-sec); font-size: .82rem;
+  margin: .8rem 0 0; line-height: 1.5; letter-spacing: .01em;
+}
+.hero-subtitle code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .72rem; color: var(--accent-bri);
+  background: rgba(74,144,226,.1);
+  padding: .12rem .4rem; border-radius: 3px;
+  border: 1px solid rgba(74,144,226,.2);
+}
+.hero-meta {
+  display: flex; gap: .4rem; margin-top: .9rem; flex-wrap: wrap;
+}
+.hero-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .65rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-ter); background: var(--bg-card);
+  border: 1px solid var(--border); padding: .22rem .55rem;
+  border-radius: 3px;
+}
+.hero-tag.accent { color: var(--accent-bri); border-color: rgba(74,144,226,.3); }
+.hero-tag.warn   { color: var(--warning);    border-color: rgba(245,158,11,.3); }
 
 /* ── Tabs ──────────────────────────────────────────────────────────────── */
 .stTabs [data-baseweb="tab-list"] {
@@ -962,6 +1008,17 @@ def _globe_figure(
                "<br>Alt: %{customdata[2]:.0f} km · Incl: %{customdata[3]:.2f}°"
                "<br>Período: %{customdata[4]:.1f} min<extra></extra>")
 
+        # Halos para los seleccionados (resaltados)
+        if highlight:
+            sel_tracks = [t for t in tracks if t.norad in highlight]
+            for st_ in sel_tracks:
+                for gs, ga in ((28, 0.18), (20, 0.32), (14, 0.55)):
+                    fig.add_trace(go.Scattergeo(
+                        lat=[st_.lat0], lon=[st_.lon0], mode="markers",
+                        marker=dict(size=gs, color=f"rgba(255,215,0,{ga})", symbol="circle"),
+                        showlegend=False, hoverinfo="skip",
+                    ))
+
         if d_lat:
             fig.add_trace(go.Scattergeo(
                 lat=d_lat, lon=d_lon, mode="markers",
@@ -1154,11 +1211,11 @@ def _globe_figure(
             resolution=50,
             showland=True,    landcolor="rgb(112,128,77)",
             showocean=True,   oceancolor="rgb(11,42,98)",
-            showlakes=show_lakes,   lakecolor="rgb(22,68,128)",
-            showrivers=show_rivers, rivercolor="rgba(70,130,200,0.55)", riverwidth=0.6,
-            showcoastlines=True, coastlinecolor="rgba(245,250,225,0.6)", coastlinewidth=0.7,
-            showcountries=show_countries, countrycolor="rgba(220,235,180,0.4)", countrywidth=0.6,
-            showsubunits=show_subunits,   subunitcolor="rgba(180,200,150,0.22)", subunitwidth=0.4,
+            showlakes=show_lakes,   lakecolor="rgb(28,90,180)",
+            showrivers=show_rivers, rivercolor="rgb(80,170,240)", riverwidth=1.0,
+            showcoastlines=True,    coastlinecolor="rgba(245,250,225,0.7)", coastlinewidth=0.8,
+            showcountries=show_countries, countrycolor="rgb(255,230,140)", countrywidth=1.0,
+            showsubunits=show_subunits,   subunitcolor="rgba(220,200,150,0.55)", subunitwidth=0.6,
             bgcolor="rgb(2,4,12)",
         ),
         paper_bgcolor="rgb(10,15,30)",
@@ -1590,8 +1647,6 @@ def _page_map() -> None:
                 fig = _globe_figure(
                     track_list, case, t0_offset,
                     highlight=highlight, extra_tracks=extra_tracks,
-                    center_lon=(center_track.lon0 if center_track else None),
-                    center_lat=(center_track.lat0 if center_track else None),
                     layers=dict(
                         cities=layer_cities, countries=layer_countries,
                         subunits=layer_subunits, lakes=layer_lakes, rivers=layer_rivers,
@@ -1962,12 +2017,31 @@ def main() -> None:
     )
     st.markdown(_CSS, unsafe_allow_html=True)
 
-    # ── Hero ──────────────────────────────────────────────────────────────────
+    # ── Hero científico ───────────────────────────────────────────────────────
     st.markdown("""
 <div class="hero">
-  <div>
-    <h1>Orbital Sentinel <span class="pill">v0.1 · Apache 2.0</span></h1>
-    <p>Infraestructura verificable para afirmaciones sobre el entorno orbital · Datos públicos · Sin IA · Sin autoridad central</p>
+  <div class="hero-row">
+    <div class="hero-icon">🛰</div>
+    <div class="hero-main">
+      <h1>ORBITAL SENTINEL</h1>
+      <span class="hero-classification">
+        <span class="live">SYSTEM ACTIVE</span>
+        &nbsp;·&nbsp; SPACE SITUATIONAL AWARENESS PLATFORM
+        &nbsp;·&nbsp; UNCLASSIFIED / OPEN SOURCE
+      </span>
+      <p class="hero-subtitle">
+        Real-time orbital reconnaissance &amp; cryptographic evidence chain. Propaga TLEs públicos
+        de <code>CelesTrak</code> con <code>SGP4</code>, detecta conjunciones y produce afirmaciones
+        verificables sobre el entorno orbital — sin IA, sin autoridad central, auditable offline.
+      </p>
+      <div class="hero-meta">
+        <span class="hero-tag accent">v0.1.2</span>
+        <span class="hero-tag">SGP4 · IAU 1982</span>
+        <span class="hero-tag">SHA-256 chain</span>
+        <span class="hero-tag accent">Apache 2.0</span>
+        <span class="hero-tag warn">Pre-release</span>
+      </div>
+    </div>
   </div>
 </div>""", unsafe_allow_html=True)
 
