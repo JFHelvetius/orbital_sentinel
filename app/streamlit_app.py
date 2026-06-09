@@ -5,10 +5,22 @@ Tres secciones:
   2. Verificar            — sube cualquier case.json y comprueba la cadena.
   3. Sobre el proyecto    — descripción, filosofía, enlaces.
 
-Requisitos: pip install orbital-sentinel[app]
+Streamlit Cloud: el paquete se importa directamente desde src/ del repo clonado.
+Las dependencias del runtime (pydantic, duckdb, pyarrow, sgp4, streamlit, pandas)
+se instalan vía requirements.txt sin compilar el paquete.
 """
 
 from __future__ import annotations
+
+import sys
+from pathlib import Path as _Path
+
+# Streamlit Cloud clona el repo en el directorio de trabajo.
+# Añadimos src/ al path para que `orbital_sentinel` sea importable
+# sin necesidad de instalar el paquete como wheel.
+_SRC = _Path(__file__).parent.parent / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
 
 import json
 from pathlib import Path

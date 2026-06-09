@@ -1,3 +1,6 @@
-git+https://github.com/JFHelvetius/orbital_sentinel.git
 streamlit>=1.35,<2
 pandas>=2,<3
+pydantic>=2.7,<3
+duckdb>=1.0,<2
+pyarrow>=15.0
+sgp4>=2.20,<3
