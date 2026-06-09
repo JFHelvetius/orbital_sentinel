@@ -228,7 +228,38 @@ _CSS = """
 
 /* Ocultar header por defecto de Streamlit */
 #MainMenu, footer, header { visibility:hidden; }
+
+/* Búsqueda de satélites */
+.sat-search-wrap { position:relative; }
+.search-result-tag { display:inline-block; background:rgba(79,158,255,.12);
+  border:1px solid rgba(79,158,255,.3); border-radius:6px;
+  padding:.2rem .6rem; font-size:.8rem; color:#4f9eff; margin:.2rem .2rem 0 0; }
+.search-result-tag.danger { background:rgba(255,53,71,.12); border-color:rgba(255,53,71,.3); color:#ff3547; }
+.search-result-tag.unknown { background:rgba(255,165,0,.12); border-color:rgba(255,165,0,.3); color:#ffb300; }
+
+/* Badge de proximidad */
+.prox-badge { display:inline-flex; align-items:center; gap:.5rem;
+  background:rgba(0,210,200,.07); border:1px solid rgba(0,210,200,.25);
+  border-radius:8px; padding:.5rem 1rem; margin:.3rem 0; }
+.prox-badge .pb-name { color:#00d2c8; font-weight:600; font-size:.9rem; }
+.prox-badge .pb-detail { color:#8892a4; font-size:.78rem; }
 </style>
+<script>
+(function(){
+  if(document.getElementById('orbital-stars')) return;
+  var sf=document.createElement('div');
+  sf.id='orbital-stars';
+  sf.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden;';
+  var s='<style>@keyframes tw{0%{opacity:.08}50%{opacity:.7}100%{opacity:.08}}</style>';
+  for(var i=0;i<180;i++){
+    var x=(Math.random()*100).toFixed(2),y=(Math.random()*100).toFixed(2);
+    var sz=(Math.random()*1.4+0.3).toFixed(1),dur=(Math.random()*4+2).toFixed(1);
+    var del=(Math.random()*5).toFixed(1);
+    s+='<div style="position:absolute;left:'+x+'%;top:'+y+'%;width:'+sz+'px;height:'+sz+'px;background:#fff;border-radius:50%;animation:tw '+dur+'s '+del+'s ease-in-out infinite;"></div>';
+  }
+  sf.innerHTML=s; document.body.appendChild(sf);
+})();
+</script>
 """
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -342,6 +373,71 @@ def _fetch_live_tles() -> tuple[str, str]:
     return _TLE_STATIONS, "🟡 TLEs embebidos 2026-06-08 · CelesTrak no alcanzable"
 
 
+@st.cache_data(ttl=1800, show_spinner=False)
+def _fetch_group_tles(group: str) -> str | None:
+    """Descarga un grupo CelesTrak. Devuelve el texto TLE o None si falla."""
+    for url in (
+        f"https://celestrak.org/NORAD/elements/gp.php?GROUP={group}&FORMAT=tle",
+        f"https://celestrak.com/NORAD/elements/{group}.txt",
+    ):
+        for verify in (True, False):
+            try:
+                ctx = ssl.create_default_context()
+                if not verify:
+                    ctx.check_hostname = False
+                    ctx.verify_mode = ssl.CERT_NONE
+                req = urllib.request.Request(url, headers=_HEADERS)
+                with urllib.request.urlopen(req, timeout=15, context=ctx) as r:
+                    text = r.read().decode("utf-8")
+                if text.strip() and text.count("1 ") >= 3:
+                    return text
+            except Exception:
+                continue
+    return None
+
+
+def _find_proximity_objects(
+    station_tracks: list[SatTrack],
+    extra_tle_text: str,
+    delta_incl: float = 8.0,
+    delta_alt: float = 300.0,
+) -> list[SatTrack]:
+    """
+    Screening rápido (sin propagación completa) de objetos en extra_tle_text
+    con parámetros orbitales similares a alguna estación rastreada.
+    Solo propaga los candidatos que pasan el filtro.
+    """
+    known_norads = {t.norad for t in station_tracks}
+    station_params = [(t.incl, t.alt_mean) for t in station_tracks if t.known]
+    if not station_params:
+        return []
+
+    candidate_blocks: list[tuple[str, str, str]] = []
+    for name, l1, l2 in _parse_blocks(extra_tle_text):
+        try:
+            norad = int(l2.split()[1])
+            if norad in known_norads:
+                continue
+            sat = Satrec.twoline2rv(l1, l2)
+            incl = math.degrees(sat.inclo)
+            pm = (2 * math.pi / sat.no_kozai) if sat.no_kozai > 0 else 0
+            a = (398600.4418 * (pm * 60 / (2 * math.pi)) ** 2) ** (1 / 3) if pm > 0 else 0
+            alt = a - EARTH_R
+            if any(abs(incl - si) <= delta_incl and abs(alt - sa) <= delta_alt
+                   for si, sa in station_params):
+                candidate_blocks.append((name, l1, l2))
+        except Exception:
+            continue
+
+    if not candidate_blocks:
+        return []
+    cand_text = "\n".join(f"{n}\n{l1}\n{l2}" for n, l1, l2 in candidate_blocks)
+    try:
+        return _tracks(cand_text, 0)
+    except Exception:
+        return []
+
+
 def _parse_blocks(text: str) -> list[tuple[str,str,str]]:
     lines = [l.rstrip() for l in text.splitlines() if l.strip()]
     out = []
@@ -403,7 +499,13 @@ def _tracks(tle_text: str, t0_offset_min: int = 0) -> list[SatTrack]:
     return result
 
 
-def _globe_figure(tracks: list[SatTrack], case: InvestigationCase, t0_offset: int = 0) -> go.Figure:
+def _globe_figure(
+    tracks: list[SatTrack],
+    case: InvestigationCase,
+    t0_offset: int = 0,
+    highlight: frozenset[int] | None = None,
+    extra_tracks: list[SatTrack] | None = None,
+) -> go.Figure:
     real_norads: set[int] = set()
     for be in case.evidence_bundle.evidence_payloads:
         hp = be.derived_evidence.honesty_payload
@@ -466,11 +568,19 @@ def _globe_figure(tracks: list[SatTrack], case: InvestigationCase, t0_offset: in
             + "<extra></extra>"
         )
 
-        show_txt = is_primary or is_real or is_unknown
+        # Si hay búsqueda activa, atenuar objetos que no coinciden
+        dim = highlight is not None and t.norad not in highlight
+        if dim:
+            lc = lc.replace("0.3", "0.06").replace("0.35", "0.06").replace("0.25", "0.04")
+            mc = mc.replace("0.7", "0.12").replace("0.65", "0.1").replace("0.6", "0.08").replace("0.9", "0.15")
+            lw = max(lw * 0.4, 0.3)
+            ms = max(ms - 3, 3)
+
+        show_txt = (is_primary or is_real or is_unknown) and not dim
         fig.add_trace(go.Scattergeo(
             lat=t.lats, lon=t.lons, mode="lines",
             line=dict(width=lw, color=lc),
-            name=t.name, showlegend=True, hoverinfo="skip",
+            name=t.name, showlegend=not dim, hoverinfo="skip",
         ))
         fig.add_trace(go.Scattergeo(
             lat=[t.lat0], lon=[t.lon0],
@@ -485,6 +595,36 @@ def _globe_figure(tracks: list[SatTrack], case: InvestigationCase, t0_offset: in
             ),
             name=t.name, showlegend=False,
             hovertemplate=hover,
+        ))
+
+    # Objetos de proximidad extra (last-30-days, etc.)
+    for t in (extra_tracks or []):
+        hover_ex = (
+            f"<b>🔴 {t.name}</b><br>NORAD {t.norad}"
+            f"<br>Alt media: {t.alt_mean:.0f} km  ·  Incl: {t.incl:.2f}°"
+            f"<br>Período: {t.period_min:.1f} min"
+            f"<br><b>⚠ Detectado en órbita cercana a estación</b>"
+            "<extra></extra>"
+        )
+        for gs, ga in ((26, 0.05), (18, 0.1)):
+            fig.add_trace(go.Scattergeo(
+                lat=[t.lat0], lon=[t.lon0], mode="markers",
+                marker=dict(size=gs, color=f"rgba(0,210,200,{ga})", symbol="circle"),
+                showlegend=False, hoverinfo="skip",
+            ))
+        fig.add_trace(go.Scattergeo(
+            lat=t.lats, lon=t.lons, mode="lines",
+            line=dict(width=1.2, color="rgba(0,210,200,0.4)"),
+            name=t.name, showlegend=True, hoverinfo="skip",
+        ))
+        fig.add_trace(go.Scattergeo(
+            lat=[t.lat0], lon=[t.lon0], mode="markers+text",
+            marker=dict(size=10, color="rgba(0,210,200,0.9)", symbol="triangle-up",
+                        line=dict(width=1, color="white")),
+            text=[t.name], textposition="top right",
+            textfont=dict(color="#00d2c8", size=10, family="monospace"),
+            name=t.name, showlegend=False,
+            hovertemplate=hover_ex,
         ))
 
     # Frames de rotación automática (lon 0→357, paso 3°)
@@ -677,19 +817,29 @@ def _page_map() -> None:
                 st.session_state["map_case"] = name
 
     selected = st.session_state["map_case"]
-    meta = _CASE_META.get(selected, {})
 
-    # ── Slider de trayectoria ─────────────────────────────────────────────────
-    t0_offset = st.slider(
-        "Proyección temporal desde época TLE",
-        min_value=0, max_value=1440, value=0, step=15,
-        format="%d min",
-        help="Desplaza las posiciones hacia adelante en el tiempo para ver trayectorias futuras.",
-        key="map_t0",
+    # ── Controles superiores: búsqueda + proyección ──────────────────────────
+    ctrl_a, ctrl_b = st.columns([3, 2])
+    with ctrl_a:
+        search_q = st.text_input(
+            "🔍 Buscar satélite",
+            placeholder="Nombre, NORAD ID o palabra clave…  Ej: ISS, HMU, 25544, debris",
+            key="map_search",
+        )
+    with ctrl_b:
+        t0_offset = st.slider(
+            "⏱ Proyección temporal",
+            min_value=0, max_value=1440, value=0, step=15,
+            format="%d min", key="map_t0",
+            help="Desplaza posiciones hacia adelante (máx 24 h).",
+        )
+
+    # ── Detección de proximidad ───────────────────────────────────────────────
+    scan_prox = st.toggle(
+        "🛰 Escanear objetos en órbita cercana (CelesTrak last-30-days)",
+        value=False, key="map_scan_prox",
+        help="Descarga los últimos 30 días de lanzamientos y detecta cuáles orbitan cerca de las estaciones rastreadas.",
     )
-    h, m = divmod(t0_offset, 60)
-    st.caption(f"Mostrando posiciones a T+{h}h {m:02d}min desde época TLE" if t0_offset else
-               "Mostrando posiciones en época TLE (T+0)")
 
     # ── Carga datos ──────────────────────────────────────────────────────────
     tle_text, tle_source = _fetch_live_tles()
@@ -700,12 +850,61 @@ def _page_map() -> None:
         except Exception as exc:
             st.error(f"Error: {exc}"); return
 
+    # ── Proximity scan ────────────────────────────────────────────────────────
+    extra_tracks: list[SatTrack] = []
+    if scan_prox:
+        with st.spinner("Descargando lanzamientos recientes y buscando proximidades…"):
+            extra_tle = _fetch_group_tles("last-30-days")
+            if extra_tle:
+                extra_tracks = _find_proximity_objects(track_list, extra_tle)
+
+    # ── Búsqueda: calcular highlight set ─────────────────────────────────────
+    highlight: frozenset[int] | None = None
+    search_matches: list[SatTrack] = []
+    if search_q.strip():
+        q = search_q.strip().lower()
+        search_matches = [
+            t for t in track_list + extra_tracks
+            if q in t.name.lower() or q in str(t.norad)
+        ]
+        highlight = frozenset(t.norad for t in search_matches)
+
     # ── Globe ─────────────────────────────────────────────────────────────────
     st.plotly_chart(
-        _globe_figure(track_list, case, t0_offset),
+        _globe_figure(track_list, case, t0_offset, highlight=highlight, extra_tracks=extra_tracks),
         use_container_width=True,
         config={"displayModeBar": True, "scrollZoom": True, "displaylogo": False},
     )
+
+    # ── Resultados de búsqueda ────────────────────────────────────────────────
+    if search_q.strip():
+        if search_matches:
+            tags = []
+            for t in search_matches:
+                cls = "danger" if not t.known else ("unknown" if t.norad in {tt.norad for tt in extra_tracks} else "")
+                tags.append(f'<span class="search-result-tag {cls}">{t.name} · NORAD {t.norad} · {t.alt_mean:.0f} km · {t.incl:.1f}°</span>')
+            st.markdown("**Coincidencias:** " + "".join(tags), unsafe_allow_html=True)
+        else:
+            st.warning(f"No se encontró ningún objeto que coincida con «{search_q}».")
+
+    # ── Resultados de proximidad ──────────────────────────────────────────────
+    if extra_tracks:
+        st.markdown(f"""
+<div style="border:1px solid rgba(0,210,200,0.35); border-radius:10px;
+     background:rgba(0,210,200,0.05); padding:.8rem 1.2rem; margin:.6rem 0;">
+  <span style="color:#00d2c8;font-weight:700;">🛰 {len(extra_tracks)} objeto(s) detectado(s) en órbita cercana a estaciones</span>
+  <span style="color:#8892a4;font-size:.83rem;margin-left:.7rem;">(last-30-days · filtro ±8° incl · ±300 km alt)</span>
+</div>""", unsafe_allow_html=True)
+        prox_cols = st.columns(min(len(extra_tracks), 3))
+        for col, t in zip(prox_cols, extra_tracks):
+            with col:
+                st.markdown(f"""
+<div class="prox-badge" style="flex-direction:column;align-items:flex-start;">
+  <div class="pb-name">🔴 {t.name}</div>
+  <div class="pb-detail">NORAD {t.norad}</div>
+  <div class="pb-detail">Alt media: {t.alt_mean:.0f} km  ·  Incl: {t.incl:.1f}°</div>
+  <div class="pb-detail">Período: {t.period_min:.1f} min</div>
+</div>""", unsafe_allow_html=True)
     st.caption(f"{tle_source}")
 
     # ── Objetos no catalogados ────────────────────────────────────────────────
