@@ -279,8 +279,8 @@ code, pre { font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace !impor
 .stat-chip {
   display:flex; align-items:center; justify-content:space-between;
   background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 6px; padding: .55rem .85rem; min-width: 130px;
-  transition: border-color .15s;
+  border-radius: 6px; padding: .5rem .75rem; min-width: 0;
+  transition: border-color .15s; gap: .5rem;
 }
 .stat-chip:hover { border-color: var(--border-strong); }
 .stat-chip .sv {
@@ -767,7 +767,6 @@ def _globe_figure(
     highlight: frozenset[int] | None = None,
     extra_tracks: list[SatTrack] | None = None,
 ) -> go.Figure:
-    """Versión SIMPLIFICADA para diagnóstico — sin frames/botones/terminator."""
     real_norads: set[int] = set()
     for be in case.evidence_bundle.evidence_payloads:
         hp = be.derived_evidence.honesty_payload
@@ -778,61 +777,163 @@ def _globe_figure(
     fig = go.Figure()
 
     for t in tracks:
-        is_primary = (t.norad == primary)
-        is_real    = (t.norad in real_norads)
-        is_unknown = not t.known and not is_primary and not is_real
+        is_primary  = (t.norad == primary)
+        is_real     = (t.norad in real_norads)
+        is_unknown  = not t.known and not is_primary and not is_real
+        is_iss_dock = (t.norad in _ISS_DOCK and not is_primary and not is_unknown)
+        is_css_dock = (t.norad in _CSS_DOCK and not is_primary and not is_unknown)
 
         if is_primary:
-            color = "#ffd700"; size = 14; sym = "star"; lw = 2.2
+            lc, mc, lw, ms, sym = "#ffd700", "#ffd700", 2.5, 16, "star"
         elif is_real:
-            color = "#ff3547"; size = 12; sym = "x"; lw = 2.0
+            lc, mc, lw, ms, sym = "#ff3547", "#ff3547", 2.0, 14, "x"
         elif is_unknown:
-            color = "rgba(255,180,0,0.85)"; size = 9; sym = "diamond"; lw = 1.2
+            lc, mc, lw, ms, sym = "rgba(255,180,0,0.5)", "rgba(255,200,0,0.9)", 1.3, 10, "diamond"
+        elif is_iss_dock:
+            lc, mc, lw, ms, sym = "rgba(79,158,255,0.3)", "rgba(79,158,255,0.65)", 1.0, 6, "circle"
+        elif is_css_dock:
+            lc, mc, lw, ms, sym = "rgba(255,100,100,0.3)", "rgba(255,120,100,0.65)", 1.0, 6, "circle"
         else:
-            color = "rgba(100,200,160,0.55)"; size = 6; sym = "circle"; lw = 1.0
+            lc, mc, lw, ms, sym = "rgba(100,200,160,0.3)", "rgba(130,220,170,0.6)", 0.9, 6, "circle"
+
+        # Atenuación si hay búsqueda
+        dim = highlight is not None and t.norad not in highlight
+        if dim:
+            ms = max(ms - 3, 3); lw = max(lw * 0.4, 0.3)
+
+        # Glow para primary/real
+        if is_primary and not dim:
+            for gs, ga in ((32, 0.04), (24, 0.09), (18, 0.14)):
+                fig.add_trace(go.Scattergeo(
+                    lat=[t.lat0], lon=[t.lon0], mode="markers",
+                    marker=dict(size=gs, color=f"rgba(255,215,0,{ga})", symbol="circle"),
+                    showlegend=False, hoverinfo="skip",
+                ))
+        elif is_real and not dim:
+            for gs, ga in ((26, 0.05), (18, 0.1)):
+                fig.add_trace(go.Scattergeo(
+                    lat=[t.lat0], lon=[t.lon0], mode="markers",
+                    marker=dict(size=gs, color=f"rgba(255,53,71,{ga})", symbol="circle"),
+                    showlegend=False, hoverinfo="skip",
+                ))
+
+        hover = (
+            f"<b>{'❓ ' if is_unknown else ''}{t.name}</b>"
+            f"<br>NORAD {t.norad}"
+            f"<br>Alt actual: <b>{t.alt0:.0f} km</b>"
+            f"<br>Alt media: {t.alt_mean:.0f} km"
+            f"<br>Inclinación: {t.incl:.2f}°"
+            f"<br>Período: {t.period_min:.1f} min"
+            + ("<br><b>⚠ NO CATALOGADO</b>" if is_unknown else "")
+            + ("<br><b>⚠ Acercamiento no cooperativo</b>" if is_real else "")
+            + "<extra></extra>"
+        )
+        show_txt = (is_primary or is_real or is_unknown) and not dim
 
         fig.add_trace(go.Scattergeo(
             lat=t.lats, lon=t.lons, mode="lines",
-            line=dict(width=lw, color=color),
+            line=dict(width=lw, color=lc),
             name=t.name, showlegend=False, hoverinfo="skip",
         ))
         fig.add_trace(go.Scattergeo(
-            lat=[t.lat0], lon=[t.lon0], mode="markers",
-            marker=dict(size=size, color=color, symbol=sym),
-            name=t.name, showlegend=False,
-            hovertemplate=(
-                f"<b>{t.name}</b><br>NORAD {t.norad}"
-                f"<br>Alt: {t.alt0:.0f} km · Incl: {t.incl:.1f}°"
-                "<extra></extra>"
-            ),
+            lat=[t.lat0], lon=[t.lon0],
+            mode="markers+text" if show_txt else "markers",
+            marker=dict(size=ms, color=mc, symbol=sym,
+                        line=dict(width=1 if show_txt else 0, color="rgba(255,255,255,0.4)")),
+            text=[t.name] if show_txt else [],
+            textposition="top right",
+            textfont=dict(color="#ffd700" if is_primary else
+                          ("#ffb300" if is_unknown else "rgba(255,255,255,0.85)"), size=10),
+            name=t.name, showlegend=False, hovertemplate=hover,
         ))
 
+    # Objetos de proximidad
     for t in (extra_tracks or []):
+        for gs, ga in ((22, 0.06), (16, 0.12)):
+            fig.add_trace(go.Scattergeo(
+                lat=[t.lat0], lon=[t.lon0], mode="markers",
+                marker=dict(size=gs, color=f"rgba(0,210,200,{ga})", symbol="circle"),
+                showlegend=False, hoverinfo="skip",
+            ))
         fig.add_trace(go.Scattergeo(
             lat=t.lats, lon=t.lons, mode="lines",
             line=dict(width=1.2, color="rgba(0,210,200,0.5)"),
             name=t.name, showlegend=False, hoverinfo="skip",
         ))
         fig.add_trace(go.Scattergeo(
-            lat=[t.lat0], lon=[t.lon0], mode="markers",
+            lat=[t.lat0], lon=[t.lon0], mode="markers+text",
             marker=dict(size=10, color="rgba(0,210,200,0.9)", symbol="triangle-up"),
+            text=[t.name], textposition="top right",
+            textfont=dict(color="#00d2c8", size=10),
             name=t.name, showlegend=False,
-            hovertemplate=f"<b>🔴 {t.name}</b><br>Proximidad detectada<extra></extra>",
+            hovertemplate=f"<b>🔴 {t.name}</b><br>NORAD {t.norad}<br>⚠ Proximidad detectada<extra></extra>",
         ))
 
+    # Terminador día/noche + subsolar (try/except por si los helpers fallan)
+    now_utc = datetime.now(timezone.utc)
+    try:
+        lat_sun, lon_sun = _subsolar_point(now_utc)
+        t_lats, t_lons = _terminator(lat_sun, lon_sun)
+        fig.add_trace(go.Scattergeo(
+            lat=t_lats, lon=t_lons, mode="lines",
+            line=dict(width=1.2, color="rgba(255,220,80,0.45)", dash="dot"),
+            name="Terminador", showlegend=False, hoverinfo="skip",
+        ))
+        fig.add_trace(go.Scattergeo(
+            lat=[lat_sun], lon=[lon_sun], mode="markers+text",
+            marker=dict(size=12, color="rgba(255,220,60,0.9)", symbol="circle"),
+            text=["☀"], textposition="top center",
+            textfont=dict(size=14, color="rgba(255,220,60,0.95)"),
+            name="Subsolar", showlegend=False,
+            hovertemplate=f"<b>☀ Subsolar</b><br>{now_utc.strftime('%H:%M UTC')}<extra></extra>",
+        ))
+    except Exception:
+        pass
+
+    # Frames de rotación
+    fig.frames = [
+        go.Frame(layout=dict(geo=dict(projection=dict(rotation=dict(lon=lon)))), name=str(lon))
+        for lon in range(0, 360, 3)
+    ]
+
+    t_label = f"T+{t0_offset//60}h {t0_offset%60:02d}m" if t0_offset else now_utc.strftime("%H:%M UTC")
     fig.update_layout(
         geo=dict(
             projection=dict(type="orthographic"),
             showland=True,    landcolor="rgb(58,82,52)",
             showocean=True,   oceancolor="rgb(14,42,98)",
-            showcoastlines=True,
-            showcountries=True,
+            showlakes=True,   lakecolor="rgb(22,68,128)",
+            showcoastlines=True, coastlinecolor="rgba(200,220,180,0.6)",
+            showcountries=True,  countrycolor="rgba(180,200,160,0.25)",
             bgcolor="rgb(10,15,30)",
         ),
         paper_bgcolor="rgb(10,15,30)",
-        height=640,
-        margin=dict(l=0, r=0, t=10, b=0),
+        height=620,
+        margin=dict(l=0, r=0, t=40, b=0),
         showlegend=False,
+        title=dict(
+            text=f"<b style='color:#e8eef7'>Vista orbital</b>  "
+                 f"<span style='font-size:11px;color:#5a6a84'>· {t_label}</span>",
+            font=dict(color="#e8eef7", size=14), x=0.02, y=0.97,
+        ),
+        font=dict(color="#94a3b8", size=11),
+        updatemenus=[dict(
+            type="buttons", showactive=True,
+            y=0.03, x=0.02, xanchor="left", yanchor="bottom", direction="left",
+            buttons=[
+                dict(label="▶ Rotar", method="animate",
+                     args=[None, {"frame": {"duration": 40, "redraw": True},
+                                  "fromcurrent": True, "transition": {"duration": 0},
+                                  "mode": "immediate"}]),
+                dict(label="⏸", method="animate",
+                     args=[[None], {"frame": {"duration": 0}, "mode": "immediate",
+                                    "transition": {"duration": 0}}]),
+            ],
+            bgcolor="rgba(21,27,44,0.92)",
+            bordercolor="rgba(160,180,220,0.2)",
+            font=dict(color="#e8eef7", size=11),
+            pad=dict(r=8, t=4, b=4),
+        )],
     )
     return fig
 
@@ -924,27 +1025,8 @@ def _page_map() -> None:
     if not cases:
         st.error("No se encontraron casos de referencia."); return
 
-    # ── Selector de caso como cartas ─────────────────────────────────────────
-    st.markdown("#### Selecciona el objeto principal")
-    cols = st.columns(len(cases))
     if "map_case" not in st.session_state:
         st.session_state["map_case"] = cases[0]
-
-    for col, name in zip(cols, cases):
-        meta = _CASE_META.get(name, {})
-        with col:
-            st.markdown(f"""
-<div class="case-card">
-  <div class="cc-icon">{meta.get('icon','🛰️')}</div>
-  <div class="cc-title">{meta.get('title', name)}</div>
-  <div class="cc-summary">{meta.get('summary','')}</div>
-  <div class="cc-highlight">{meta.get('highlight','')}</div>
-</div>""", unsafe_allow_html=True)
-            st.markdown("&nbsp;", unsafe_allow_html=True)
-            if st.button(f"Ver este caso", key=f"map_btn_{name}", use_container_width=True):
-                st.session_state["map_case"] = name
-
-    selected = st.session_state["map_case"]
 
     # ── Carga TLEs anticipada (no bloquea el layout) ──────────────────────────
     tle_text, tle_source = _fetch_live_tles()
@@ -1021,61 +1103,6 @@ def _page_map() -> None:
 
     # ── Globe + resultados (columna izquierda) ────────────────────────────────
     with col_globe:
-        import plotly as _plotly
-        st.info(
-            f"🔬 track_list: **{len(track_list)} objetos**  ·  "
-            f"primary NORAD: **{case.evidence_bundle.object_id}**  ·  "
-            f"plotly **{_plotly.__version__}**"
-        )
-
-        # Test 0: Plotly más básico posible
-        st.markdown("**Test 0** — scatter trivial (¿Plotly funciona?):")
-        try:
-            t0 = go.Figure(data=[go.Scatter(x=[1, 2, 3, 4], y=[1, 4, 9, 16],
-                                              mode="lines+markers")])
-            t0.update_layout(height=250)
-            st.plotly_chart(t0, use_container_width=True)
-        except Exception as exc:
-            st.error(f"❌ Test 0 falló: {type(exc).__name__}: {exc}")
-
-        # Test 1: Scattergeo con proyección "natural earth" (plana, sin orthographic)
-        st.markdown("**Test 1** — scattergeo natural earth (proyección plana):")
-        try:
-            t1 = go.Figure(data=[go.Scattergeo(
-                lat=[40.4, -33.4, 35.6, 51.5],
-                lon=[-3.7, -70.6, 139.6, -0.1],
-                mode="markers+text",
-                marker=dict(size=14, color="red"),
-                text=["MAD", "SCL", "TYO", "LON"],
-            )])
-            t1.update_layout(
-                geo=dict(projection=dict(type="natural earth")),
-                height=350, margin=dict(l=0, r=0, t=10, b=0),
-            )
-            st.plotly_chart(t1, use_container_width=True)
-        except Exception as exc:
-            st.error(f"❌ Test 1 falló: {type(exc).__name__}: {exc}")
-            import traceback; st.code(traceback.format_exc())
-
-        # Test 2: Scattergeo con orthographic (lo que queremos al final)
-        st.markdown("**Test A** — scattergeo orthographic:")
-        try:
-            t2 = go.Figure(data=[go.Scattergeo(
-                lat=[0, 30, 60], lon=[0, 30, 60],
-                mode="markers",
-                marker=dict(size=14, color="red"),
-            )])
-            t2.update_layout(
-                geo=dict(projection=dict(type="orthographic")),
-                height=400, margin=dict(l=0, r=0, t=10, b=0),
-            )
-            st.plotly_chart(t2, use_container_width=True)
-        except Exception as exc:
-            st.error(f"❌ Test A falló: {type(exc).__name__}: {exc}")
-            import traceback; st.code(traceback.format_exc())
-
-        # Test 3: globo completo
-        st.markdown("**Test B** — `_globe_figure` (versión minimal):")
         try:
             fig = _globe_figure(track_list, case, t0_offset,
                                 highlight=highlight, extra_tracks=extra_tracks)
@@ -1084,11 +1111,11 @@ def _page_map() -> None:
                 config={"displayModeBar": True, "scrollZoom": True, "displaylogo": False},
             )
         except Exception as exc:
-            st.error(f"❌ Falló Test B: `{type(exc).__name__}: {exc}`")
+            st.error(f"❌ {type(exc).__name__}: {exc}")
             import traceback
             st.code(traceback.format_exc(), language="python")
             return
-        st.caption(f"{tle_source}  ·  {n_min_steps} min  ·  {len(track_list)} objetos")
+        st.caption(f"{tle_source}  ·  {n_min_steps} min de propagación  ·  {len(track_list)} objetos")
 
         if search_q.strip():
             if search_matches:
@@ -1407,12 +1434,11 @@ def main() -> None:
     )
     st.markdown(_CSS, unsafe_allow_html=True)
 
-    # ── Hero (con marcador de build para verificar deploy) ───────────────────
-    _build = datetime.now(timezone.utc).strftime("%H:%M:%S")
-    st.markdown(f"""
+    # ── Hero ──────────────────────────────────────────────────────────────────
+    st.markdown("""
 <div class="hero">
   <div>
-    <h1>Orbital Sentinel <span class="pill" style="background:#ef4444;color:white;border-color:#ef4444;">MINIMAL-DIAGNOSTIC-V3 · {_build}</span></h1>
+    <h1>Orbital Sentinel <span class="pill">v0.1 · Apache 2.0</span></h1>
     <p>Infraestructura verificable para afirmaciones sobre el entorno orbital · Datos públicos · Sin IA · Sin autoridad central</p>
   </div>
 </div>""", unsafe_allow_html=True)
