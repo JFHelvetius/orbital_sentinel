@@ -4,3 +4,4 @@ pydantic>=2.7,<3
 duckdb>=1.0,<2
 pyarrow>=15.0
 sgp4>=2.20,<3
+plotly>=5.20,<6
