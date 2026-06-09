@@ -81,6 +81,12 @@ ignore = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
+# Ensure the project root is on sys.path so tests can import shared fixtures
+# via `from tests.unit.X import ...` regardless of whether pytest is invoked
+# directly or via `python -m pytest`. Equivalent to the default behavior of
+# `python -m pytest`, but explicit and portable to CI runners that invoke
+# the `pytest` entry point directly.
+pythonpath = ["."]
 markers = [
     "requires_secret(service): mark test as requiring a secret credential (skipped in public CI)",
 ]
