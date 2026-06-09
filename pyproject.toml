@@ -45,6 +45,10 @@ dev = [
 viz = [
     "matplotlib >=3.7,<4",
 ]
+app = [
+    "streamlit >=1.35,<2",
+    "pandas >=2,<3",
+]
 
 [project.scripts]
 orbital-sentinel = "orbital_sentinel.orchestration.cli:cli_entry_point"
