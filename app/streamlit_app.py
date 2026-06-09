@@ -1033,28 +1033,21 @@ def _page_map() -> None:
 
     # ── Globe + resultados (columna izquierda) ────────────────────────────────
     with col_globe:
-        # DIAGNÓSTICO: información explícita antes del chart
+        import plotly as _plotly
         st.info(
-            f"🔬 Diagnóstico — track_list: **{len(track_list)} objetos**  ·  "
-            f"primary: **{case.evidence_bundle.object_id}**  ·  "
-            f"plotly version: **{go.__module__}**"
+            f"🔬 track_list: **{len(track_list)} objetos**  ·  "
+            f"primary NORAD: **{case.evidence_bundle.object_id}**  ·  "
+            f"plotly **{_plotly.__version__}**"
         )
 
-        # Test 1: figura ultra-mínima (sin geo)
-        st.markdown("**Test 1**: scatter trivial (sin geo)")
+        # Test 2: scattergeo orthographic vacío (con 3 puntos)
+        st.markdown("**Test A** — scattergeo orthographic con 3 puntos:")
         try:
-            test_fig = go.Figure(data=go.Scatter(x=[1,2,3], y=[1,4,9], mode="lines+markers"))
-            test_fig.update_layout(height=200, paper_bgcolor="rgb(10,15,30)",
-                                    plot_bgcolor="rgb(10,15,30)",
-                                    font=dict(color="white"))
-            st.plotly_chart(test_fig, use_container_width=True)
-        except Exception as exc:
-            st.error(f"❌ Falló scatter trivial: {type(exc).__name__}: {exc}")
-
-        # Test 2: scattergeo con projection orthographic
-        st.markdown("**Test 2**: scattergeo orthographic vacío")
-        try:
-            t2 = go.Figure(data=go.Scattergeo(lat=[0, 30, 60], lon=[0, 30, 60], mode="markers"))
+            t2 = go.Figure(data=[go.Scattergeo(
+                lat=[0, 30, 60], lon=[0, 30, 60],
+                mode="markers",
+                marker=dict(size=12, color="red"),
+            )])
             t2.update_layout(
                 geo=dict(projection_type="orthographic", showland=True,
                          landcolor="rgb(58,82,52)", oceancolor="rgb(14,42,98)",
@@ -1064,11 +1057,11 @@ def _page_map() -> None:
             )
             st.plotly_chart(t2, use_container_width=True)
         except Exception as exc:
-            st.error(f"❌ Falló scattergeo orthographic: {type(exc).__name__}: {exc}")
+            st.error(f"❌ Falló Test A: {type(exc).__name__}: {exc}")
             import traceback; st.code(traceback.format_exc())
 
         # Test 3: globo completo
-        st.markdown("**Test 3**: _globe_figure (versión minimal)")
+        st.markdown("**Test B** — `_globe_figure` (versión minimal):")
         try:
             fig = _globe_figure(track_list, case, t0_offset,
                                 highlight=highlight, extra_tracks=extra_tracks)
@@ -1077,7 +1070,7 @@ def _page_map() -> None:
                 config={"displayModeBar": True, "scrollZoom": True, "displaylogo": False},
             )
         except Exception as exc:
-            st.error(f"❌ Falló _globe_figure: `{type(exc).__name__}: {exc}`")
+            st.error(f"❌ Falló Test B: `{type(exc).__name__}: {exc}`")
             import traceback
             st.code(traceback.format_exc(), language="python")
             return
