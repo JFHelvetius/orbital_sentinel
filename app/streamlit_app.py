@@ -335,7 +335,6 @@ def _globe_figure(tracks: list[SatTrack], case: InvestigationCase) -> go.Figure:
         showcountries=True,  countrycolor="rgba(70,85,115,.4)",
         showgraticules=True, graticulecolor="rgba(60,80,130,.2)",
         bgcolor="rgb(7,11,24)",
-        framecolor="rgba(79,158,255,.2)",
     )
     fig.update_layout(
         paper_bgcolor="rgb(7,11,24)",
