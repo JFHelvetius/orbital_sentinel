@@ -424,22 +424,10 @@ button[kind="secondary"]:hover {
   font-weight: 600 !important;
 }
 
-/* ── Globo: marco elegante con halo atmosférico sutil ──────────────────── */
+/* ── Globo: marco mínimo (sin tocar el SVG interno) ────────────────────── */
 [data-testid="stPlotlyChart"] {
-  background: rgb(10,15,30) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 10px !important;
-  box-shadow:
-    0 1px 3px rgba(0,0,0,.4),
-    0 0 0 1px rgba(74,144,226,.04),
-    0 0 30px rgba(20,80,220,.08),
-    0 0 80px rgba(10,50,180,.04);
-  padding: 2px;
-}
-[data-testid="stPlotlyChart"] .main-svg,
-[data-testid="stPlotlyChart"] .svg-container,
-[data-testid="stPlotlyChart"] .plot-container {
-  background: rgb(10,15,30) !important;
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 
 /* ── Panel lateral de control ──────────────────────────────────────────── */
@@ -1040,24 +1028,50 @@ def _page_map() -> None:
             f"plotly **{_plotly.__version__}**"
         )
 
-        # Test 2: scattergeo orthographic vacío (con 3 puntos)
-        st.markdown("**Test A** — scattergeo orthographic con 3 puntos:")
+        # Test 0: Plotly más básico posible
+        st.markdown("**Test 0** — scatter trivial (¿Plotly funciona?):")
+        try:
+            t0 = go.Figure(data=[go.Scatter(x=[1, 2, 3, 4], y=[1, 4, 9, 16],
+                                              mode="lines+markers")])
+            t0.update_layout(height=250)
+            st.plotly_chart(t0, use_container_width=True)
+        except Exception as exc:
+            st.error(f"❌ Test 0 falló: {type(exc).__name__}: {exc}")
+
+        # Test 1: Scattergeo con proyección "natural earth" (plana, sin orthographic)
+        st.markdown("**Test 1** — scattergeo natural earth (proyección plana):")
+        try:
+            t1 = go.Figure(data=[go.Scattergeo(
+                lat=[40.4, -33.4, 35.6, 51.5],
+                lon=[-3.7, -70.6, 139.6, -0.1],
+                mode="markers+text",
+                marker=dict(size=14, color="red"),
+                text=["MAD", "SCL", "TYO", "LON"],
+            )])
+            t1.update_layout(
+                geo=dict(projection=dict(type="natural earth")),
+                height=350, margin=dict(l=0, r=0, t=10, b=0),
+            )
+            st.plotly_chart(t1, use_container_width=True)
+        except Exception as exc:
+            st.error(f"❌ Test 1 falló: {type(exc).__name__}: {exc}")
+            import traceback; st.code(traceback.format_exc())
+
+        # Test 2: Scattergeo con orthographic (lo que queremos al final)
+        st.markdown("**Test A** — scattergeo orthographic:")
         try:
             t2 = go.Figure(data=[go.Scattergeo(
                 lat=[0, 30, 60], lon=[0, 30, 60],
                 mode="markers",
-                marker=dict(size=12, color="red"),
+                marker=dict(size=14, color="red"),
             )])
             t2.update_layout(
-                geo=dict(projection_type="orthographic", showland=True,
-                         landcolor="rgb(58,82,52)", oceancolor="rgb(14,42,98)",
-                         showocean=True, bgcolor="rgb(10,15,30)"),
-                paper_bgcolor="rgb(10,15,30)", height=400,
-                margin=dict(l=0, r=0, t=10, b=0),
+                geo=dict(projection=dict(type="orthographic")),
+                height=400, margin=dict(l=0, r=0, t=10, b=0),
             )
             st.plotly_chart(t2, use_container_width=True)
         except Exception as exc:
-            st.error(f"❌ Falló Test A: {type(exc).__name__}: {exc}")
+            st.error(f"❌ Test A falló: {type(exc).__name__}: {exc}")
             import traceback; st.code(traceback.format_exc())
 
         # Test 3: globo completo
