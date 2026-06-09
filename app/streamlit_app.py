@@ -930,6 +930,100 @@ def _globe_figure(
     return fig
 
 
+def _satellite_figure(
+    tracks: list[SatTrack],
+    case: InvestigationCase,
+    highlight: frozenset[int] | None = None,
+    extra_tracks: list[SatTrack] | None = None,
+) -> go.Figure:
+    """Vista plana con teselas satelitales reales de Esri World Imagery (estilo Google Earth)."""
+    real_norads: set[int] = set()
+    for be in case.evidence_bundle.evidence_payloads:
+        hp = be.derived_evidence.honesty_payload
+        if float(hp.get("miss_distance_km", 0)) > 10:
+            real_norads.add(int(hp.get("other_norad_cat_id", 0)))
+
+    primary = case.evidence_bundle.object_id
+    fig = go.Figure()
+
+    for t in tracks:
+        is_primary = (t.norad == primary)
+        is_real    = (t.norad in real_norads)
+        is_unknown = not t.known and not is_primary and not is_real
+
+        if is_primary:
+            color = "#ffd700"; size = 14; sym = "star"
+        elif is_real:
+            color = "#ff3547"; size = 12; sym = "x"
+        elif is_unknown:
+            color = "#ffb300"; size = 9; sym = "diamond"
+        else:
+            color = "rgba(120,220,180,0.85)"; size = 6; sym = "circle"
+
+        dim = highlight is not None and t.norad not in highlight
+        if dim:
+            size = max(size - 2, 3)
+
+        # Quitar None y cortes de longitud para mapbox
+        lats = [l for l in t.lats if l is not None]
+        lons = [l for l in t.lons if l is not None]
+
+        fig.add_trace(go.Scattermapbox(
+            lat=lats, lon=lons, mode="lines",
+            line=dict(width=2 if (is_primary or is_real) else 1, color=color),
+            name=t.name, showlegend=False, hoverinfo="skip",
+            opacity=0.3 if dim else (0.9 if (is_primary or is_real or is_unknown) else 0.6),
+        ))
+        fig.add_trace(go.Scattermapbox(
+            lat=[t.lat0], lon=[t.lon0], mode="markers",
+            marker=dict(size=size, color=color),
+            name=t.name, showlegend=False,
+            text=[t.name], hovertemplate=(
+                f"<b>{t.name}</b><br>NORAD {t.norad}"
+                f"<br>Alt: {t.alt0:.0f} km · Incl: {t.incl:.1f}°"
+                "<extra></extra>"
+            ),
+            opacity=0.3 if dim else 1.0,
+        ))
+
+    for t in (extra_tracks or []):
+        lats = [l for l in t.lats if l is not None]
+        lons = [l for l in t.lons if l is not None]
+        fig.add_trace(go.Scattermapbox(
+            lat=lats, lon=lons, mode="lines",
+            line=dict(width=1.5, color="#00d2c8"),
+            name=t.name, showlegend=False, hoverinfo="skip", opacity=0.7,
+        ))
+        fig.add_trace(go.Scattermapbox(
+            lat=[t.lat0], lon=[t.lon0], mode="markers",
+            marker=dict(size=10, color="#00d2c8"),
+            name=t.name, showlegend=False,
+            hovertemplate=f"<b>🔴 {t.name}</b><br>⚠ Proximidad detectada<extra></extra>",
+        ))
+
+    fig.update_layout(
+        mapbox=dict(
+            style="white-bg",
+            layers=[dict(
+                below="traces",
+                sourcetype="raster",
+                sourceattribution="Esri · Maxar · Earthstar Geographics · USGS",
+                source=[
+                    "https://server.arcgisonline.com/ArcGIS/rest/services/"
+                    "World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                ],
+            )],
+            center=dict(lat=20, lon=0),
+            zoom=1.2,
+        ),
+        paper_bgcolor="rgb(10,15,30)",
+        height=760,
+        margin=dict(l=0, r=0, t=0, b=0),
+        showlegend=False,
+    )
+    return fig
+
+
 def _scatter_figure(rows: list[dict[str, Any]]) -> go.Figure:
     co   = [r for r in rows if r["Miss (km)"] < 5]
     real = [r for r in rows if r["Miss (km)"] >= 5]
@@ -1061,6 +1155,13 @@ def _page_map() -> None:
             help="Escanea last-30-days de CelesTrak buscando objetos en órbita similar a las estaciones.",
         )
 
+        view_mode = st.radio(
+            "Modo de vista",
+            ["🌍 Globo 3D", "🛰 Satélite (Esri)"],
+            key="map_view_mode",
+            help="Globo 3D: orthographic vectorial. Satélite: imágenes reales de Esri World Imagery (estilo Google Earth).",
+        )
+
     # ── Propagación ───────────────────────────────────────────────────────────
     blocks_ref = _parse_blocks(tle_text)
     n_min_steps = 185
@@ -1096,8 +1197,12 @@ def _page_map() -> None:
     # ── Globe + resultados (columna izquierda) ────────────────────────────────
     with col_globe:
         try:
-            fig = _globe_figure(track_list, case, t0_offset,
-                                highlight=highlight, extra_tracks=extra_tracks)
+            if view_mode and "Satélite" in view_mode:
+                fig = _satellite_figure(track_list, case,
+                                         highlight=highlight, extra_tracks=extra_tracks)
+            else:
+                fig = _globe_figure(track_list, case, t0_offset,
+                                    highlight=highlight, extra_tracks=extra_tracks)
             st.plotly_chart(
                 fig, use_container_width=True,
                 config={"displayModeBar": True, "scrollZoom": True, "displaylogo": False},
@@ -1170,10 +1275,14 @@ def _page_map() -> None:
                     icon="❓",
                 )
 
-    # ── Tabla completa (sin styling complejo que pueda solaparse) ────────────
-    st.markdown("&nbsp;")  # espacio antes del expander
+    # ── Tabla completa (toggle limpio sin expander) ──────────────────────────
+    st.divider()
     all_objs = track_list + extra_tracks
-    with st.expander(f"📋 Todos los objetos detectados ({len(all_objs)})", expanded=False):
+    show_table = st.toggle(
+        f"📋 Ver tabla completa — {len(all_objs)} objetos detectados",
+        key="map_show_table",
+    )
+    if show_table:
         prox_set = {t.norad for t in extra_tracks}
         rows = []
         for t in sorted(all_objs, key=lambda x: (x.known, x.norad)):
@@ -1187,7 +1296,6 @@ def _page_map() -> None:
                 "Período (min)": round(t.period_min, 1),
             })
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True, height=400)
-    st.markdown("&nbsp;")  # espacio después
 
 
 def _page_cases() -> None:
