@@ -587,6 +587,53 @@ def _fetch_live_tles() -> tuple[str, str]:
     return _TLE_STATIONS, "🟡 TLEs embebidos 2026-06-08 · CelesTrak no alcanzable"
 
 
+_DATASETS = {
+    "🏠 Estaciones (~25)":              ("stations",       "full"),
+    "👁 Visibles a simple vista (~150)": ("visual",         "full"),
+    "🚀 Lanzamientos 30 días (~300)":   ("last-30-days",   "lite"),
+    "📡 Starlink (~6000)":              ("starlink",       "lite"),
+    "🌍 Activos LEO (~3000)":           ("active",         "lite"),
+}
+
+
+@st.cache_data(show_spinner=False)
+def _positions_only(tle_text: str, t0_offset_min: int = 0) -> list[SatTrack]:
+    """Modo LITE: solo posición actual, sin propagar la órbita completa.
+    Para datasets >100 objetos — evita timeouts y figuras gigantes."""
+    blocks = _parse_blocks(tle_text)
+    if not blocks:
+        return []
+    ref = Satrec.twoline2rv(blocks[0][1], blocks[0][2])
+    epoch = _epoch_dt(ref) + timedelta(minutes=t0_offset_min)
+
+    out: list[SatTrack] = []
+    for name, l1, l2 in blocks:
+        try:
+            sat = Satrec.twoline2rv(l1, l2)
+            norad = int(l2.split()[1])
+            incl = math.degrees(sat.inclo)
+            pm = (2 * math.pi / sat.no_kozai) if sat.no_kozai > 0 else 0.0
+            a = (398600.4418 * (pm * 60 / (2 * math.pi)) ** 2) ** (1/3) if pm > 0 else 6771.0
+            alt_mean = a - EARTH_R
+
+            j1, j2 = _jday(epoch.year, epoch.month, epoch.day,
+                            epoch.hour, epoch.minute, epoch.second + epoch.microsecond/1e6)
+            e, r0, _ = sat.sgp4(j1, j2)
+            if e != 0 or r0[0] == 0:
+                continue
+            lat0, lon0, alt0 = _teme_latlon(r0[0], r0[1], r0[2], j1 + j2)
+            out.append(SatTrack(
+                norad, _NAMES.get(norad, name.strip()),
+                [], [],  # sin traza orbital
+                lat0, lon0, alt0,
+                incl, pm, alt_mean,
+                norad in _NAMES,
+            ))
+        except Exception:
+            continue
+    return out
+
+
 @st.cache_data(ttl=1800, show_spinner=False)
 def _fetch_group_tles(group: str) -> str | None:
     """Descarga un grupo CelesTrak. Devuelve el texto TLE o None si falla."""
@@ -768,7 +815,58 @@ def _globe_figure(
     primary = case.evidence_bundle.object_id
     fig = go.Figure()
 
-    for t in tracks:
+    # Modo lite: muchos objetos → solo dots, sin trazas ni labels
+    lite_mode = len(tracks) > 100 or any(not t.lats for t in tracks)
+    if lite_mode:
+        # Render por batches de marcadores agrupados (mucho más rápido que un trace por objeto)
+        d_lat = [t.lat0 for t in tracks if t.known and t.norad != primary]
+        d_lon = [t.lon0 for t in tracks if t.known and t.norad != primary]
+        d_txt = [f"<b>{t.name}</b><br>NORAD {t.norad}<br>Alt: {t.alt0:.0f} km · Incl: {t.incl:.1f}°"
+                 for t in tracks if t.known and t.norad != primary]
+        u_lat = [t.lat0 for t in tracks if not t.known]
+        u_lon = [t.lon0 for t in tracks if not t.known]
+        u_txt = [f"<b>❓ {t.name}</b><br>NORAD {t.norad}<br>Alt: {t.alt0:.0f} km"
+                 for t in tracks if not t.known]
+        prim = [t for t in tracks if t.norad == primary]
+        if d_lat:
+            fig.add_trace(go.Scattergeo(
+                lat=d_lat, lon=d_lon, mode="markers",
+                marker=dict(size=4, color="rgba(110,210,160,0.7)",
+                            line=dict(width=0)),
+                hovertext=d_txt, hovertemplate="%{hovertext}<extra></extra>",
+                name="Catalogados", showlegend=False,
+            ))
+        if u_lat:
+            fig.add_trace(go.Scattergeo(
+                lat=u_lat, lon=u_lon, mode="markers",
+                marker=dict(size=5, color="rgba(255,180,0,0.85)",
+                            symbol="diamond", line=dict(width=0)),
+                hovertext=u_txt, hovertemplate="%{hovertext}<extra></extra>",
+                name="Sin catalogar", showlegend=False,
+            ))
+        if prim:
+            t = prim[0]
+            for gs, ga in ((32, 0.04), (24, 0.09), (18, 0.14)):
+                fig.add_trace(go.Scattergeo(
+                    lat=[t.lat0], lon=[t.lon0], mode="markers",
+                    marker=dict(size=gs, color=f"rgba(255,215,0,{ga})", symbol="circle"),
+                    showlegend=False, hoverinfo="skip",
+                ))
+            fig.add_trace(go.Scattergeo(
+                lat=[t.lat0], lon=[t.lon0], mode="markers+text",
+                marker=dict(size=16, color="#ffd700", symbol="star",
+                            line=dict(width=1, color="white")),
+                text=[t.name], textposition="top right",
+                textfont=dict(color="#ffd700", size=11),
+                name=t.name, showlegend=False,
+                hovertemplate=f"<b>{t.name}</b><br>NORAD {t.norad}<br>Alt: {t.alt0:.0f} km<extra></extra>",
+            ))
+        # No procesamos extra_tracks ni el terminador en lite (overhead)
+        tracks_to_draw = []  # skip el for loop normal
+    else:
+        tracks_to_draw = tracks
+
+    for t in tracks_to_draw:
         is_primary  = (t.norad == primary)
         is_real     = (t.norad in real_norads)
         is_unknown  = not t.known and not is_primary and not is_real
@@ -888,17 +986,48 @@ def _globe_figure(
         for lon in range(0, 360, 3)
     ]
 
+    # Geo realista — tonos Earth from space (verdoso tierra, océano profundo, alta resolución)
     t_label = f"T+{t0_offset//60}h {t0_offset%60:02d}m" if t0_offset else now_utc.strftime("%H:%M UTC")
+    _geo_realistic = dict(
+        projection=dict(type="orthographic"),
+        resolution=50,
+        showland=True,    landcolor="rgb(78,98,62)",       # verde-marrón vivo terreno
+        showocean=True,   oceancolor="rgb(8,32,82)",       # azul profundo natural
+        showlakes=True,   lakecolor="rgb(18,55,118)",
+        showrivers=True,  rivercolor="rgba(30,75,140,0.5)", riverwidth=0.5,
+        showcoastlines=True, coastlinecolor="rgba(220,235,200,0.7)", coastlinewidth=0.8,
+        showcountries=True,  countrycolor="rgba(180,200,150,0.4)", countrywidth=0.5,
+        showsubunits=True,   subunitcolor="rgba(150,170,130,0.18)", subunitwidth=0.3,
+        bgcolor="rgb(8,12,28)",
+    )
+    _geo_fallback = dict(
+        projection=dict(type="orthographic"),
+        showland=True,    landcolor="rgb(78,98,62)",
+        showocean=True,   oceancolor="rgb(8,32,82)",
+        showlakes=True,   lakecolor="rgb(18,55,118)",
+        showcoastlines=True, coastlinecolor="rgba(220,235,200,0.6)",
+        showcountries=True,  countrycolor="rgba(180,200,150,0.3)",
+        bgcolor="rgb(8,12,28)",
+    )
+    _geo_minimal = dict(
+        projection=dict(type="orthographic"),
+        showland=True,   landcolor="rgb(78,98,62)",
+        showocean=True,  oceancolor="rgb(8,32,82)",
+        showcoastlines=True,
+    )
+    # Aplica el más rico que funcione
+    _geo_to_use = _geo_minimal
+    for _g in (_geo_realistic, _geo_fallback, _geo_minimal):
+        try:
+            # Hacemos un test mínimo creando una figura aux
+            _test = go.Figure().update_layout(geo=_g)
+            _geo_to_use = _g
+            break
+        except Exception:
+            continue
+
     fig.update_layout(
-        geo=dict(
-            projection=dict(type="orthographic"),
-            showland=True,    landcolor="rgb(58,82,52)",
-            showocean=True,   oceancolor="rgb(14,42,98)",
-            showlakes=True,   lakecolor="rgb(22,68,128)",
-            showcoastlines=True, coastlinecolor="rgba(200,220,180,0.6)",
-            showcountries=True,  countrycolor="rgba(180,200,160,0.25)",
-            bgcolor="rgb(10,15,30)",
-        ),
+        geo=_geo_to_use,
         paper_bgcolor="rgb(10,15,30)",
         height=760,
         margin=dict(l=0, r=0, t=40, b=0),
@@ -946,7 +1075,46 @@ def _satellite_figure(
     primary = case.evidence_bundle.object_id
     fig = go.Figure()
 
-    for t in tracks:
+    # Modo lite: muchos objetos → render por batches sin trazas
+    lite_mode = len(tracks) > 100 or any(not t.lats for t in tracks)
+    if lite_mode:
+        d_lat = [t.lat0 for t in tracks if t.known and t.norad != primary]
+        d_lon = [t.lon0 for t in tracks if t.known and t.norad != primary]
+        d_txt = [f"<b>{t.name}</b><br>NORAD {t.norad}<br>Alt: {t.alt0:.0f} km"
+                 for t in tracks if t.known and t.norad != primary]
+        u_lat = [t.lat0 for t in tracks if not t.known]
+        u_lon = [t.lon0 for t in tracks if not t.known]
+        u_txt = [f"<b>❓ {t.name}</b><br>NORAD {t.norad}"
+                 for t in tracks if not t.known]
+        prim = [t for t in tracks if t.norad == primary]
+        if d_lat:
+            fig.add_trace(go.Scattermapbox(
+                lat=d_lat, lon=d_lon, mode="markers",
+                marker=dict(size=5, color="#7eff9e"),
+                hovertext=d_txt, hovertemplate="%{hovertext}<extra></extra>",
+                name="", showlegend=False,
+            ))
+        if u_lat:
+            fig.add_trace(go.Scattermapbox(
+                lat=u_lat, lon=u_lon, mode="markers",
+                marker=dict(size=6, color="#ffb300"),
+                hovertext=u_txt, hovertemplate="%{hovertext}<extra></extra>",
+                name="", showlegend=False,
+            ))
+        if prim:
+            t = prim[0]
+            fig.add_trace(go.Scattermapbox(
+                lat=[t.lat0], lon=[t.lon0], mode="markers",
+                marker=dict(size=15, color="#ffd700"),
+                hovertext=f"<b>{t.name}</b>",
+                hovertemplate="%{hovertext}<extra></extra>",
+                name="", showlegend=False,
+            ))
+        tracks_to_draw = []
+    else:
+        tracks_to_draw = tracks
+
+    for t in tracks_to_draw:
         is_primary = (t.norad == primary)
         is_real    = (t.norad in real_norads)
         is_unknown = not t.known and not is_primary and not is_real
@@ -1004,15 +1172,25 @@ def _satellite_figure(
     fig.update_layout(
         mapbox=dict(
             style="white-bg",
-            layers=[dict(
-                below="traces",
-                sourcetype="raster",
-                sourceattribution="Esri · Maxar · Earthstar Geographics · USGS",
-                source=[
-                    "https://server.arcgisonline.com/ArcGIS/rest/services/"
-                    "World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                ],
-            )],
+            layers=[
+                dict(  # base: imágenes satelitales Esri
+                    below="traces",
+                    sourcetype="raster",
+                    sourceattribution="Esri · Maxar · Earthstar Geographics · USGS",
+                    source=[
+                        "https://server.arcgisonline.com/ArcGIS/rest/services/"
+                        "World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                    ],
+                ),
+                dict(  # capa híbrida: bordes y etiquetas de países/ciudades
+                    below="traces",
+                    sourcetype="raster",
+                    source=[
+                        "https://server.arcgisonline.com/ArcGIS/rest/services/"
+                        "Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+                    ],
+                ),
+            ],
             center=dict(lat=20, lon=0),
             zoom=1.2,
         ),
@@ -1155,25 +1333,54 @@ def _page_map() -> None:
             help="Escanea last-30-days de CelesTrak buscando objetos en órbita similar a las estaciones.",
         )
 
+        dataset_label = st.selectbox(
+            "Dataset a rastrear",
+            list(_DATASETS.keys()),
+            index=0,
+            key="map_dataset",
+            help=("Estaciones: ISS, CSS y módulos acoplados (con trazas).  "
+                  "Visibles: brillantes a simple vista.  "
+                  "Lanzamientos: últimos 30 días.  "
+                  "Starlink/Activos: miles de objetos en modo lite (solo posiciones)."),
+        )
         view_mode = st.radio(
             "Modo de vista",
             ["🌍 Globo 3D", "🛰 Satélite (Esri)"],
             key="map_view_mode",
-            help="Globo 3D: orthographic vectorial. Satélite: imágenes reales de Esri World Imagery (estilo Google Earth).",
+            help="Globo 3D: orthographic vectorial realista. Satélite: tiles Esri World Imagery.",
         )
 
+    # ── Selección de dataset: fetch live de CelesTrak según selección ────────
+    ds_group, ds_mode = _DATASETS[dataset_label]
+    if ds_group != "stations":
+        # Para datasets distintos a stations, usamos el group fetcher
+        with st.spinner(f"Descargando {dataset_label} desde CelesTrak…"):
+            ds_tle = _fetch_group_tles(ds_group)
+        if ds_tle:
+            active_tle = ds_tle
+            active_source = f"🟢 CelesTrak live · {ds_group} · {datetime.now(timezone.utc).strftime('%H:%M UTC')}"
+        else:
+            active_tle = tle_text
+            active_source = tle_source + f" (fallback de {ds_group})"
+    else:
+        active_tle = tle_text
+        active_source = tle_source
+
     # ── Propagación ───────────────────────────────────────────────────────────
-    blocks_ref = _parse_blocks(tle_text)
+    blocks_ref = _parse_blocks(active_tle)
     n_min_steps = 185
     if blocks_ref:
         sat0 = Satrec.twoline2rv(blocks_ref[0][1], blocks_ref[0][2])
         p0 = (2 * math.pi / sat0.no_kozai) if sat0.no_kozai > 0 else 92
         n_min_steps = int(p0 * n_orbits) + 5
 
-    with st.spinner("Propagando órbitas…"):
+    with st.spinner(f"Calculando posiciones ({ds_mode} mode)…"):
         try:
-            track_list = _tracks(tle_text, t0_offset, n_min_steps)
-            case       = _load(selected)
+            if ds_mode == "lite":
+                track_list = _positions_only(active_tle, t0_offset)
+            else:
+                track_list = _tracks(active_tle, t0_offset, n_min_steps)
+            case = _load(selected)
         except Exception as exc:
             st.error(f"Error: {exc}"); return
 
