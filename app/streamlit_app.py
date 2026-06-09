@@ -1,5 +1,7 @@
 """Orbital Sentinel — interfaz web profesional.
 
+Build: v0.1.2 · dashboard layout · realistic globe · Inter typography.
+
 Cuatro pestañas:
   🌍 Mapa orbital     — globo interactivo con trazas de órbita en tiempo de época.
   📋 Casos            — evidencias, scatter de conjunciones, descarga del caso.
