@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import math
 import sys
+import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, NamedTuple
@@ -308,6 +309,24 @@ def _epoch_dt(sat: Satrec) -> datetime:
     jd = sat.jdsatepoch + sat.jdsatepochF
     return datetime(2000,1,1,12,tzinfo=timezone.utc) + timedelta(days=jd-2451545.0)
 
+_CELESTRAK_URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle"
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def _fetch_live_tles() -> tuple[str, str]:
+    """Descarga TLEs de CelesTrak (caché 1 h). Devuelve (tle_text, etiqueta_fuente)."""
+    try:
+        req = urllib.request.Request(_CELESTRAK_URL, headers={"User-Agent": "orbital-sentinel/0.1"})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            text = r.read().decode("utf-8")
+        if text.strip() and "1 " in text:
+            ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+            return text, f"CelesTrak live · {ts}"
+    except Exception:
+        pass
+    return _TLE_STATIONS, "TLEs de referencia embebidos (sin conexión con CelesTrak)"
+
+
 def _parse_blocks(text: str) -> list[tuple[str,str,str]]:
     lines = [l.rstrip() for l in text.splitlines() if l.strip()]
     out = []
@@ -318,9 +337,7 @@ def _parse_blocks(text: str) -> list[tuple[str,str,str]]:
     return out
 
 @st.cache_data(show_spinner=False)
-def _tracks(case_name: str) -> list[SatTrack]:
-    blob = next((_CASES / case_name / "cache" / "blobs").rglob("*.bin"), None)
-    tle_text = blob.read_text(encoding="utf-8") if blob is not None else _TLE_STATIONS
+def _tracks(tle_text: str) -> list[SatTrack]:
     blocks = _parse_blocks(tle_text)
     ref = Satrec.twoline2rv(blocks[0][1], blocks[0][2])
     epoch = _epoch_dt(ref)
@@ -559,10 +576,11 @@ def _page_map() -> None:
     selected = st.session_state["map_case"]
     meta = _CASE_META.get(selected, {})
 
-    # ── Glob ─────────────────────────────────────────────────────────────────
+    # ── Carga datos ──────────────────────────────────────────────────────────
+    tle_text, tle_source = _fetch_live_tles()
     with st.spinner("Propagando órbitas…"):
         try:
-            track_list = _tracks(selected)
+            track_list = _tracks(tle_text)
             case       = _load(selected)
         except Exception as exc:
             st.error(f"Error: {exc}"); return
@@ -573,6 +591,7 @@ def _page_map() -> None:
         use_container_width=True,
         config={"displayModeBar": True, "scrollZoom": False},
     )
+    st.caption(f"📡 {tle_source} · trazas 90 min desde época TLE")
 
     # ── Métricas de conjunciones ──────────────────────────────────────────────
     real_evs = [
