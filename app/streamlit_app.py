@@ -636,10 +636,14 @@ def _positions_only(tle_text: str, t0_offset_min: int = 0) -> list[SatTrack]:
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def _fetch_group_tles(group: str) -> str | None:
-    """Descarga un grupo CelesTrak. Devuelve el texto TLE o None si falla."""
+    """Descarga un grupo CelesTrak. Timeout adaptativo según tamaño esperado."""
+    # Datasets grandes necesitan más tiempo
+    timeout = 60 if group in {"active", "starlink", "oneweb"} else 25
+    last_err = None
     for url in (
         f"https://celestrak.org/NORAD/elements/gp.php?GROUP={group}&FORMAT=tle",
         f"https://celestrak.com/NORAD/elements/{group}.txt",
+        f"https://celestrak.org/NORAD/elements/{group}.txt",
     ):
         for verify in (True, False):
             try:
@@ -647,13 +651,21 @@ def _fetch_group_tles(group: str) -> str | None:
                 if not verify:
                     ctx.check_hostname = False
                     ctx.verify_mode = ssl.CERT_NONE
-                req = urllib.request.Request(url, headers=_HEADERS)
-                with urllib.request.urlopen(req, timeout=15, context=ctx) as r:
-                    text = r.read().decode("utf-8")
+                req = urllib.request.Request(url, headers={
+                    **_HEADERS,
+                    "Accept": "text/plain, */*",
+                    "Accept-Encoding": "identity",
+                })
+                with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
+                    raw = r.read()
+                text = raw.decode("utf-8", errors="replace")
                 if text.strip() and text.count("1 ") >= 3:
                     return text
-            except Exception:
+            except Exception as exc:
+                last_err = f"{type(exc).__name__}: {exc} ({url[:60]}…)"
                 continue
+    # Si fallaron todos los intentos, lo guardamos como atributo de la función
+    _fetch_group_tles.last_error = last_err  # type: ignore[attr-defined]
     return None
 
 
@@ -1366,12 +1378,18 @@ def _page_map() -> None:
 
     # Diagnóstico visible
     with col_globe:
-        n_blocks = active_tle.count("\n1 ")  # cuenta líneas que empiezan con "1 "
+        n_blocks = active_tle.count("\n1 ")
         if ds_group != "stations":
             if ds_tle is None:
-                st.error(f"❌ CelesTrak no respondió para grupo **{ds_group}**. Mostrando fallback de estaciones.")
+                err = getattr(_fetch_group_tles, "last_error", "timeout o red bloqueada")
+                st.error(
+                    f"❌ CelesTrak no respondió para **{ds_group}**.\n\n"
+                    f"Último error: `{err}`\n\n"
+                    f"Mostrando fallback de estaciones. "
+                    f"Datasets grandes (active, starlink) pueden tardar hasta 60 s — vuelve a intentar."
+                )
             elif len(track_list) == 0:
-                st.warning(f"⚠ Se descargaron {n_blocks} TLEs de **{ds_group}** pero ninguno propagó. Revisa el log.")
+                st.warning(f"⚠ Se descargaron {n_blocks} TLEs de **{ds_group}** pero ninguno propagó.")
             else:
                 st.success(f"✅ **{len(track_list)} objetos** activos de **{ds_group}** ({active_source})")
 
