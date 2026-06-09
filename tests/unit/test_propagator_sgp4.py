@@ -82,7 +82,16 @@ def test_propagate_at_epoch_convenience() -> None:
     prop = Sgp4Propagator()
     a = prop.propagate_at_epoch(element, snap)
     b = prop.propagate(element, snap, [element.epoch_datetime])[0]
-    assert a.model_dump() == b.model_dump()
+    # Compare everything except `derived_at`: that field is operational
+    # metadata (wall-clock now()) and intentionally differs between calls.
+    # Two propagate() invocations cannot be expected to coincide at sub-µs
+    # resolution on Linux; on Windows datetime quantizes to ~15 ms so it
+    # happened to match before.
+    a_dump = a.model_dump()
+    b_dump = b.model_dump()
+    a_dump.pop("derived_at")
+    b_dump.pop("derived_at")
+    assert a_dump == b_dump
 
 
 # --- Sanidad física --------------------------------------------------------
