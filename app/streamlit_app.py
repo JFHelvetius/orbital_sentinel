@@ -167,115 +167,334 @@ SHENZHOU-23 (SZ-23)
 
 _CSS = """
 <style>
-/* Fondo degradado espacial */
-.stApp { background: linear-gradient(160deg,#050810 0%,#07091a 55%,#0a0e20 100%) !important; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* Hero */
-.hero { padding:2rem 0 1.5rem; }
-.hero h1 { font-size:2.6rem; font-weight:800; letter-spacing:-1px;
-           background:linear-gradient(90deg,#e8edf5 0%,#4f9eff 100%);
-           -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin:0; }
-.hero p  { color:#8892a4; font-size:1.05rem; margin:.4rem 0 0; }
-
-/* Cards de caso */
-.case-card { border:1px solid rgba(100,140,255,.18); border-radius:14px;
-             background:rgba(255,255,255,.04); padding:1.4rem 1.4rem 1rem;
-             transition:border .2s; cursor:default; }
-.case-card:hover { border-color:rgba(100,140,255,.4); }
-.case-card .cc-icon { font-size:2rem; margin-bottom:.5rem; }
-.case-card .cc-title { font-size:1.1rem; font-weight:700; color:#e8edf5; }
-.case-card .cc-summary { color:#8892a4; font-size:.88rem; margin:.3rem 0 .25rem; }
-.case-card .cc-highlight { color:#ffd700; font-size:.85rem; font-weight:600; }
-
-/* Stat chips */
-.stat-row { display:flex; gap:1rem; margin:1.2rem 0 .8rem; flex-wrap:wrap; }
-.stat-chip { display:flex; flex-direction:column; align-items:center;
-             background:rgba(79,158,255,.08); border:1px solid rgba(79,158,255,.2);
-             border-radius:10px; padding:.6rem 1.2rem; min-width:120px; }
-.stat-chip .sv { font-size:1.5rem; font-weight:700; color:#4f9eff; }
-.stat-chip .sl { font-size:.75rem; color:#8892a4; margin-top:.15rem; text-align:center; }
-
-/* Cadena hash */
-.chain-wrap { display:flex; align-items:center; flex-wrap:wrap; gap:.4rem;
-              padding:1rem; background:rgba(0,0,0,.25); border-radius:10px;
-              border:1px solid rgba(79,158,255,.12); }
-.chain-node { display:flex; flex-direction:column; align-items:center;
-              background:rgba(79,158,255,.1); border:1px solid rgba(79,158,255,.25);
-              border-radius:8px; padding:.45rem .7rem; min-width:100px; }
-.chain-node.ok  { border-color:rgba(46,213,115,.4);  background:rgba(46,213,115,.07); }
-.chain-node.err { border-color:rgba(255,71,87,.4);   background:rgba(255,71,87,.07);  }
-.cn-label { font-size:.7rem; color:#8892a4; text-align:center; }
-.cn-hash  { font-size:.65rem; color:#4f9eff; font-family:monospace; }
-.cn-badge { font-size:.8rem; margin-top:.2rem; }
-.chain-arrow { color:#4a5568; font-size:1.2rem; }
-
-/* Alerta de conjunción */
-.conj-alert { display:flex; align-items:center; gap:1rem;
-              border:1px solid rgba(255,71,87,.35); border-radius:12px;
-              background:rgba(255,71,87,.08); padding:.9rem 1.2rem;
-              margin:.5rem 0; }
-.conj-alert .ca-val { font-size:1.6rem; font-weight:800; color:#ff4757; }
-.conj-alert .ca-label { font-size:.8rem; color:#8892a4; }
-.conj-alert .ca-name  { font-size:1rem; font-weight:600; color:#e8edf5; }
-
-/* Sección "Cómo funciona" */
-.how-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin:1rem 0; }
-.how-card { border:1px solid rgba(100,140,255,.18); border-radius:12px;
-            background:rgba(255,255,255,.03); padding:1.2rem; }
-.how-num  { font-size:2rem; font-weight:800; color:#4f9eff; margin-bottom:.5rem; }
-.how-title{ font-size:1rem; font-weight:700; color:#e8edf5; margin-bottom:.4rem; }
-.how-body { font-size:.85rem; color:#8892a4; line-height:1.5; }
-
-/* Ocultar header por defecto de Streamlit */
-#MainMenu, footer, header { visibility:hidden; }
-
-/* Atmósfera alrededor del globo */
-[data-testid="stPlotlyChart"] {
-    box-shadow:
-        0 0 0 1px rgba(20,80,220,.1),
-        0 0 35px rgba(20,80,220,.2),
-        0 0 80px rgba(10,50,180,.12),
-        0 0 150px rgba(5,30,130,.07);
-    border-radius: 8px;
+/* ── Design tokens (sophisticated dark navy, no pitch black) ───────────── */
+:root {
+  --bg-app:        #0d1220;
+  --bg-panel:      #151b2c;
+  --bg-card:       #1a2236;
+  --bg-elevated:   #212a40;
+  --bg-input:      #11172a;
+  --border-soft:   rgba(160,180,220,.08);
+  --border:        rgba(160,180,220,.14);
+  --border-strong: rgba(160,180,220,.22);
+  --text-pri:      #e8eef7;
+  --text-sec:      #94a3b8;
+  --text-ter:      #64748b;
+  --accent:        #4a90e2;
+  --accent-bri:    #5fa8f5;
+  --success:       #10b981;
+  --warning:       #f59e0b;
+  --danger:        #ef4444;
+  --info:          #06b6d4;
 }
 
-/* Panel lateral de control */
-.ctrl-section { margin-bottom:.8rem; }
-.ctrl-title { font-size:.78rem; text-transform:uppercase; letter-spacing:.08em;
-              color:#4a5568; margin-bottom:.35rem; }
-.live-clock { font-family:monospace; font-size:.85rem; color:#4f9eff; }
+/* ── Base ──────────────────────────────────────────────────────────────── */
+html, body, [class*="st-"], [class*="css-"] {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif !important;
+}
+.stApp {
+  background: var(--bg-app) !important;
+  color: var(--text-pri);
+}
+.stApp, .main, .block-container,
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewContainer"] {
+  background: var(--bg-app) !important;
+}
+h1,h2,h3,h4,h5,h6 { color: var(--text-pri); letter-spacing:-.01em; font-weight:600; }
+p, span, div, label { color: var(--text-pri); }
+hr, [data-testid="stMarkdownContainer"] hr { border-color: var(--border) !important; opacity:.6; }
+code, pre { font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace !important; }
 
-/* Búsqueda de satélites */
-.sat-search-wrap { position:relative; }
-.search-result-tag { display:inline-block; background:rgba(79,158,255,.12);
-  border:1px solid rgba(79,158,255,.3); border-radius:6px;
-  padding:.2rem .6rem; font-size:.8rem; color:#4f9eff; margin:.2rem .2rem 0 0; }
-.search-result-tag.danger { background:rgba(255,53,71,.12); border-color:rgba(255,53,71,.3); color:#ff3547; }
-.search-result-tag.unknown { background:rgba(255,165,0,.12); border-color:rgba(255,165,0,.3); color:#ffb300; }
+/* ── Hero refinado ─────────────────────────────────────────────────────── */
+.hero {
+  padding: 1.4rem 0 1.2rem;
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 1.3rem;
+  display: flex; align-items: baseline; gap: 1.2rem;
+}
+.hero h1 {
+  font-size: 1.65rem; font-weight: 700; letter-spacing:-.02em; margin: 0;
+  color: var(--text-pri);
+}
+.hero h1 .pill {
+  display:inline-block; font-size:.65rem; font-weight:600;
+  background:rgba(74,144,226,.12); color:var(--accent-bri);
+  border:1px solid rgba(74,144,226,.25); border-radius:4px;
+  padding:.15rem .5rem; margin-left:.6rem; letter-spacing:.05em;
+  text-transform:uppercase; vertical-align:middle;
+}
+.hero p {
+  color: var(--text-sec); font-size: .82rem; margin: 0;
+  letter-spacing: .005em;
+}
 
-/* Badge de proximidad */
-.prox-badge { display:inline-flex; align-items:center; gap:.5rem;
-  background:rgba(0,210,200,.07); border:1px solid rgba(0,210,200,.25);
-  border-radius:8px; padding:.5rem 1rem; margin:.3rem 0; }
-.prox-badge .pb-name { color:#00d2c8; font-weight:600; font-size:.9rem; }
-.prox-badge .pb-detail { color:#8892a4; font-size:.78rem; }
+/* ── Tabs ──────────────────────────────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] {
+  background: transparent !important;
+  border-bottom: 1px solid var(--border) !important;
+  gap: .25rem;
+}
+.stTabs [data-baseweb="tab"] {
+  background: transparent !important;
+  color: var(--text-sec) !important;
+  font-size: .82rem !important;
+  font-weight: 500 !important;
+  padding: .55rem 1rem !important;
+  border-radius: 6px 6px 0 0 !important;
+  border-bottom: 2px solid transparent !important;
+  transition: all .15s !important;
+}
+.stTabs [data-baseweb="tab"]:hover {
+  color: var(--text-pri) !important;
+  background: rgba(255,255,255,.025) !important;
+}
+.stTabs [data-baseweb="tab"][aria-selected="true"] {
+  color: var(--accent-bri) !important;
+  border-bottom-color: var(--accent-bri) !important;
+  background: rgba(74,144,226,.06) !important;
+}
+
+/* ── Cards de caso (estilo Linear/Vercel) ──────────────────────────────── */
+.case-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  padding: 1rem 1.1rem .9rem;
+  transition: all .15s;
+}
+.case-card:hover { border-color: var(--border-strong); background: var(--bg-elevated); }
+.case-card .cc-icon { font-size:1.4rem; margin-bottom:.4rem; opacity:.85; }
+.case-card .cc-title { font-size:.92rem; font-weight:600; color: var(--text-pri); }
+.case-card .cc-summary { color: var(--text-ter); font-size:.78rem; margin:.25rem 0 .2rem; }
+.case-card .cc-highlight { color: var(--warning); font-size:.76rem; font-weight:500; }
+
+/* ── Stat chips (numéricos compactos) ──────────────────────────────────── */
+.stat-row { display:flex; gap:.6rem; margin:.9rem 0 .6rem; flex-wrap:wrap; }
+.stat-chip {
+  display:flex; align-items:center; justify-content:space-between;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 6px; padding: .55rem .85rem; min-width: 130px;
+  transition: border-color .15s;
+}
+.stat-chip:hover { border-color: var(--border-strong); }
+.stat-chip .sv {
+  font-size: 1.05rem; font-weight: 600; color: var(--text-pri);
+  font-family: 'JetBrains Mono', monospace; letter-spacing:-.02em;
+}
+.stat-chip .sl {
+  font-size:.66rem; color: var(--text-ter);
+  text-transform: uppercase; letter-spacing:.07em; font-weight:500;
+}
+
+/* ── Cadena hash ───────────────────────────────────────────────────────── */
+.chain-wrap {
+  display:flex; align-items:center; flex-wrap:wrap; gap:.4rem;
+  padding: 1rem; background: var(--bg-card); border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.chain-node {
+  display:flex; flex-direction:column; align-items:center;
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 6px; padding: .45rem .65rem; min-width: 95px;
+}
+.chain-node.ok  { border-color: rgba(16,185,129,.35); background: rgba(16,185,129,.05); }
+.chain-node.err { border-color: rgba(239,68,68,.35);  background: rgba(239,68,68,.05);  }
+.cn-label { font-size:.65rem; color: var(--text-ter); text-transform:uppercase; letter-spacing:.05em; }
+.cn-hash  { font-size:.62rem; color: var(--accent-bri); font-family:'JetBrains Mono',monospace; }
+.cn-badge { font-size:.78rem; margin-top:.15rem; }
+.chain-arrow { color: var(--text-ter); font-size:1rem; opacity:.5; }
+
+/* ── Alertas (conjunción y proximidad) ────────────────────────────────── */
+.conj-alert {
+  display:flex; align-items:center; gap:1rem;
+  border: 1px solid rgba(239,68,68,.3); border-radius: 8px;
+  background: rgba(239,68,68,.05); padding: .85rem 1.1rem; margin: .4rem 0;
+}
+.conj-alert .ca-val { font-size: 1.4rem; font-weight: 700; color: var(--danger); font-family: 'JetBrains Mono', monospace; }
+.conj-alert .ca-label { font-size:.72rem; color: var(--text-ter); text-transform:uppercase; letter-spacing:.05em; }
+.conj-alert .ca-name { font-size:.9rem; font-weight:600; color: var(--text-pri); }
+
+.prox-badge {
+  display: flex; align-items: center; gap: .5rem;
+  background: rgba(6,182,212,.05);
+  border: 1px solid rgba(6,182,212,.25);
+  border-radius: 6px; padding: .5rem .85rem; margin: .25rem 0;
+}
+.prox-badge .pb-name { color: var(--info); font-weight: 600; font-size: .85rem; }
+.prox-badge .pb-detail { color: var(--text-ter); font-size:.75rem; }
+
+/* ── How-it-works grid ─────────────────────────────────────────────────── */
+.how-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin:1rem 0; }
+.how-card {
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-card); padding: 1.2rem 1.3rem;
+}
+.how-num  { font-size:1.6rem; font-weight:700; color: var(--accent); margin-bottom:.4rem; font-family:'JetBrains Mono',monospace; }
+.how-title{ font-size:.95rem; font-weight:600; color: var(--text-pri); margin-bottom:.35rem; }
+.how-body { font-size:.82rem; color: var(--text-sec); line-height:1.55; }
+
+/* ── Inputs (compactos y elegantes) ───────────────────────────────────── */
+[data-testid="stTextInput"] input,
+[data-testid="stTextArea"] textarea {
+  background: var(--bg-input) !important;
+  color: var(--text-pri) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  font-size: .85rem !important;
+  font-family: 'Inter', sans-serif !important;
+}
+[data-testid="stTextInput"] input:focus,
+[data-testid="stTextArea"] textarea:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(74,144,226,.12) !important;
+  outline: none !important;
+}
+[data-testid="stTextInput"] input::placeholder { color: var(--text-ter) !important; }
+
+/* Radio buttons */
+[data-testid="stRadio"] label, [data-testid="stRadio"] > div { color: var(--text-pri) !important; }
+[data-testid="stRadio"] > div[role="radiogroup"] { gap: .35rem !important; }
+
+/* Sliders */
+.stSlider [data-baseweb="slider"] [role="slider"] {
+  background: var(--accent) !important;
+  border: 2px solid var(--bg-app) !important;
+}
+
+/* Toggles */
+[data-testid="stToggle"] label { color: var(--text-pri) !important; font-size:.83rem !important; }
+
+/* Captions */
+[data-testid="stCaptionContainer"], .stCaption {
+  color: var(--text-ter) !important; font-size:.75rem !important;
+}
+
+/* ── Botones ───────────────────────────────────────────────────────────── */
+button[kind="secondary"], button[data-testid*="baseButton-secondary"] {
+  background: var(--bg-card) !important;
+  color: var(--text-pri) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  font-size: .83rem !important;
+  font-weight: 500 !important;
+  padding: .4rem .85rem !important;
+  transition: all .15s !important;
+}
+button[kind="secondary"]:hover {
+  background: var(--bg-elevated) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent-bri) !important;
+}
+
+/* ── Expanders ─────────────────────────────────────────────────────────── */
+.stExpander, .stExpander details {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+}
+.stExpander summary {
+  background: var(--bg-card) !important;
+  color: var(--text-pri) !important;
+  font-size: .87rem !important;
+  font-weight: 500 !important;
+  padding: .8rem 1rem !important;
+}
+.stExpander summary:hover { background: var(--bg-elevated) !important; }
+
+/* ── DataFrame ─────────────────────────────────────────────────────────── */
+[data-testid="stDataFrame"] {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+[data-testid="stDataFrame"] table { background: var(--bg-card) !important; }
+[data-testid="stDataFrame"] thead th {
+  background: var(--bg-panel) !important;
+  color: var(--text-sec) !important;
+  text-transform: uppercase !important;
+  font-size: .7rem !important;
+  letter-spacing: .05em !important;
+  font-weight: 600 !important;
+}
+
+/* ── Globo: marco elegante con halo atmosférico sutil ──────────────────── */
+[data-testid="stPlotlyChart"] {
+  background: #0a0f1e !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,.4),
+    0 0 0 1px rgba(74,144,226,.04),
+    0 0 30px rgba(20,80,220,.08),
+    0 0 80px rgba(10,50,180,.04);
+  overflow: hidden;
+}
+[data-testid="stPlotlyChart"] > div,
+[data-testid="stPlotlyChart"] iframe,
+[data-testid="stPlotlyChart"] .js-plotly-plot,
+[data-testid="stPlotlyChart"] .plot-container,
+[data-testid="stPlotlyChart"] .svg-container,
+[data-testid="stPlotlyChart"] .main-svg {
+  background: #0a0f1e !important;
+}
+
+/* ── Panel lateral de control ──────────────────────────────────────────── */
+.ctrl-section { margin-bottom: .9rem; }
+.ctrl-title {
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: var(--text-ter);
+  margin: 1rem 0 .4rem;
+  font-weight: 600;
+}
+.live-clock {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .82rem; color: var(--accent-bri);
+  padding: .55rem .8rem;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 6px; margin-bottom: .8rem;
+  display: flex; align-items: center; gap: .5rem;
+}
+.live-clock::before {
+  content:''; width:.45rem; height:.45rem; border-radius:50%;
+  background: var(--success); box-shadow: 0 0 6px var(--success);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.3 } }
+
+/* ── Búsqueda: tags de resultado ───────────────────────────────────────── */
+.search-result-tag {
+  display: inline-block;
+  background: rgba(74,144,226,.1);
+  border: 1px solid rgba(74,144,226,.3);
+  border-radius: 5px;
+  padding: .22rem .55rem;
+  font-size: .76rem;
+  color: var(--accent-bri);
+  margin: .2rem .2rem 0 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+.search-result-tag.danger { background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.3); color: var(--danger); }
+.search-result-tag.unknown { background:rgba(6,182,212,.1); border-color:rgba(6,182,212,.3); color: var(--info); }
+
+/* ── Sin starfield (queda más serio sin animaciones decorativas) ──────── */
+#orbital-stars { display: none !important; }
+
+/* ── Ocultar chrome de Streamlit ───────────────────────────────────────── */
+#MainMenu, footer, header { visibility: hidden; }
+[data-testid="stSidebarNav"] { display: none; }
+[data-testid="stHeader"] { background: transparent !important; height: 0 !important; }
+
+/* ── Inline link styling ───────────────────────────────────────────────── */
+a { color: var(--accent-bri) !important; text-decoration: none !important; }
+a:hover { color: var(--accent) !important; text-decoration: underline !important; }
 </style>
-<script>
-(function(){
-  if(document.getElementById('orbital-stars')) return;
-  var sf=document.createElement('div');
-  sf.id='orbital-stars';
-  sf.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden;';
-  var s='<style>@keyframes tw{0%{opacity:.08}50%{opacity:.7}100%{opacity:.08}}</style>';
-  for(var i=0;i<180;i++){
-    var x=(Math.random()*100).toFixed(2),y=(Math.random()*100).toFixed(2);
-    var sz=(Math.random()*1.4+0.3).toFixed(1),dur=(Math.random()*4+2).toFixed(1);
-    var del=(Math.random()*5).toFixed(1);
-    s+='<div style="position:absolute;left:'+x+'%;top:'+y+'%;width:'+sz+'px;height:'+sz+'px;background:#fff;border-radius:50%;animation:tw '+dur+'s '+del+'s ease-in-out infinite;"></div>';
-  }
-  sf.innerHTML=s; document.body.appendChild(sf);
-})();
-</script>
 """
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -710,24 +929,33 @@ def _globe_figure(
     ]
     fig.frames = frames
 
-    # ── Geo: colores realistas "desde el espacio" ────────────────────────────
+    # ── Geo: colores realistas pero visibles (no pitch black) ────────────────
     for _geo in (
         dict(
             projection=dict(type="orthographic"),
-            showland=True,    landcolor="rgb(45,65,38)",    # verde-marrón natural
-            showocean=True,   oceancolor="rgb(5,28,80)",    # azul océano profundo real
-            showlakes=True,   lakecolor="rgb(10,45,100)",
+            resolution=50,
+            showland=True,    landcolor="rgb(58,82,52)",      # verde más visible
+            showocean=True,   oceancolor="rgb(14,42,98)",     # azul océano vivo
+            showlakes=True,   lakecolor="rgb(22,68,128)",
             showrivers=False,
-            showcoastlines=True, coastlinecolor="rgba(180,200,160,0.7)",
-            showcountries=True,  countrycolor="rgba(120,140,100,0.3)",
-            showgraticules=True, graticulecolor="rgba(60,90,140,0.18)",
-            bgcolor="rgb(2,5,15)",
+            showcoastlines=True,  coastlinecolor="rgba(200,220,180,.65)",
+            showcountries=True,   countrycolor="rgba(180,200,160,.25)",
+            showsubunits=True,    subunitcolor="rgba(150,170,130,.15)",
+            showgraticules=True,  graticulecolor="rgba(100,130,180,.12)",
+            bgcolor="rgb(10,15,30)",
+        ),
+        dict(
+            projection=dict(type="orthographic"),
+            resolution=50,
+            showland=True,   landcolor="rgb(58,82,52)",
+            showocean=True,  oceancolor="rgb(14,42,98)",
+            showcoastlines=True, showcountries=True,
         ),
         dict(  # fallback mínimo
             projection=dict(type="orthographic"),
-            showland=True,   landcolor="rgb(45,65,38)",
-            showocean=True,  oceancolor="rgb(5,28,80)",
-            showcoastlines=True, showcountries=True,
+            showland=True,   landcolor="rgb(58,82,52)",
+            showocean=True,  oceancolor="rgb(14,42,98)",
+            showcoastlines=True,
         ),
     ):
         try:
@@ -737,24 +965,23 @@ def _globe_figure(
 
     t_label = f"T+{t0_offset//60}h {t0_offset%60:02d}m" if t0_offset else now_utc.strftime("%H:%M UTC")
     fig.update_layout(
-        paper_bgcolor="rgb(2,5,15)",
+        paper_bgcolor="rgb(10,15,30)",
         height=740,
         margin=dict(l=0, r=150, t=46, b=0),
         legend=dict(
-            bgcolor="rgba(3,7,20,0.94)", bordercolor="rgba(79,158,255,0.15)",
-            borderwidth=1, font=dict(color="#5a6a84", size=9),
+            bgcolor="rgba(21,27,44,.92)", bordercolor="rgba(160,180,220,.15)",
+            borderwidth=1, font=dict(family="Inter", color="#94a3b8", size=10),
             x=1.01, y=0.99, xanchor="left", tracegroupgap=1,
         ),
         title=dict(
-            text=f"<b>Vista orbital en tiempo real</b>"
-                 f"  <span style='font-size:11px;color:#3a4a60;font-family:monospace'>{t_label}</span>"
-                 f"<br><span style='font-size:10px;color:#2a3a50'>"
-                 f"Arrastra para rotar · rueda para zoom · hover para detalles · ▶ auto-rotar</span>",
-            font=dict(color="#b0bcd0", size=14), x=0.01, y=0.99,
+            text=f"<b style='color:#e8eef7'>Vista orbital en tiempo real</b>"
+                 f"  <span style='font-size:11px;color:#5a6a84;font-family:monospace'>{t_label}</span>",
+            font=dict(family="Inter", color="#e8eef7", size=14), x=0.012, y=0.985,
         ),
+        font=dict(family="Inter", color="#94a3b8", size=11),
         updatemenus=[dict(
             type="buttons", showactive=True,
-            y=0.01, x=0.01, xanchor="left", yanchor="bottom", direction="left",
+            y=0.02, x=0.012, xanchor="left", yanchor="bottom", direction="left",
             buttons=[
                 dict(label="▶  Rotar",  method="animate",
                      args=[None, {"frame": {"duration": 35, "redraw": True},
@@ -764,8 +991,9 @@ def _globe_figure(
                      args=[[None], {"frame": {"duration": 0}, "mode": "immediate",
                                     "transition": {"duration": 0}}]),
             ],
-            bgcolor="rgba(5,10,25,0.92)", bordercolor="rgba(79,158,255,0.25)",
-            font=dict(color="#b0bcd0", size=11), pad=dict(r=8, t=6, b=6),
+            bgcolor="rgba(21,27,44,.95)", bordercolor="rgba(160,180,220,.18)",
+            font=dict(family="Inter", color="#e8eef7", size=11),
+            pad=dict(r=8, t=6, b=6),
         )],
     )
     return fig
@@ -1275,8 +1503,10 @@ def main() -> None:
     # ── Hero ──────────────────────────────────────────────────────────────────
     st.markdown("""
 <div class="hero">
-  <h1>Orbital Sentinel</h1>
-  <p>Infraestructura verificable para afirmaciones sobre el entorno orbital · Sin IA · Sin autoridad central</p>
+  <div>
+    <h1>Orbital Sentinel <span class="pill">v0.1 · Apache 2.0</span></h1>
+    <p>Infraestructura verificable para afirmaciones sobre el entorno orbital · Datos públicos · Sin IA · Sin autoridad central</p>
+  </div>
 </div>""", unsafe_allow_html=True)
 
     tab_map, tab_cases, tab_verify, tab_about = st.tabs([
