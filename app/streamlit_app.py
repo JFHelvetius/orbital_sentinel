@@ -34,6 +34,15 @@ from sgp4.api import jday as _jday
 from orbital_sentinel.analytics.investigations.models import InvestigationCase
 from orbital_sentinel.analytics.investigations.verifier import verify_investigation_case
 
+# TLEs embebidos para carga instantánea sin red
+try:
+    from app import tle_embedded as _embedded
+except Exception:
+    try:
+        import tle_embedded as _embedded  # type: ignore
+    except Exception:
+        _embedded = None
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Constantes de dominio
 # ─────────────────────────────────────────────────────────────────────────────
@@ -721,19 +730,28 @@ _MAJOR_CITIES = [
 
 
 _DATASETS = {
-    # Datasets que cargan rápido (recomendados)
+    # Datasets embebidos (cargan al instante)
     "🏠 Estaciones (~25)":               ("stations",       "full"),
     "👁 Visibles a simple vista (~150)":  ("visual",         "full"),
     "🌦 Meteorológicos (~60)":           ("weather",        "full"),
     "📡 GPS (~30)":                      ("gps-ops",        "full"),
-    "🛰 Iridium NEXT (~75)":             ("iridium",        "full"),
+    "🛰 Iridium NEXT (~75)":             ("iridium-NEXT",   "full"),
     "🚀 Lanzamientos 30 días (~300)":    ("last-30-days",   "lite"),
     "🌐 Geoestacionarios (~600)":        ("geo",            "lite"),
-    # Datasets grandes — pueden ser lentos o no cargar (CelesTrak rate-limit)
-    "📞 OneWeb (~650) ⚠️ lento":         ("oneweb",         "lite"),
-    "📡 Starlink (~6000) ⚠️ muy lento":   ("starlink",       "lite"),
-    "🌍 Activos LEO (~3000) ⚠️ muy lento":("active",         "lite"),
-    "💫 Cubesats (~1500) ⚠️ lento":      ("cubesat",        "lite"),
+    # Datasets grandes — solo desde CelesTrak en runtime (pueden fallar)
+    "📞 OneWeb (~650) ⚠️":               ("oneweb",         "lite"),
+    "📡 Starlink (~6000) ⚠️":             ("starlink",       "lite"),
+    "🌍 Activos LEO (~3000) ⚠️":          ("active",         "lite"),
+}
+
+# Mapeo de group → variable en tle_embedded.py
+_EMBEDDED_GROUPS = {
+    "visual":       "TLE_VISUAL",
+    "weather":      "TLE_WEATHER",
+    "gps-ops":      "TLE_GPS_OPS",
+    "geo":          "TLE_GEO",
+    "iridium-NEXT": "TLE_IRIDIUM_NEXT",
+    "last-30-days": "TLE_LAST_30_DAYS",
 }
 
 
@@ -1640,10 +1658,21 @@ def _page_map() -> None:
             help="Globo 3D: orthographic vectorial realista. Satélite: tiles Esri World Imagery.",
         )
 
-    # ── Selección de dataset: fetch live de CelesTrak según selección ────────
+    # ── Selección de dataset ─────────────────────────────────────────────────
     ds_group, ds_mode = _DATASETS[dataset_label]
-    if ds_group != "stations":
-        # Para datasets distintos a stations, usamos el group fetcher
+    ds_tle: str | None = None
+    if ds_group == "stations":
+        active_tle = tle_text
+        active_source = tle_source
+    elif ds_group in _EMBEDDED_GROUPS and _embedded is not None:
+        # Carga instantánea desde el módulo embebido en el repo
+        var = _EMBEDDED_GROUPS[ds_group]
+        active_tle = getattr(_embedded, var, None) or tle_text
+        snap = getattr(_embedded, "EMBEDDED_SNAPSHOT_UTC", "")
+        active_source = f"📦 Embebido · {ds_group} · snapshot {snap}"
+        ds_tle = active_tle  # marcar como exitoso
+    else:
+        # Datasets grandes (Starlink/Active/OneWeb) — solo CelesTrak live
         with st.spinner(f"Descargando {dataset_label} desde CelesTrak…"):
             ds_tle = _fetch_group_tles(ds_group)
         if ds_tle:
@@ -1651,10 +1680,7 @@ def _page_map() -> None:
             active_source = f"🟢 CelesTrak live · {ds_group} · {datetime.now(timezone.utc).strftime('%H:%M UTC')}"
         else:
             active_tle = tle_text
-            active_source = tle_source + f" (fallback de {ds_group})"
-    else:
-        active_tle = tle_text
-        active_source = tle_source
+            active_source = tle_source + f" (fallback)"
 
     # ── Propagación ───────────────────────────────────────────────────────────
     blocks_ref = _parse_blocks(active_tle)
