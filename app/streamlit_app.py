@@ -725,14 +725,14 @@ _DATASETS = {
     "👁 Visibles a simple vista (~150)": ("visual",         "full"),
     "🌦 Meteorológicos (~60)":          ("weather",        "full"),
     "📡 GPS (~30)":                     ("gps-ops",        "full"),
-    "🛰 Iridium (~75)":                 ("iridium-NEXT",   "full"),
+    "🛰 Iridium NEXT (~75)":            ("iridium",        "full"),
     "📞 OneWeb (~650)":                 ("oneweb",         "lite"),
     "🌐 Geoestacionarios (~600)":       ("geo",            "lite"),
     "🚀 Lanzamientos 30 días (~300)":   ("last-30-days",   "lite"),
     "📡 Starlink (~6000)":              ("starlink",       "lite"),
     "🌍 Activos LEO (~3000)":           ("active",         "lite"),
     "💫 Cubesats (~1500)":              ("cubesat",        "lite"),
-    "🗑 Basura espacial / debris":      ("cosmos-1408-debris", "lite"),
+    "🗑 Debris Cosmos 1408":            ("1982-092",       "lite"),
 }
 
 
@@ -843,18 +843,26 @@ def _positions_only(tle_text: str, t0_offset_min: int = 0) -> list[SatTrack]:
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def _fetch_group_tles(group: str) -> str | None:
-    """Descarga un grupo CelesTrak. Timeout adaptativo + reintentos."""
-    timeout = 90 if group in {"active", "starlink", "cubesat"} else (
-        60 if group in {"oneweb", "geo", "last-30-days"} else 30
-    )
-    urls = [
-        f"https://celestrak.org/NORAD/elements/gp.php?GROUP={group}&FORMAT=tle",
-        f"https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE={group}&FORMAT=tle",
-        f"https://celestrak.com/NORAD/elements/{group}.txt",
-        f"https://celestrak.org/NORAD/elements/{group}.txt",
-    ]
+    """Descarga un grupo CelesTrak. Timeout generoso + reintentos.
+
+    Datasets de query especiales (catnr, intdes, etc.) usan rutas distintas.
+    """
+    # Si es un INTDES (formato YYYY-NNN), va por endpoint diferente
+    if "-" in group and group[:4].isdigit():
+        urls = [
+            f"https://celestrak.org/NORAD/elements/gp.php?INTDES={group}&FORMAT=tle",
+        ]
+    else:
+        urls = [
+            f"https://celestrak.org/NORAD/elements/gp.php?GROUP={group}&FORMAT=tle",
+            f"https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE={group}&FORMAT=tle",
+            f"https://celestrak.com/NORAD/elements/{group}.txt",
+            f"https://celestrak.org/NORAD/elements/{group}.txt",
+        ]
+    # Timeout generoso para todos (CelesTrak puede ser lento desde Streamlit Cloud)
+    timeout = 120 if group in {"active", "starlink", "cubesat"} else 60
     last_err = None
-    for attempt in range(2):  # 2 intentos para los timeouts intermitentes
+    for attempt in range(2):
         for url in urls:
             for verify in (True, False):
                 try:
@@ -866,6 +874,7 @@ def _fetch_group_tles(group: str) -> str | None:
                         **_HEADERS,
                         "Accept": "text/plain, */*",
                         "Accept-Encoding": "identity",
+                        "Connection": "close",
                     })
                     with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
                         raw = r.read()
@@ -873,7 +882,7 @@ def _fetch_group_tles(group: str) -> str | None:
                     if text.strip() and text.count("1 ") >= 3:
                         return text
                 except Exception as exc:
-                    last_err = f"{type(exc).__name__}: {str(exc)[:80]}"
+                    last_err = f"{type(exc).__name__}: {str(exc)[:100]}  →  {url[:80]}"
                     continue
     _fetch_group_tles.last_error = last_err  # type: ignore[attr-defined]
     return None
