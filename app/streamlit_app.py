@@ -908,7 +908,7 @@ def _globe_figure(
             bgcolor="rgb(10,15,30)",
         ),
         paper_bgcolor="rgb(10,15,30)",
-        height=620,
+        height=760,
         margin=dict(l=0, r=0, t=40, b=0),
         showlegend=False,
         title=dict(
@@ -1141,56 +1141,42 @@ def _page_map() -> None:
 
     with col_ctrl:
         st.divider()
-        st.markdown(f"""
-<div class="stat-row" style="flex-direction:column;gap:.4rem;">
-  <div class="stat-chip" style="flex-direction:row;justify-content:space-between;min-width:0;padding:.4rem .8rem;">
-    <span class="sl">Objetos</span><span class="sv" style="font-size:1rem;">{len(track_list)}</span>
-  </div>
-  <div class="stat-chip" style="flex-direction:row;justify-content:space-between;min-width:0;padding:.4rem .8rem;">
-    <span class="sl">Sin catalogar</span><span class="sv" style="font-size:1rem;color:#ffb300">{n_unknown}</span>
-  </div>
-  <div class="stat-chip" style="flex-direction:row;justify-content:space-between;min-width:0;padding:.4rem .8rem;">
-    <span class="sl">Evidencias</span><span class="sv" style="font-size:1rem;">{n_ev}</span>
-  </div>
-  <div class="stat-chip" style="flex-direction:row;justify-content:space-between;min-width:0;padding:.4rem .8rem;">
-    <span class="sl">Acercamientos</span><span class="sv" style="font-size:1rem;color:#ff4757">{n_real}</span>
-  </div>{"" if not extra_tracks else f'''
-  <div class="stat-chip" style="flex-direction:row;justify-content:space-between;min-width:0;padding:.4rem .8rem;border-color:rgba(0,210,200,.3);">
-    <span class="sl">Proximidad</span><span class="sv" style="font-size:1rem;color:#00d2c8">{len(extra_tracks)}</span>
-  </div>'''}
-</div>""", unsafe_allow_html=True)
+        st.metric("Objetos rastreados", len(track_list))
+        if n_unknown:
+            st.metric("Sin catalogar", n_unknown)
+        st.metric("Evidencias", n_ev)
+        if n_real:
+            st.metric("Acercamientos", n_real)
+        if extra_tracks:
+            st.metric("Proximidad detectada", len(extra_tracks))
 
         if real_evs:
-            st.markdown('<div class="ctrl-title" style="margin-top:.8rem;">⚠ Conjunciones</div>', unsafe_allow_html=True)
+            st.divider()
+            st.markdown("**⚠ Conjunciones**")
             for be in real_evs:
                 hp    = be.derived_evidence.honesty_payload
                 norad = int(hp.get("other_norad_cat_id", 0))
                 miss  = float(hp.get("miss_distance_km", 0))
                 tca   = be.derived_evidence.event_epoch.strftime("%d %b %H:%M")
-                st.markdown(f"""
-<div class="conj-alert" style="flex-direction:column;align-items:flex-start;gap:.2rem;padding:.6rem .8rem;margin:.2rem 0;">
-  <div class="ca-name" style="font-size:.85rem;">⚠ {_label(norad)}</div>
-  <div class="ca-val" style="font-size:1.1rem;">{miss:.2f} km</div>
-  <div class="ca-label">{tca} UTC</div>
-</div>""", unsafe_allow_html=True)
+                st.error(f"**{_label(norad)}**  \n{miss:.2f} km · {tca} UTC", icon="⚠")
 
         if extra_tracks:
-            st.markdown(f'<div class="ctrl-title" style="margin-top:.8rem;">🛰 Proximidad ({len(extra_tracks)})</div>', unsafe_allow_html=True)
+            st.divider()
+            st.markdown(f"**🛰 Proximidad ({len(extra_tracks)})**")
             for t in extra_tracks[:6]:
-                st.markdown(f"""
-<div class="prox-badge" style="flex-direction:column;align-items:flex-start;padding:.4rem .7rem;margin:.2rem 0;">
-  <div class="pb-name" style="font-size:.82rem;">🔴 {t.name}</div>
-  <div class="pb-detail">{t.norad} · {t.alt_mean:.0f} km · {t.incl:.1f}°</div>
-</div>""", unsafe_allow_html=True)
+                st.info(
+                    f"**{t.name}**  \nNORAD {t.norad} · {t.alt_mean:.0f} km · {t.incl:.1f}°",
+                    icon="🔴",
+                )
 
         if unknown_tracks:
-            st.markdown(f'<div class="ctrl-title" style="margin-top:.8rem;">❓ Sin catalogar ({n_unknown})</div>', unsafe_allow_html=True)
+            st.divider()
+            st.markdown(f"**❓ Sin catalogar ({n_unknown})**")
             for t in unknown_tracks[:5]:
-                st.markdown(f"""
-<div style="border:1px solid rgba(255,165,0,.2);border-radius:6px;padding:.35rem .6rem;margin:.2rem 0;background:rgba(255,165,0,.05);">
-  <div style="color:#ffb300;font-size:.82rem;font-weight:600;">{t.name}</div>
-  <div style="color:#5a6a84;font-size:.75rem;">{t.norad} · {t.alt_mean:.0f} km · {t.incl:.1f}°</div>
-</div>""", unsafe_allow_html=True)
+                st.warning(
+                    f"**{t.name}**  \nNORAD {t.norad} · {t.alt_mean:.0f} km · {t.incl:.1f}°",
+                    icon="❓",
+                )
 
     # ── Tabla completa ────────────────────────────────────────────────────────
     all_objs = track_list + extra_tracks
