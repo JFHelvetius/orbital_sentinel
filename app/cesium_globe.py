@@ -64,19 +64,21 @@ def html(
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <!-- CRÍTICO: CESIUM_BASE_URL debe definirse ANTES de cargar Cesium.js,
-       porque el iframe srcdoc de Streamlit no resuelve rutas relativas
-       (workers, shaders, asset images) sin un base URL absoluto. -->
+  <!-- CDN unpkg con CORS abierto. Cesium.com a veces no sirve workers
+       correctamente cuando el iframe srcdoc tiene origin=null. -->
   <script>
-    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/';
+    window.CESIUM_BASE_URL = 'https://unpkg.com/cesium@1.119.0/Build/Cesium/';
   </script>
-  <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/Widgets/widgets.css">
-  <script src="https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/Cesium.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/cesium@1.119.0/Build/Cesium/Widgets/widgets.css">
+  <script src="https://unpkg.com/cesium@1.119.0/Build/Cesium/Cesium.js"></script>
   <script>
-    // Doble-asegura el base URL después de que Cesium se cargue, para
-    // las llamadas a buildModuleUrl() que se hagan posteriormente.
     if (typeof Cesium !== 'undefined' && Cesium.buildModuleUrl && Cesium.buildModuleUrl.setBaseUrl) {{
       Cesium.buildModuleUrl.setBaseUrl(window.CESIUM_BASE_URL);
+    }}
+    // Aumenta la concurrencia de tiles por servidor — el default de 6
+    // puede dejar la cola enorme contra Esri/NASA GIBS desde iframe.
+    if (typeof Cesium !== 'undefined' && Cesium.RequestScheduler) {{
+      Cesium.RequestScheduler.maximumRequestsPerServer = 18;
     }}
   </script>
   <style>
@@ -177,13 +179,13 @@ def html(
     /* Panel diagnóstico siempre visible */
     .diag {{
       position: absolute; top: 12px; right: 14px; z-index: 999;
-      max-width: 320px;
-      background: rgba(15,20,38,.92); color: #c9d8e8;
+      max-width: 340px;
+      background: rgba(15,20,38,.94); color: #c9d8e8;
       padding: 10px 12px; border-radius: 6px;
       font-family: 'JetBrains Mono', monospace; font-size: 11px;
       border: 1px solid rgba(95,168,245,.3);
       line-height: 1.5;
-      pointer-events: none;
+      pointer-events: auto;
     }}
     .diag .row {{ display: flex; gap: 6px; }}
     .diag .lbl {{ color: #5fa8f5; min-width: 90px; }}
@@ -209,7 +211,18 @@ def html(
     <div class="row"><span class="lbl">Imagery</span><span id="d-imagery" class="wait">…</span></div>
     <div class="row"><span class="lbl">Canvas</span><span id="d-canvas" class="wait">…</span></div>
     <div class="row"><span class="lbl">Tiles cargados</span><span id="d-tiles" class="wait">…</span></div>
+    <div class="row"><span class="lbl">Globe show</span><span id="d-show" class="wait">…</span></div>
+    <div class="row"><span class="lbl">Layers count</span><span id="d-layers" class="wait">…</span></div>
+    <div class="row"><span class="lbl">Frames</span><span id="d-frames" class="wait">…</span></div>
     <div class="row"><span class="lbl">Errores</span><span id="d-errs" class="wait">0</span></div>
+    <div style="margin-top:8px;pointer-events:auto;">
+      <button id="forceRenderBtn" style="
+        background: rgba(74,144,226,.3); color: #5fa8f5;
+        border: 1px solid rgba(95,168,245,.5); border-radius: 4px;
+        padding: 4px 10px; font-size: 11px; cursor: pointer;
+        font-family: 'JetBrains Mono', monospace;
+      ">Forzar render</button>
+    </div>
   </div>
   <div class="err-banner" id="errBanner"></div>
   <script>
@@ -472,6 +485,29 @@ def html(
         DIAG.set('d-tiles', pending === 0 ? 'ok' : 'wait',
           pending === 0 ? 'completos' : (pending + ' pendientes'));
       }}
+    }});
+
+    // ASEGURA que el globe esté visible y reporta su estado
+    scene.globe.show = true;
+    DIAG.set('d-show', scene.globe.show ? 'ok' : 'ko',
+      scene.globe.show ? 'true' : 'false');
+    DIAG.set('d-layers', viewer.imageryLayers.length > 0 ? 'ok' : 'ko',
+      String(viewer.imageryLayers.length));
+
+    // Contador de frames vivos (cada postRender incrementa)
+    let frameCount = 0;
+    scene.postRender.addEventListener(function() {{
+      frameCount++;
+      if (frameCount % 30 === 0) {{
+        DIAG.set('d-frames', frameCount > 30 ? 'ok' : 'wait', String(frameCount));
+      }}
+    }});
+
+    // Botón de forzar render — útil si requestRenderMode quedó activo
+    document.getElementById('forceRenderBtn').addEventListener('click', function() {{
+      scene.requestRender();
+      scene.render();
+      viewer.resize();
     }});
 
     try {{ viewer.cesiumWidget.creditContainer.style.display = 'none'; }} catch (e) {{}}
