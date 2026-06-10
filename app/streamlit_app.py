@@ -1440,13 +1440,13 @@ def _globe_figure(
             projection=_projection,
             resolution=50,
             # Paleta Blue Marble: tierra cálida tonificada, océano profundo
-            showland=True,    landcolor="rgb(86,110,76)",
-            showocean=True,   oceancolor="rgb(6,22,55)",
-            showlakes=show_lakes,   lakecolor="rgb(18,58,130)",
-            showrivers=show_rivers, rivercolor="rgba(95,170,235,0.55)", riverwidth=0.7,
-            showcoastlines=True,    coastlinecolor="rgba(240,248,225,0.45)", coastlinewidth=0.6,
-            showcountries=show_countries, countrycolor="rgba(255,210,120,0.45)", countrywidth=0.7,
-            showsubunits=show_subunits,   subunitcolor="rgba(220,200,150,0.4)", subunitwidth=0.5,
+            showland=True,    landcolor="rgb(94,118,82)",
+            showocean=True,   oceancolor="rgb(7,24,58)",
+            showlakes=show_lakes,   lakecolor="rgb(20,72,148)",
+            showrivers=show_rivers, rivercolor="rgba(110,180,240,0.7)", riverwidth=0.9,
+            showcoastlines=True,    coastlinecolor="rgba(240,248,225,0.85)", coastlinewidth=0.9,
+            showcountries=show_countries, countrycolor="rgba(255,210,120,0.55)", countrywidth=0.8,
+            showsubunits=show_subunits,   subunitcolor="rgba(230,210,160,0.55)", subunitwidth=0.55,
             bgcolor="rgba(0,0,0,0)",
         ),
         paper_bgcolor="rgba(0,0,0,0)",
@@ -1767,15 +1767,15 @@ def _page_map() -> None:
                   "de los últimos 30 días buscando objetos que orbitan cerca de las estaciones espaciales."),
         )
 
-        # ── Capas geográficas ────────────────────────────────────────────────
+        # ── Capas geográficas (defaults pensados para máxima definición) ─────
         st.markdown("**🗺 Capas del globo**")
         layer_cities       = st.toggle("Ciudades principales", value=False, key="lyr_cities")
         layer_country_names = st.toggle("Nombres de países",   value=False, key="lyr_country_names")
         layer_countries    = st.toggle("Fronteras nacionales", value=True,  key="lyr_countries")
         layer_state_names  = st.toggle("Nombres de estados (USA)", value=False, key="lyr_state_names")
-        layer_subunits     = st.toggle("Fronteras de estados", value=False, key="lyr_subunits")
+        layer_subunits     = st.toggle("Fronteras de estados", value=True,  key="lyr_subunits")
         layer_lakes        = st.toggle("Lagos",                value=True,  key="lyr_lakes")
-        layer_rivers       = st.toggle("Ríos",                 value=False, key="lyr_rivers")
+        layer_rivers       = st.toggle("Ríos",                 value=True,  key="lyr_rivers")
 
         dataset_label = st.selectbox(
             "Dataset a rastrear",
@@ -1910,11 +1910,15 @@ def _page_map() -> None:
                         rivers=layer_rivers,
                     ),
                 )
+            # scrollZoom sí en satélite (mapbox plano), NO en orthographic
+            # (el orthographic se recorta lateralmente al ampliar la projection.scale)
+            _is_sat = bool(view_mode and "Satélite" in view_mode)
             event = st.plotly_chart(
                 fig, use_container_width=True,
                 config={
                     "displayModeBar": "hover",
-                    "scrollZoom": True,
+                    "scrollZoom": _is_sat,
+                    "doubleClick": "reset" if not _is_sat else "reset+autosize",
                     "displaylogo": False,
                     "modeBarButtonsToRemove": [
                         "lasso2d", "select2d", "autoScale2d",
