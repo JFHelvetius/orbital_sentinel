@@ -59,6 +59,13 @@
       font-size: 12px !important;
       margin-left: 6px !important;
     }
+    .cesium-baseLayerPicker-itemIcon {
+      width: 48px !important;
+      height: 48px !important;
+      border-radius: 4px !important;
+      object-fit: cover !important;
+      border: 1px solid rgba(95,168,245,.3) !important;
+    }
     .hud {
       position: absolute; top: 12px; left: 14px; z-index: 999;
       color: #e8eef7; padding: 8px 12px;
@@ -135,47 +142,60 @@
       });
     }
 
+    // Tiles reales como iconos: cada thumbnail es un tile del propio provider
+    // a un nivel/zoom específico. Garantiza que el icono represente exactamente
+    // el estilo del imagery, y no depende de assets locales de Cesium que
+    // pueden no existir en algunas builds.
+    const ICONS = {
+      esriImagery: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/2/1/2',
+      esriTopo:    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/2/1/2',
+      esriOcean:   'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/2/1/2',
+      natgeo:      'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/2/1/2',
+      osm:         'https://tile.openstreetmap.org/2/2/1.png',
+      blueMarble:  'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/EPSG3857_500m/2/1/2.jpeg',
+    };
+
     const imageryModels = [
       new Cesium.ProviderViewModel({
-        name: 'Esri Imagery + etiquetas',
-        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/esriWorldImagery.png'),
-        tooltip: 'Tiles satelitales Esri/Maxar con etiquetas de países.',
-        creationFunction: esriImageryWithLabels,
-      }),
-      new Cesium.ProviderViewModel({
         name: 'Esri World Imagery',
-        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/esriWorldImagery.png'),
-        tooltip: 'Solo imagery satelital Esri/Maxar.',
+        iconUrl: ICONS.esriImagery,
+        tooltip: 'Imagery satelital fotorealística Esri/Maxar/USGS. Sin etiquetas.',
         creationFunction: esriImagery,
       }),
       new Cesium.ProviderViewModel({
+        name: 'Esri + etiquetas',
+        iconUrl: ICONS.esriImagery,
+        tooltip: 'Imagery Esri con superposición de fronteras y nombres.',
+        creationFunction: esriImageryWithLabels,
+      }),
+      new Cesium.ProviderViewModel({
         name: 'NASA Blue Marble',
-        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/blueMarble.png'),
-        tooltip: 'Blue Marble + Shaded Relief + Bathymetry.',
+        iconUrl: ICONS.blueMarble,
+        tooltip: 'Blue Marble + Shaded Relief + Bathymetry (NASA EOSDIS).',
         creationFunction: nasaBlueMarble,
       }),
       new Cesium.ProviderViewModel({
         name: 'Esri Topográfico',
-        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/esriWorldStreetMap.png'),
-        tooltip: 'Mapa topográfico mundial.',
+        iconUrl: ICONS.esriTopo,
+        tooltip: 'Mapa topográfico mundial con relieve y geografía física.',
         creationFunction: esriTopo,
       }),
       new Cesium.ProviderViewModel({
         name: 'Esri Océanos',
-        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/openStreetMap.png'),
+        iconUrl: ICONS.esriOcean,
         tooltip: 'Batimetría oceánica.',
         creationFunction: esriOcean,
       }),
       new Cesium.ProviderViewModel({
         name: 'OpenStreetMap',
-        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/openStreetMap.png'),
-        tooltip: 'OSM clásico.',
+        iconUrl: ICONS.osm,
+        tooltip: 'OSM clásico — estilo callejero.',
         creationFunction: osm,
       }),
       new Cesium.ProviderViewModel({
         name: 'National Geographic',
-        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/openStreetMap.png'),
-        tooltip: 'Estilo Nat Geo.',
+        iconUrl: ICONS.natgeo,
+        tooltip: 'Estilo Nat Geo — mapa físico-político.',
         creationFunction: natgeo,
       }),
     ];
@@ -185,7 +205,7 @@
       timeline: false,
       baseLayerPicker: true,
       imageryProviderViewModels: imageryModels,
-      selectedImageryProviderViewModel: imageryModels[0],
+      selectedImageryProviderViewModel: imageryModels[0],  // Esri sin etiquetas
       terrainProviderViewModels: [],
       geocoder: false,
       homeButton: true,
@@ -209,7 +229,18 @@
     scene.fog.density = 0.00006;
     scene.backgroundColor = Cesium.Color.fromCssColorString('#01020a');
 
-    document.getElementById('hudSub').textContent = 'Esri Imagery + etiquetas';
+    document.getElementById('hudSub').textContent = 'Esri World Imagery';
+
+    // HUD dinámico: cambia el subtítulo al seleccionar otra capa de imagery
+    try {
+      Cesium.knockout
+        .getObservable(viewer.baseLayerPicker.viewModel, 'selectedImagery')
+        .subscribe(function (model) {
+          if (model && model.name) {
+            document.getElementById('hudSub').textContent = model.name;
+          }
+        });
+    } catch (e) { /* sin subscriber, el HUD queda estático */ }
 
     viewer.camera.setView({
       destination: Cesium.Cartesian3.fromDegrees(0, 15, 28_000_000),
