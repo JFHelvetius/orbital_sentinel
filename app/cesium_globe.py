@@ -163,13 +163,17 @@ def html(
     }}
     .err-banner {{
       position: absolute; bottom: 16px; left: 14px; right: 14px;
-      background: rgba(80,20,30,.95); color: #ffcfd6;
-      padding: 10px 14px; border-radius: 6px; font-size: 12px;
-      border: 1px solid rgba(239,68,68,.5); display: none;
+      background: rgba(80,20,30,.96); color: #ffcfd6;
+      padding: 12px 16px; border-radius: 8px; font-size: 12px;
+      border: 1px solid rgba(239,68,68,.6); display: none;
       z-index: 1000;
-      max-height: 200px; overflow: auto;
+      max-height: 280px; overflow: auto;
       font-family: 'JetBrains Mono', monospace;
+      line-height: 1.55;
+      box-shadow: 0 6px 24px rgba(0,0,0,.5);
+      white-space: pre-wrap;
     }}
+    .err-banner-title {{ font-weight: 700; color: #ff8294; margin-bottom: 6px; font-size: 13px; }}
     /* Panel diagnóstico siempre visible */
     .diag {{
       position: absolute; top: 12px; right: 14px; z-index: 999;
@@ -218,11 +222,22 @@ def html(
         }}
       }},
       addErr(src, msg) {{
-        this.errors.push(src + ': ' + msg);
+        const entry = '[' + src + '] ' + msg;
+        this.errors.push(entry);
+        // Dedupe: si hay 30+ del mismo tipo, agrupa
         this.set('d-errs', 'ko', String(this.errors.length));
         const banner = document.getElementById('errBanner');
         banner.style.display = 'block';
-        banner.textContent = this.errors.join('\\n\\n');
+        const counts = {{}};
+        for (const e of this.errors) {{
+          const key = e.split(' @ ')[0].slice(0, 80);
+          counts[key] = (counts[key] || 0) + 1;
+        }}
+        const lines = Object.entries(counts)
+          .sort((a, b) => b[1] - a[1])
+          .map(([k, n]) => (n > 1 ? '×' + n + '  ' : '     ') + k);
+        banner.innerHTML = '<div class="err-banner-title">⚠ Errores (' + this.errors.length + '):</div>' +
+          lines.join('\\n');
       }},
     }};
 
@@ -388,26 +403,26 @@ def html(
         DIAG.addErr('webgl', e.message);
       }}
 
-      // GARANTIZA que haya una capa de imagery
+      // GARANTIZA que haya una capa de imagery, capturando errores por provider
+      function attachErrHook(provider, name) {{
+        if (provider && provider.errorEvent && provider.errorEvent.addEventListener) {{
+          provider.errorEvent.addEventListener(function(err) {{
+            const msg = err && err.message ? err.message : String(err);
+            DIAG.addErr(name, msg.slice(0, 150));
+          }});
+        }}
+      }}
       try {{
-        viewer.imageryLayers.addImageryProvider(osmStandard());
-        viewer.imageryLayers.addImageryProvider(nasaGibsBlueMarble());
+        const osmProv = osmStandard();
+        attachErrHook(osmProv, 'osm');
+        viewer.imageryLayers.addImageryProvider(osmProv);
+        const bmProv = nasaGibsBlueMarble();
+        attachErrHook(bmProv, 'blueMarble');
+        viewer.imageryLayers.addImageryProvider(bmProv);
         DIAG.set('d-imagery', 'ok', 'OSM + Blue Marble');
       }} catch (e) {{
         DIAG.set('d-imagery', 'ko', 'falla: ' + e.message);
         DIAG.addErr('imagery', e.message);
-      }}
-
-      // Listener de errores de tile (tiles que fallan al cargar)
-      let tileErrors = 0;
-      viewer.scene.globe.tileLoadProgressEvent.addEventListener(function(n) {{
-        // n = tiles pendientes (informativo)
-      }});
-      if (viewer.scene.imageryLayers && viewer.scene.imageryLayers.tileProviderError) {{
-        viewer.scene.imageryLayers.tileProviderError.addEventListener(function(e) {{
-          tileErrors++;
-          DIAG.addErr('tile', e.error ? e.error.toString() : 'tile error');
-        }});
       }}
 
       setHudSub('Blue Marble · NASA Earth Observatory');
@@ -418,9 +433,10 @@ def html(
       throw e;
     }}
 
-    // Atmósfera + lighting
+    // Atmósfera (sin lighting — el lighting oscurece el hemisferio nocturno
+    // y daba la impresión de globo invisible cuando la cámara miraba allí).
     const scene = viewer.scene;
-    scene.globe.enableLighting = true;
+    scene.globe.enableLighting = false;
     scene.globe.showGroundAtmosphere = true;
     if (scene.globe.atmosphereLightIntensity !== undefined)
       scene.globe.atmosphereLightIntensity = 10.0;
@@ -431,6 +447,8 @@ def html(
     scene.fog.enabled = true;
     scene.fog.density = 0.00006;
     scene.backgroundColor = Cesium.Color.fromCssColorString('#01020a');
+    // Color base por si los tiles tardan en cargar — globo azul tenue
+    scene.globe.baseColor = Cesium.Color.fromCssColorString('#0a1838');
 
     try {{ viewer.cesiumWidget.creditContainer.style.display = 'none'; }} catch (e) {{}}
 
