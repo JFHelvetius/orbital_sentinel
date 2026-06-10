@@ -490,6 +490,21 @@ def html(
         }}
       }}
 
+      // BYPASS adicional: aplica la textura procedural directamente como
+      // material del globo. Esto NO usa el quadtree de imagery, así que
+      // funciona aunque los workers que decodifican tiles estén bloqueados.
+      try {{
+        const proceduralUrl = proceduralEarthDataURL();
+        scene.globe.material = new Cesium.Material({{
+          fabric: {{
+            type: 'Image',
+            uniforms: {{ image: proceduralUrl }},
+          }},
+        }});
+      }} catch (matErr) {{
+        DIAG.addErr('globe-material', matErr.message);
+      }}
+
       // Intentos en cascada: Wikimedia → NASA → textura procedural local
       DIAG.set('d-imagery', 'wait', 'intentando Wikimedia…');
       addImagery(
