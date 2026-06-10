@@ -142,17 +142,117 @@
       });
     }
 
-    // Tiles reales como iconos: cada thumbnail es un tile del propio provider
-    // a un nivel/zoom específico. Garantiza que el icono represente exactamente
-    // el estilo del imagery, y no depende de assets locales de Cesium que
-    // pueden no existir en algunas builds.
+    // Iconos generados en canvas — siempre cargan (data:URL local), estilo
+    // único por provider para que sean identificables a un vistazo.
+    function makeIcon(style) {
+      const c = document.createElement('canvas');
+      c.width = c.height = 64;
+      const ctx = c.getContext('2d');
+      // Disco circular tipo planeta
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(32, 32, 30, 0, Math.PI * 2);
+      ctx.clip();
+      // Fondo según estilo
+      if (style.bg) {
+        const grad = ctx.createRadialGradient(28, 22, 4, 32, 32, 34);
+        for (let i = 0; i < style.bg.length; i++)
+          grad.addColorStop(i / (style.bg.length - 1), style.bg[i]);
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = '#1a2236';
+      }
+      ctx.fillRect(0, 0, 64, 64);
+      // Detalles (líneas tipo borde / formas tipo continente)
+      if (style.shapes) {
+        for (const s of style.shapes) {
+          ctx.fillStyle = s.color;
+          if (s.type === 'blob') {
+            ctx.beginPath();
+            ctx.ellipse(s.x, s.y, s.rx, s.ry, s.r || 0, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (s.type === 'lines') {
+            ctx.strokeStyle = s.color;
+            ctx.lineWidth = s.w || 0.7;
+            for (const [x1, y1, x2, y2] of s.lines) {
+              ctx.beginPath();
+              ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+              ctx.stroke();
+            }
+          }
+        }
+      }
+      // Borde
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(95,168,245,.45)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(32, 32, 30, 0, Math.PI * 2);
+      ctx.stroke();
+      return c.toDataURL('image/png');
+    }
     const ICONS = {
-      esriImagery: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/2/1/2',
-      esriTopo:    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/2/1/2',
-      esriOcean:   'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/2/1/2',
-      natgeo:      'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/2/1/2',
-      osm:         'https://tile.openstreetmap.org/2/2/1.png',
-      blueMarble:  'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/EPSG3857_500m/2/1/2.jpeg',
+      esriImagery: makeIcon({
+        bg: ['#5a7a4e', '#3c5a78', '#0a2849'],
+        shapes: [
+          {type:'blob', color:'rgba(120,140,80,.85)', x:20, y:24, rx:11, ry:8},
+          {type:'blob', color:'rgba(120,140,80,.85)', x:42, y:36, rx:14, ry:10},
+          {type:'blob', color:'rgba(180,170,120,.7)', x:34, y:22, rx:7, ry:5},
+        ],
+      }),
+      esriWithLabels: makeIcon({
+        bg: ['#5a7a4e', '#3c5a78', '#0a2849'],
+        shapes: [
+          {type:'blob', color:'rgba(120,140,80,.85)', x:20, y:24, rx:11, ry:8},
+          {type:'blob', color:'rgba(120,140,80,.85)', x:42, y:36, rx:14, ry:10},
+          {type:'lines', color:'rgba(255,255,255,.5)', w:0.6, lines:[
+            [12,32,52,32],[32,12,32,52],
+          ]},
+        ],
+      }),
+      blueMarble: makeIcon({
+        bg: ['#3a5a78', '#1a3a68', '#04102c'],
+        shapes: [
+          {type:'blob', color:'rgba(70,100,60,.75)', x:22, y:26, rx:10, ry:7},
+          {type:'blob', color:'rgba(70,100,60,.75)', x:44, y:38, rx:12, ry:9},
+          {type:'blob', color:'rgba(255,255,255,.25)', x:20, y:18, rx:8, ry:4},
+        ],
+      }),
+      esriTopo: makeIcon({
+        bg: ['#c8b78a', '#9a8855', '#5a4a28'],
+        shapes: [
+          {type:'lines', color:'rgba(80,60,30,.6)', w:0.8, lines:[
+            [10,30,30,28],[28,28,48,32],[14,40,38,42],[36,44,54,40],
+            [16,20,28,16],[30,16,48,22],
+          ]},
+        ],
+      }),
+      esriOcean: makeIcon({
+        bg: ['#3470a0', '#1a4878', '#0a2050'],
+        shapes: [
+          {type:'lines', color:'rgba(180,210,240,.4)', w:0.6, lines:[
+            [8,22,56,22],[8,32,56,32],[8,42,56,42],[8,52,56,52],
+          ]},
+        ],
+      }),
+      osm: makeIcon({
+        bg: ['#f4e8c8', '#e0d4a8', '#c8b888'],
+        shapes: [
+          {type:'lines', color:'rgba(120,90,60,.65)', w:1.1, lines:[
+            [8,32,56,32],[32,8,32,56],[16,16,48,48],[16,48,48,16],
+          ]},
+        ],
+      }),
+      natgeo: makeIcon({
+        bg: ['#d8c8a0', '#a0a878', '#5a6a48'],
+        shapes: [
+          {type:'blob', color:'rgba(170,160,90,.7)', x:24, y:24, rx:10, ry:7},
+          {type:'blob', color:'rgba(170,160,90,.7)', x:42, y:38, rx:11, ry:9},
+          {type:'lines', color:'rgba(120,80,50,.5)', w:0.6, lines:[
+            [10,38,30,40],[34,42,54,38],
+          ]},
+        ],
+      }),
     };
 
     const imageryModels = [
@@ -164,7 +264,7 @@
       }),
       new Cesium.ProviderViewModel({
         name: 'Esri + etiquetas',
-        iconUrl: ICONS.esriImagery,
+        iconUrl: ICONS.esriWithLabels,
         tooltip: 'Imagery Esri con superposición de fronteras y nombres.',
         creationFunction: esriImageryWithLabels,
       }),
@@ -385,10 +485,54 @@
       }
     }
 
+    // ── Overlays toggleables (etiquetas, fronteras) ─────────────────
+    // Mapeo de toggles de Streamlit → capas overlay reales de Esri.
+    function makeOverlay(url) {
+      return new Cesium.UrlTemplateImageryProvider({
+        url: url,
+        credit: 'Esri Reference',
+        maximumLevel: 19,
+      });
+    }
+    const OVERLAY_URLS = {
+      labels:    'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      boundaries:'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Reference_Overlay/MapServer/tile/{z}/{y}/{x}',
+      transport: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+    };
+    const activeOverlays = {};  // key → Cesium.ImageryLayer
+
+    function ensureOverlay(key, on) {
+      if (on && !activeOverlays[key]) {
+        const prov = makeOverlay(OVERLAY_URLS[key]);
+        activeOverlays[key] = viewer.imageryLayers.addImageryProvider(prov);
+      } else if (!on && activeOverlays[key]) {
+        viewer.imageryLayers.remove(activeOverlays[key], true);
+        delete activeOverlays[key];
+      }
+    }
+
+    function applyLayers(layers) {
+      if (!layers) return;
+      // Etiquetas (nombres de países, estados, ciudades)
+      const wantLabels = !!(layers.country_names || layers.state_names || layers.cities);
+      ensureOverlay('labels', wantLabels);
+      // Fronteras (nacionales y subnacionales)
+      const wantBorders = !!(layers.countries || layers.subunits);
+      ensureOverlay('boundaries', wantBorders);
+      // Ríos/Lagos en Cesium se aproximan con World_Transportation (incluye
+      // hidrografía menor en zoom alto). No es 1:1 pero da indicación visual.
+      const wantHydro = !!(layers.rivers || layers.lakes);
+      ensureOverlay('transport', wantHydro);
+    }
+
     // ── Recibe datos del parent via postMessage ──────────────────────
     window.addEventListener('message', function(event) {
       if (event.data && event.data.type === 'orbital-sentinel-tracks') {
         renderTracks(event.data.payload);
+        applyLayers(event.data.payload.layers);
+      } else if (event.data && event.data.type === 'orbital-sentinel-layers') {
+        // Mensaje sólo de layers, sin reenviar tracks
+        applyLayers(event.data.payload);
       }
     });
 

@@ -56,16 +56,19 @@ def html(
     primary_norad: int,
     real_norads: set[int] | None = None,
     extra_tracks: list[Any] | None = None,
+    layers: dict[str, bool] | None = None,
     height: int = 880,
 ) -> str:
     """Genera el wrapper HTML que carga el iframe Cesium desde GitHub Pages."""
     real_norads = real_norads or set()
     extra_tracks = extra_tracks or []
+    layers = layers or {}
     payload = {
         "tracks": _tracks_to_dict(tracks, primary_norad),
         "primary_norad": int(primary_norad),
         "real_norads": [int(n) for n in real_norads],
         "extra_tracks": _tracks_to_dict(extra_tracks, primary_norad),
+        "layers": {k: bool(v) for k, v in layers.items()},
     }
     payload_json = json.dumps(payload, separators=(",", ":"))
 

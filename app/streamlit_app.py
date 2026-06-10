@@ -1918,6 +1918,15 @@ def _page_map() -> None:
                     primary_norad=case.evidence_bundle.object_id,
                     real_norads=real_norads,
                     extra_tracks=extra_tracks,
+                    layers=dict(
+                        cities=layer_cities,
+                        country_names=layer_country_names,
+                        countries=layer_countries,
+                        state_names=layer_state_names,
+                        subunits=layer_subunits,
+                        lakes=layer_lakes,
+                        rivers=layer_rivers,
+                    ),
                     height=880,
                 )
                 import streamlit.components.v1 as components
