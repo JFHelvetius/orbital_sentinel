@@ -216,6 +216,7 @@ def html(
     <div class="row"><span class="lbl">Layers count</span><span id="d-layers" class="wait">…</span></div>
     <div class="row"><span class="lbl">Frames</span><span id="d-frames" class="wait">…</span></div>
     <div class="row"><span class="lbl">Esri fetch</span><span id="d-esri" class="wait">…</span></div>
+    <div class="row"><span class="lbl">Worker</span><span id="d-worker" class="wait">…</span></div>
     <div class="row"><span class="lbl">Errores</span><span id="d-errs" class="wait">0</span></div>
     <div style="margin-top:8px;pointer-events:auto;">
       <button id="forceRenderBtn" style="
@@ -535,6 +536,26 @@ def html(
         DIAG.set('d-esri', 'ko', 'falla');
         DIAG.addErr('esri-fetch', e.message.slice(0, 150));
       }});
+
+    // ── Test crítico: ¿se pueden crear Workers cross-origin en este iframe?
+    // Si esto falla, los workers de Cesium para decodificar tiles también
+    // fallan, y los tiles quedan en pending eterno aunque la red funcione.
+    try {{
+      const workerUrl = window.CESIUM_BASE_URL + 'Workers/cesiumWorkerBootstrapper.js';
+      const w = new Worker(workerUrl);
+      w.addEventListener('error', function(e) {{
+        DIAG.set('d-worker', 'ko', 'error: ' + (e.message || 'silent'));
+        DIAG.addErr('worker', 'Worker error: ' + (e.message || 'silent (likely cross-origin block)') + ' @ ' + workerUrl);
+      }});
+      // Damos 800ms para que cargue/falle, luego reportamos
+      setTimeout(function() {{
+        DIAG.set('d-worker', 'ok', 'creado');
+        try {{ w.terminate(); }} catch (e) {{}}
+      }}, 800);
+    }} catch (e) {{
+      DIAG.set('d-worker', 'ko', e.message.slice(0, 50));
+      DIAG.addErr('worker', 'No se pudo crear Worker: ' + e.message);
+    }}
 
     try {{ viewer.cesiumWidget.creditContainer.style.display = 'none'; }} catch (e) {{}}
 
