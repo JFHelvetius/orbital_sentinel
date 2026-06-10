@@ -438,6 +438,11 @@ def html(
     // Atmósfera (sin lighting — el lighting oscurece el hemisferio nocturno
     // y daba la impresión de globo invisible cuando la cámara miraba allí).
     const scene = viewer.scene;
+    // CRÍTICO: render continuo. Por default en Cesium 1.119 hay
+    // requestRenderMode que solo pinta cuando algo se mueve, lo cual
+    // deja el globo en negro si el usuario no toca nada al cargar.
+    scene.requestRenderMode = false;
+    scene.maximumRenderTimeChange = Infinity;
     scene.globe.enableLighting = false;
     scene.globe.showGroundAtmosphere = true;
     if (scene.globe.atmosphereLightIntensity !== undefined)
