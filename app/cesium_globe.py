@@ -210,6 +210,7 @@ def html(
     <div class="row"><span class="lbl">WebGL</span><span id="d-webgl" class="wait">…</span></div>
     <div class="row"><span class="lbl">Imagery</span><span id="d-imagery" class="wait">…</span></div>
     <div class="row"><span class="lbl">Canvas</span><span id="d-canvas" class="wait">…</span></div>
+    <div class="row"><span class="lbl">Client</span><span id="d-client" class="wait">…</span></div>
     <div class="row"><span class="lbl">Tiles cargados</span><span id="d-tiles" class="wait">…</span></div>
     <div class="row"><span class="lbl">Globe show</span><span id="d-show" class="wait">…</span></div>
     <div class="row"><span class="lbl">Layers count</span><span id="d-layers" class="wait">…</span></div>
@@ -467,17 +468,30 @@ def html(
     scene.fog.enabled = true;
     scene.fog.density = 0.00006;
     scene.backgroundColor = Cesium.Color.fromCssColorString('#01020a');
-    // DIAGNÓSTICO: rojo brillante temporal — si ves esfera roja, el globo
-    // se renderiza correctamente y los tiles no llegan; si no la ves,
-    // hay problema de cámara/canvas/contexto.
-    scene.globe.baseColor = Cesium.Color.fromCssColorString('#ff2244');
+    // DIAGNÓSTICO: verde fluo MUY visible — imposible perderlo si pinta.
+    scene.globe.baseColor = Cesium.Color.fromCssColorString('#00ff77');
+    // También subimos el screen-space-error para forzar tiles más grandes
+    // y que carguen rápido aunque sean groseros.
+    scene.globe.maximumScreenSpaceError = 8;
 
-    // Reporta tamaño del canvas y progreso de tiles en el panel diag
-    try {{
-      const cnv = viewer.canvas;
-      DIAG.set('d-canvas', cnv.width > 0 ? 'ok' : 'ko',
-        cnv.width + ' × ' + cnv.height + ' px');
-    }} catch (e) {{ DIAG.set('d-canvas', 'ko', 'sin canvas'); }}
+    // Reporta tamaño del canvas y del container client
+    function reportDims() {{
+      try {{
+        const cnv = viewer.canvas;
+        DIAG.set('d-canvas', cnv.width > 0 ? 'ok' : 'ko',
+          cnv.width + ' × ' + cnv.height);
+        const cont = document.getElementById('cesiumContainer');
+        DIAG.set('d-client', cont.clientWidth > 0 ? 'ok' : 'ko',
+          cont.clientWidth + ' × ' + cont.clientHeight);
+      }} catch (e) {{ DIAG.set('d-canvas', 'ko', 'sin canvas'); }}
+    }}
+    reportDims();
+    // CRÍTICO: forzar resize varias veces, el iframe Streamlit puede tardar
+    // en estabilizar dimensiones mientras Cesium ya inicializó.
+    setTimeout(function() {{ viewer.resize(); reportDims(); }}, 100);
+    setTimeout(function() {{ viewer.resize(); reportDims(); }}, 500);
+    setTimeout(function() {{ viewer.resize(); reportDims(); }}, 2000);
+    window.addEventListener('resize', function() {{ viewer.resize(); reportDims(); }});
     let lastTilePending = -1;
     scene.globe.tileLoadProgressEvent.addEventListener(function(pending) {{
       if (pending !== lastTilePending) {{
