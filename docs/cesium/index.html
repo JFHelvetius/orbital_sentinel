@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Orbital Sentinel · Cesium 3D</title>
+  <script>
+    window.CESIUM_BASE_URL = 'https://unpkg.com/cesium@1.119.0/Build/Cesium/';
+  </script>
+  <link rel="stylesheet" href="https://unpkg.com/cesium@1.119.0/Build/Cesium/Widgets/widgets.css">
+  <script src="https://unpkg.com/cesium@1.119.0/Build/Cesium/Cesium.js"></script>
+  <style>
+    html, body, #cesiumContainer {
+      width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+      background: #000;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .cesium-viewer-bottom { display: none !important; }
+    .cesium-viewer-toolbar { top: 10px !important; right: 10px !important; }
+    .cesium-button {
+      background: rgba(21,27,44,.92) !important;
+      border: 1px solid rgba(95,168,245,.3) !important;
+      color: #5fa8f5 !important;
+    }
+    .cesium-button:hover { background: rgba(74,144,226,.3) !important; }
+    .cesium-baseLayerPicker-dropDown {
+      background: rgba(15,20,38,.98) !important;
+      border: 1px solid rgba(95,168,245,.35) !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,.6);
+      max-height: 540px !important;
+      width: 320px !important;
+      padding: 8px !important;
+    }
+    .cesium-baseLayerPicker-sectionTitle {
+      color: #5fa8f5 !important;
+      font-size: 11px !important;
+      letter-spacing: .08em !important;
+      text-transform: uppercase !important;
+      font-weight: 600 !important;
+      margin: 8px 4px 4px !important;
+    }
+    .cesium-baseLayerPicker-item {
+      background: rgba(30,40,65,.5) !important;
+      border: 1px solid rgba(95,168,245,.15) !important;
+      border-radius: 6px !important;
+      margin: 4px !important;
+      padding: 4px !important;
+      cursor: pointer !important;
+    }
+    .cesium-baseLayerPicker-item:hover {
+      background: rgba(74,144,226,.2) !important;
+      border-color: rgba(95,168,245,.5) !important;
+    }
+    .cesium-baseLayerPicker-selectedItem {
+      background: rgba(74,144,226,.3) !important;
+      border-color: rgba(95,168,245,.7) !important;
+    }
+    .cesium-baseLayerPicker-itemLabel {
+      color: #e8eef7 !important;
+      font-size: 12px !important;
+      margin-left: 6px !important;
+    }
+    .hud {
+      position: absolute; top: 12px; left: 14px; z-index: 999;
+      color: #e8eef7; padding: 8px 12px;
+      background: rgba(15,25,50,.65);
+      border: 1px solid rgba(95,168,245,.3);
+      border-radius: 6px; backdrop-filter: blur(8px);
+      pointer-events: none;
+    }
+    .hud .title { font-size: 13px; font-weight: 700; letter-spacing: .03em; }
+    .hud .sub { font-size: 10px; color: #5fa8f5; font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+    .loading {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      color: #5fa8f5; font-size: 14px;
+      padding: 12px 18px; background: rgba(15,20,38,.85);
+      border: 1px solid rgba(95,168,245,.3); border-radius: 6px;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer">
+    <div class="loading" id="loadingMsg">Cargando Cesium…</div>
+  </div>
+  <div class="hud">
+    <div class="title">🌐 VISTA CESIUM · 3D fotorealístico</div>
+    <div class="sub" id="hudSub">Esperando datos…</div>
+  </div>
+  <script>
+    // ── Providers públicos (sin token) ───────────────────────────────
+    function esriImagery() {
+      return new Cesium.UrlTemplateImageryProvider({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        credit: 'Esri · Maxar · Earthstar Geographics · USGS',
+        maximumLevel: 19,
+      });
+    }
+    function esriImageryWithLabels() {
+      return [esriImagery(), new Cesium.UrlTemplateImageryProvider({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+        credit: 'Esri Reference',
+        maximumLevel: 19,
+      })];
+    }
+    function esriTopo() {
+      return new Cesium.UrlTemplateImageryProvider({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+        credit: 'Esri Topo', maximumLevel: 19,
+      });
+    }
+    function esriOcean() {
+      return new Cesium.UrlTemplateImageryProvider({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}',
+        credit: 'Esri Ocean', maximumLevel: 13,
+      });
+    }
+    function osm() {
+      return new Cesium.OpenStreetMapImageryProvider({
+        url: 'https://tile.openstreetmap.org/',
+        credit: '© OpenStreetMap contributors',
+      });
+    }
+    function nasaBlueMarble() {
+      return new Cesium.UrlTemplateImageryProvider({
+        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/EPSG3857_500m/{z}/{y}/{x}.jpeg',
+        credit: 'NASA Earth Observatory — Blue Marble',
+        tilingScheme: new Cesium.WebMercatorTilingScheme(),
+        maximumLevel: 8,
+      });
+    }
+    function natgeo() {
+      return new Cesium.UrlTemplateImageryProvider({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
+        credit: 'Esri · National Geographic', maximumLevel: 16,
+      });
+    }
+
+    const imageryModels = [
+      new Cesium.ProviderViewModel({
+        name: 'Esri Imagery + etiquetas',
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/esriWorldImagery.png'),
+        tooltip: 'Tiles satelitales Esri/Maxar con etiquetas de países.',
+        creationFunction: esriImageryWithLabels,
+      }),
+      new Cesium.ProviderViewModel({
+        name: 'Esri World Imagery',
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/esriWorldImagery.png'),
+        tooltip: 'Solo imagery satelital Esri/Maxar.',
+        creationFunction: esriImagery,
+      }),
+      new Cesium.ProviderViewModel({
+        name: 'NASA Blue Marble',
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/blueMarble.png'),
+        tooltip: 'Blue Marble + Shaded Relief + Bathymetry.',
+        creationFunction: nasaBlueMarble,
+      }),
+      new Cesium.ProviderViewModel({
+        name: 'Esri Topográfico',
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/esriWorldStreetMap.png'),
+        tooltip: 'Mapa topográfico mundial.',
+        creationFunction: esriTopo,
+      }),
+      new Cesium.ProviderViewModel({
+        name: 'Esri Océanos',
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/openStreetMap.png'),
+        tooltip: 'Batimetría oceánica.',
+        creationFunction: esriOcean,
+      }),
+      new Cesium.ProviderViewModel({
+        name: 'OpenStreetMap',
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/openStreetMap.png'),
+        tooltip: 'OSM clásico.',
+        creationFunction: osm,
+      }),
+      new Cesium.ProviderViewModel({
+        name: 'National Geographic',
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/openStreetMap.png'),
+        tooltip: 'Estilo Nat Geo.',
+        creationFunction: natgeo,
+      }),
+    ];
+
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      animation: false,
+      timeline: false,
+      baseLayerPicker: true,
+      imageryProviderViewModels: imageryModels,
+      selectedImageryProviderViewModel: imageryModels[0],
+      terrainProviderViewModels: [],
+      geocoder: false,
+      homeButton: true,
+      sceneModePicker: true,
+      navigationHelpButton: false,
+      fullscreenButton: true,
+      infoBox: true,
+      selectionIndicator: true,
+      shouldAnimate: false,
+    });
+    try { viewer.cesiumWidget.creditContainer.style.display = 'none'; } catch (e) {}
+
+    const scene = viewer.scene;
+    scene.globe.enableLighting = false;
+    scene.globe.showGroundAtmosphere = true;
+    if (scene.globe.atmosphereLightIntensity !== undefined)
+      scene.globe.atmosphereLightIntensity = 10.0;
+    scene.skyAtmosphere.show = true;
+    scene.skyAtmosphere.saturationShift = 0.05;
+    scene.fog.enabled = true;
+    scene.fog.density = 0.00006;
+    scene.backgroundColor = Cesium.Color.fromCssColorString('#01020a');
+
+    document.getElementById('hudSub').textContent = 'Esri Imagery + etiquetas';
+
+    viewer.camera.setView({
+      destination: Cesium.Cartesian3.fromDegrees(0, 15, 28_000_000),
+      orientation: { heading: 0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0 },
+    });
+
+    // Quita "Cargando" después del primer render
+    let firstRenderDone = false;
+    scene.postRender.addEventListener(function() {
+      if (!firstRenderDone) {
+        firstRenderDone = true;
+        const m = document.getElementById('loadingMsg');
+        if (m) m.style.display = 'none';
+      }
+    });
+
+    // ── Render de satélites desde datos recibidos por postMessage ────
+    function renderTracks(payload) {
+      try {
+        const { tracks, primary_norad, real_norads, extra_tracks } = payload;
+        const realSet = new Set(real_norads || []);
+
+        viewer.entities.removeAll();
+
+        function addSat(t, opts) {
+          const pos = Cesium.Cartesian3.fromDegrees(t.lon0, t.lat0, t.alt0 * 1000.0);
+          viewer.entities.add({
+            name: t.name,
+            position: pos,
+            point: {
+              pixelSize: opts.size,
+              color: opts.color,
+              outlineColor: Cesium.Color.WHITE.withAlpha(0.8),
+              outlineWidth: opts.outline,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            },
+            label: opts.label ? {
+              text: t.name,
+              font: '11px Inter, sans-serif',
+              fillColor: opts.labelColor,
+              outlineColor: Cesium.Color.BLACK,
+              outlineWidth: 2,
+              style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+              pixelOffset: new Cesium.Cartesian2(10, 0),
+              showBackground: true,
+              backgroundColor: new Cesium.Color(0.04, 0.06, 0.12, 0.75),
+              backgroundPadding: new Cesium.Cartesian2(6, 4),
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            } : undefined,
+            description: `
+              <h3>${t.name}</h3>
+              <p><b>NORAD:</b> ${t.norad}</p>
+              <p><b>Altitud:</b> ${t.alt0.toFixed(0)} km</p>
+              <p><b>Altitud media:</b> ${t.alt_mean.toFixed(0)} km</p>
+              <p><b>Inclinación:</b> ${t.incl.toFixed(2)}°</p>
+              <p><b>Período:</b> ${t.period_min.toFixed(1)} min</p>
+            `,
+          });
+
+          if (t.lats && t.lats.length > 1 && opts.drawTrack) {
+            const positions = [];
+            for (let i = 0; i < t.lats.length; i++) {
+              positions.push(t.lons[i]);
+              positions.push(t.lats[i]);
+              positions.push(t.alt0 * 1000.0);
+            }
+            viewer.entities.add({
+              polyline: {
+                positions: Cesium.Cartesian3.fromDegreesArrayHeights(positions),
+                width: opts.trackWidth,
+                material: opts.trackColor,
+              },
+            });
+          }
+        }
+
+        (tracks || []).forEach(t => {
+          const isPrimary = (t.norad === primary_norad);
+          const isReal = realSet.has(t.norad);
+          if (isPrimary) {
+            addSat(t, {
+              size: 18, color: Cesium.Color.fromCssColorString('#ffd700'),
+              outline: 2, label: true,
+              labelColor: Cesium.Color.fromCssColorString('#ffd700'),
+              drawTrack: true, trackWidth: 2.5,
+              trackColor: new Cesium.PolylineGlowMaterialProperty({
+                color: Cesium.Color.fromCssColorString('#ffd700'),
+                glowPower: 0.25,
+              }),
+            });
+          } else if (isReal) {
+            addSat(t, {
+              size: 14, color: Cesium.Color.fromCssColorString('#ff3547'),
+              outline: 2, label: true,
+              labelColor: Cesium.Color.fromCssColorString('#ff7a85'),
+              drawTrack: true, trackWidth: 2,
+              trackColor: Cesium.Color.fromCssColorString('#ff3547').withAlpha(0.65),
+            });
+          } else if (!t.known) {
+            addSat(t, {
+              size: 10, color: Cesium.Color.fromCssColorString('#ffb300'),
+              outline: 1.5, label: true,
+              labelColor: Cesium.Color.fromCssColorString('#ffb300'),
+              drawTrack: true, trackWidth: 1,
+              trackColor: Cesium.Color.fromCssColorString('#ffb300').withAlpha(0.45),
+            });
+          } else {
+            addSat(t, {
+              size: 7, color: Cesium.Color.fromCssColorString('#7eff9e'),
+              outline: 1, label: false,
+              labelColor: Cesium.Color.WHITE,
+              drawTrack: true, trackWidth: 0.8,
+              trackColor: Cesium.Color.fromCssColorString('#7eff9e').withAlpha(0.35),
+            });
+          }
+        });
+
+        (extra_tracks || []).forEach(t => {
+          addSat(t, {
+            size: 12, color: Cesium.Color.fromCssColorString('#00d2c8'),
+            outline: 1.5, label: true,
+            labelColor: Cesium.Color.fromCssColorString('#00d2c8'),
+            drawTrack: true, trackWidth: 1.5,
+            trackColor: Cesium.Color.fromCssColorString('#00d2c8').withAlpha(0.55),
+          });
+        });
+
+        // Vuela al primary
+        const primary = (tracks || []).find(t => t.norad === primary_norad);
+        if (primary) {
+          setTimeout(function() {
+            viewer.camera.flyTo({
+              destination: Cesium.Cartesian3.fromDegrees(
+                primary.lon0, primary.lat0, 22_000_000
+              ),
+              duration: 2.0,
+            });
+          }, 800);
+        }
+      } catch (e) {
+        console.error('renderTracks failed:', e);
+      }
+    }
+
+    // ── Recibe datos del parent via postMessage ──────────────────────
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'orbital-sentinel-tracks') {
+        renderTracks(event.data.payload);
+      }
+    });
+
+    // Avisar al parent que estamos listos
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'orbital-sentinel-ready' }, '*');
+    }
+  </script>
+</body>
+</html>
