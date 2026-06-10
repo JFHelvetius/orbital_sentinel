@@ -418,8 +418,9 @@ def html(
         DIAG.addErr('webgl', e.message);
       }}
 
-      // Una sola capa: Esri World Imagery (sin token, sin viewModels que
-      // generen capas fantasma). Si esta carga, el globo se ve.
+      // SOLUCIÓN: SingleTileImageryProvider — una sola imagen Blue Marble
+      // cargada como textura WebGL directamente. NO requiere Web Workers,
+      // que es lo que está bloqueado por el iframe srcdoc de Streamlit.
       function attachErrHook(provider, name) {{
         if (provider && provider.errorEvent && provider.errorEvent.addEventListener) {{
           provider.errorEvent.addEventListener(function(err) {{
@@ -428,11 +429,19 @@ def html(
           }});
         }}
       }}
+      // Forzar EllipsoidTerrainProvider — sin terreno 3D, sin workers
+      viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+
+      // Imagen Blue Marble 4096×2048 servida por NASA Visible Earth (CORS OK)
       try {{
-        const esriProv = esriImagery();
-        attachErrHook(esriProv, 'esri');
-        viewer.imageryLayers.addImageryProvider(esriProv);
-        DIAG.set('d-imagery', 'ok', 'Esri solamente');
+        const singleProv = new Cesium.SingleTileImageryProvider({{
+          url: 'https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57752/land_shallow_topo_2048.jpg',
+          credit: 'NASA Visible Earth — Blue Marble',
+          rectangle: Cesium.Rectangle.fromDegrees(-180, -90, 180, 90),
+        }});
+        attachErrHook(singleProv, 'blueMarble');
+        viewer.imageryLayers.addImageryProvider(singleProv);
+        DIAG.set('d-imagery', 'ok', 'Blue Marble (single tile)');
       }} catch (e) {{
         DIAG.set('d-imagery', 'ko', 'falla: ' + e.message);
         DIAG.addErr('imagery', e.message);
