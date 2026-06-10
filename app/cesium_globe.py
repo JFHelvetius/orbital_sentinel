@@ -2,8 +2,15 @@
 
 Implementa la decisión de ADR-0008 (enmienda 1): Cesium embebido vía
 `streamlit.components.v1.html`. Sin dependencia de Cesium Ion para
-imagery — usa tiles públicos sin token (Esri World Imagery por default,
-con baseLayerPicker para alternar a OSM, Esri Topo, etc.).
+imagery — usa tiles públicos sin token.
+
+Estrategia robusta v0.2:
+- baseLayer creado explícitamente con OpenStreetMap (siempre funciona,
+  CORS abierto, sin token, sin rate limits agresivos).
+- Capas adicionales (NASA GIBS Blue Marble, Esri Imagery, etc.) en el
+  baseLayerPicker para alternar.
+- Si una capa externa falla por CORS desde el iframe sandbox de Streamlit,
+  OSM sigue mostrando el globo — degradación elegante.
 
 Deuda técnica (ADR-0008 enmienda 1, plan v0.1 → v0.3):
 - v0.1 (este módulo): puntos animados + línea fina como traza.
@@ -18,7 +25,6 @@ from typing import Any
 
 
 def _tracks_to_json(tracks: list[Any], primary_norad: int) -> str:
-    """Serializa los tracks a JSON consumible por Cesium JS."""
     payload = []
     for t in tracks:
         lats = [v for v in (t.lats or []) if v is not None]
@@ -48,7 +54,6 @@ def html(
     extra_tracks: list[Any] | None = None,
     height: int = 880,
 ) -> str:
-    """Genera el HTML completo del iframe Cesium para st.components.html."""
     real_norads = real_norads or set()
     extra_tracks = extra_tracks or []
     tracks_json = _tracks_to_json(tracks, primary_norad)
@@ -62,50 +67,103 @@ def html(
   <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/Widgets/widgets.css">
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/Cesium.js"></script>
   <style>
-    html, body, #cesiumContainer {{
+    html, body {{
       width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
       background: #000;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }}
-    #cesiumContainer {{ height: {height}px; border-radius: 14px; overflow: hidden; }}
+    #cesiumContainer {{
+      width: 100%; height: {height}px;
+      border-radius: 14px; overflow: hidden;
+      position: relative;
+    }}
     .cesium-viewer-bottom {{ display: none !important; }}
     .cesium-viewer-toolbar {{ top: 10px !important; right: 10px !important; }}
     .cesium-button {{
-      background: rgba(21,27,44,.85) !important;
-      border: 1px solid rgba(95,168,245,.25) !important;
-      color: #5fa8f5 !important;
-    }}
-    .cesium-button:hover {{ background: rgba(74,144,226,.2) !important; }}
-    .cesium-baseLayerPicker-dropDown {{
-      background: rgba(15,20,38,.97) !important;
+      background: rgba(21,27,44,.92) !important;
       border: 1px solid rgba(95,168,245,.3) !important;
-      color: #e8eef7 !important;
+      color: #5fa8f5 !important;
+      width: 36px !important; height: 36px !important;
+      line-height: 32px !important;
     }}
-    .cesium-baseLayerPicker-sectionTitle {{ color: #5fa8f5 !important; }}
-    .cesium-baseLayerPicker-itemLabel {{ color: #e8eef7 !important; }}
+    .cesium-button:hover {{ background: rgba(74,144,226,.3) !important; }}
+    .cesium-baseLayerPicker-dropDown {{
+      background: rgba(15,20,38,.98) !important;
+      border: 1px solid rgba(95,168,245,.35) !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,.6);
+      max-height: 540px !important;
+      width: 320px !important;
+      padding: 8px !important;
+    }}
+    .cesium-baseLayerPicker-sectionTitle {{
+      color: #5fa8f5 !important;
+      font-size: 11px !important;
+      letter-spacing: .08em !important;
+      text-transform: uppercase !important;
+      font-weight: 600 !important;
+      margin: 8px 4px 4px !important;
+    }}
+    .cesium-baseLayerPicker-choices {{ padding: 0 !important; }}
+    .cesium-baseLayerPicker-item {{
+      background: rgba(30,40,65,.5) !important;
+      border: 1px solid rgba(95,168,245,.15) !important;
+      border-radius: 6px !important;
+      margin: 4px !important;
+      padding: 4px !important;
+      cursor: pointer !important;
+    }}
+    .cesium-baseLayerPicker-item:hover {{
+      background: rgba(74,144,226,.2) !important;
+      border-color: rgba(95,168,245,.5) !important;
+    }}
+    .cesium-baseLayerPicker-selectedItem {{
+      background: rgba(74,144,226,.3) !important;
+      border-color: rgba(95,168,245,.7) !important;
+    }}
+    .cesium-baseLayerPicker-itemLabel {{
+      color: #e8eef7 !important;
+      font-size: 12px !important;
+      margin-left: 6px !important;
+    }}
+    .cesium-baseLayerPicker-itemIcon {{
+      width: 48px !important; height: 48px !important;
+      border-radius: 4px !important;
+    }}
     .hud {{
       position: absolute; top: 12px; left: 14px; z-index: 999;
       color: #e8eef7; padding: 8px 12px;
-      background: rgba(15,25,50,.55);
-      border: 1px solid rgba(95,168,245,.25);
+      background: rgba(15,25,50,.65);
+      border: 1px solid rgba(95,168,245,.3);
       border-radius: 6px; backdrop-filter: blur(8px);
       pointer-events: none;
     }}
     .hud .title {{ font-size: 13px; font-weight: 700; letter-spacing: .03em; }}
-    .hud .sub   {{ font-size: 10px; color: #5fa8f5; font-family: 'JetBrains Mono',monospace; margin-top: 2px; }}
+    .hud .sub   {{
+      font-size: 10px; color: #5fa8f5;
+      font-family: 'JetBrains Mono',monospace; margin-top: 2px;
+    }}
+    .loading {{
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      color: #5fa8f5; font-size: 14px; z-index: 100;
+      padding: 12px 18px; background: rgba(15,20,38,.85);
+      border: 1px solid rgba(95,168,245,.3); border-radius: 6px;
+    }}
     .err-banner {{
       position: absolute; bottom: 16px; left: 14px; right: 14px;
-      background: rgba(80,20,30,.92); color: #ffcfd6;
-      padding: 8px 12px; border-radius: 6px; font-size: 12px;
-      border: 1px solid rgba(239,68,68,.4); display: none;
+      background: rgba(80,20,30,.95); color: #ffcfd6;
+      padding: 10px 14px; border-radius: 6px; font-size: 12px;
+      border: 1px solid rgba(239,68,68,.5); display: none;
+      z-index: 1000;
     }}
   </style>
 </head>
 <body>
-  <div id="cesiumContainer"></div>
+  <div id="cesiumContainer">
+    <div class="loading" id="loadingMsg">Cargando Cesium…</div>
+  </div>
   <div class="hud">
     <div class="title">🌐 VISTA CESIUM · 3D fotorealístico</div>
-    <div class="sub" id="hudSub">Esri World Imagery · ArcGIS · Tile-textured globe</div>
+    <div class="sub" id="hudSub">Iniciando…</div>
   </div>
   <div class="err-banner" id="errBanner"></div>
   <script>
@@ -113,98 +171,127 @@ def html(
     const EXTRA  = {extra_json};
     const REAL_NORADS = new Set({real_json});
 
-    // ── Imagery providers públicos (sin Cesium Ion) ─────────────────
-    // Esri World Imagery: fotorealistic, gratis, sin token
+    function showError(msg) {{
+      const el = document.getElementById('errBanner');
+      el.style.display = 'block';
+      el.textContent = msg;
+    }}
+    function setHudSub(s) {{
+      document.getElementById('hudSub').textContent = s;
+    }}
+
+    // ── Imagery providers públicos sin token ─────────────────────────
+    function osmStandard() {{
+      return new Cesium.OpenStreetMapImageryProvider({{
+        url: 'https://tile.openstreetmap.org/',
+        credit: '© OpenStreetMap contributors',
+      }});
+    }}
+    function osmHumanitarian() {{
+      return new Cesium.OpenStreetMapImageryProvider({{
+        url: 'https://tile-a.openstreetmap.fr/hot/',
+        credit: '© OSM Humanitarian',
+      }});
+    }}
+    function nasaGibsBlueMarble() {{
+      return new Cesium.UrlTemplateImageryProvider({{
+        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/EPSG3857_500m/{{z}}/{{y}}/{{x}}.jpeg',
+        credit: 'NASA Earth Observatory — Blue Marble',
+        tilingScheme: new Cesium.WebMercatorTilingScheme(),
+        maximumLevel: 8,
+      }});
+    }}
+    function nasaGibsViirs() {{
+      const today = new Date();
+      today.setDate(today.getDate() - 2); // VIIRS tiene 1-2 días de lag
+      const ds = today.toISOString().slice(0, 10);
+      return new Cesium.UrlTemplateImageryProvider({{
+        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/' + ds + '/GoogleMapsCompatible_Level9/{{z}}/{{y}}/{{x}}.jpeg',
+        credit: 'NASA EOSDIS — VIIRS (' + ds + ')',
+        tilingScheme: new Cesium.WebMercatorTilingScheme(),
+        maximumLevel: 9,
+      }});
+    }}
+    function nasaGibsCityLights() {{
+      return new Cesium.UrlTemplateImageryProvider({{
+        url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default/EPSG3857_500m/{{z}}/{{y}}/{{x}}.jpeg',
+        credit: 'NASA — Black Marble',
+        tilingScheme: new Cesium.WebMercatorTilingScheme(),
+        maximumLevel: 8,
+      }});
+    }}
     function esriImagery() {{
       return new Cesium.UrlTemplateImageryProvider({{
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}',
-        credit: new Cesium.Credit('Esri · Maxar · Earthstar Geographics · USGS'),
-        maximumLevel: 19,
-      }});
-    }}
-    function esriHybridLabels() {{
-      return new Cesium.UrlTemplateImageryProvider({{
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{{z}}/{{y}}/{{x}}',
-        credit: new Cesium.Credit('Esri Reference'),
+        credit: 'Esri · Maxar · Earthstar Geographics · USGS',
         maximumLevel: 19,
       }});
     }}
     function esriTopo() {{
       return new Cesium.UrlTemplateImageryProvider({{
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{{z}}/{{y}}/{{x}}',
-        credit: new Cesium.Credit('Esri Topo'),
-        maximumLevel: 19,
-      }});
-    }}
-    function esriOcean() {{
-      return new Cesium.UrlTemplateImageryProvider({{
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{{z}}/{{y}}/{{x}}',
-        credit: new Cesium.Credit('Esri Ocean'),
-        maximumLevel: 13,
-      }});
-    }}
-    function osm() {{
-      return new Cesium.OpenStreetMapImageryProvider({{
-        url: 'https://tile.openstreetmap.org/',
-        credit: new Cesium.Credit('© OpenStreetMap contributors'),
-      }});
-    }}
-    function natgeo() {{
-      return new Cesium.UrlTemplateImageryProvider({{
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{{z}}/{{y}}/{{x}}',
-        credit: new Cesium.Credit('Esri · National Geographic'),
-        maximumLevel: 16,
+        credit: 'Esri Topo', maximumLevel: 19,
       }});
     }}
 
+    // Modelos para el baseLayerPicker
     const imageryModels = [
       new Cesium.ProviderViewModel({{
-        name: 'Esri World Imagery',
-        iconUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/2/1/1',
-        tooltip: 'Imagery satelital fotorealista — Esri/Maxar',
-        creationFunction: esriImagery,
+        name: 'NASA Blue Marble',
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/blueMarble.png'),
+        tooltip: 'Imagery fotorealística NASA (Blue Marble + Shaded Relief + Bathymetry). Recomendado.',
+        creationFunction: nasaGibsBlueMarble,
       }}),
       new Cesium.ProviderViewModel({{
-        name: 'Esri Imagery + etiquetas',
-        iconUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/2/1/2',
-        tooltip: 'Satelital con etiquetas de países y ciudades',
-        creationFunction: function() {{ return [esriImagery(), esriHybridLabels()]; }},
+        name: 'NASA VIIRS (ayer)',
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/naturalEarthII.png'),
+        tooltip: 'Imagen satelital real del último día disponible (NASA VIIRS True Color).',
+        creationFunction: nasaGibsViirs,
       }}),
       new Cesium.ProviderViewModel({{
-        name: 'Esri Topográfico',
-        iconUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/2/1/1',
-        tooltip: 'Mapa topográfico mundial',
-        creationFunction: esriTopo,
-      }}),
-      new Cesium.ProviderViewModel({{
-        name: 'Esri Océanos',
-        iconUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/2/1/1',
-        tooltip: 'Batimetría oceánica',
-        creationFunction: esriOcean,
+        name: 'NASA Black Marble',
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/blackMarble.png'),
+        tooltip: 'Luces nocturnas (Black Marble). Bonito para ver ciudades.',
+        creationFunction: nasaGibsCityLights,
       }}),
       new Cesium.ProviderViewModel({{
         name: 'OpenStreetMap',
-        iconUrl: 'https://tile.openstreetmap.org/2/1/1.png',
-        tooltip: 'OSM clásico',
-        creationFunction: osm,
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/openStreetMap.png'),
+        tooltip: 'OSM clásico — siempre funciona, mapa político.',
+        creationFunction: osmStandard,
       }}),
       new Cesium.ProviderViewModel({{
-        name: 'National Geographic',
-        iconUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/2/1/1',
-        tooltip: 'Estilo Nat Geo',
-        creationFunction: natgeo,
+        name: 'Esri World Imagery',
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/esriWorldImagery.png'),
+        tooltip: 'Tiles satelitales Esri/Maxar (zoom alto, puede no cargar si hay bloqueo CORS).',
+        creationFunction: esriImagery,
+      }}),
+      new Cesium.ProviderViewModel({{
+        name: 'Esri Topográfico',
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/esriWorldStreetMap.png'),
+        tooltip: 'Mapa topográfico — relieve y geografía física.',
+        creationFunction: esriTopo,
+      }}),
+      new Cesium.ProviderViewModel({{
+        name: 'OSM Humanitarian',
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/openStreetMap.png'),
+        tooltip: 'OSM con énfasis en infraestructura humanitaria.',
+        creationFunction: osmHumanitarian,
       }}),
     ];
 
     let viewer;
     try {{
+      // Inicializa SIN baseLayer del picker — luego añadimos a mano para
+      // garantizar imagery activa.
       viewer = new Cesium.Viewer('cesiumContainer', {{
         animation: false,
         timeline: false,
+        baseLayer: false,
         baseLayerPicker: true,
         imageryProviderViewModels: imageryModels,
-        selectedImageryProviderViewModel: imageryModels[1],  // Esri Imagery + labels default
-        terrainProviderViewModels: [],  // sin terreno por ahora (no requiere Ion)
+        selectedImageryProviderViewModel: imageryModels[0],  // Blue Marble
+        terrainProviderViewModels: [],
         geocoder: false,
         homeButton: true,
         sceneModePicker: true,
@@ -213,17 +300,22 @@ def html(
         infoBox: true,
         selectionIndicator: true,
         shouldAnimate: false,
-        skyBox: undefined,
-        contextOptions: {{ webgl: {{ alpha: true, antialias: true, preserveDrawingBuffer: true }} }},
       }});
+
+      // GARANTIZA que haya una capa de imagery — el flag baseLayer:false
+      // y el picker juntos a veces dejan el globo vacío en Cesium 1.119.
+      // Añadimos OSM siempre como fallback al fondo, y encima el Blue Marble.
+      const fallbackLayer = viewer.imageryLayers.addImageryProvider(osmStandard());
+      const blueMarbleLayer = viewer.imageryLayers.addImageryProvider(nasaGibsBlueMarble());
+
+      setHudSub('Blue Marble · NASA Earth Observatory');
     }} catch (e) {{
-      document.getElementById('errBanner').style.display = 'block';
-      document.getElementById('errBanner').textContent =
-        'Error inicializando Cesium: ' + e.message;
+      showError('Error inicializando Cesium: ' + e.message);
+      document.getElementById('loadingMsg').style.display = 'none';
       throw e;
     }}
 
-    // Atmósfera + lighting estilo Blue Marble
+    // Atmósfera + lighting
     const scene = viewer.scene;
     scene.globe.enableLighting = true;
     scene.globe.showGroundAtmosphere = true;
@@ -234,13 +326,19 @@ def html(
     scene.skyAtmosphere.saturationShift = 0.05;
     scene.skyAtmosphere.brightnessShift = 0.0;
     scene.fog.enabled = true;
-    scene.fog.density = 0.00008;
+    scene.fog.density = 0.00006;
     scene.backgroundColor = Cesium.Color.fromCssColorString('#01020a');
 
-    // Ocultar credits visual (los atribuimos en HUD propio)
     try {{ viewer.cesiumWidget.creditContainer.style.display = 'none'; }} catch (e) {{}}
 
-    // ── Render satélites ────────────────────────────────────────────
+    // Quita el loading message cuando el globo está listo
+    viewer.scene.postRender.addEventListener(function removeLoading() {{
+      const el = document.getElementById('loadingMsg');
+      if (el) el.style.display = 'none';
+      viewer.scene.postRender.removeEventListener(removeLoading);
+    }});
+
+    // ── Render satélites ─────────────────────────────────────────────
     function addSat(t, opts) {{
       const pos = Cesium.Cartesian3.fromDegrees(t.lon0, t.lat0, t.alt0 * 1000.0);
       viewer.entities.add({{
@@ -262,7 +360,7 @@ def html(
           style: Cesium.LabelStyle.FILL_AND_OUTLINE,
           pixelOffset: new Cesium.Cartesian2(10, 0),
           showBackground: true,
-          backgroundColor: new Cesium.Color(0.04, 0.06, 0.12, 0.7),
+          backgroundColor: new Cesium.Color(0.04, 0.06, 0.12, 0.75),
           backgroundPadding: new Cesium.Cartesian2(6, 4),
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
         }} : undefined,
@@ -297,13 +395,10 @@ def html(
       const isReal = REAL_NORADS.has(t.norad);
       if (t.is_primary) {{
         addSat(t, {{
-          size: 18,
-          color: Cesium.Color.fromCssColorString('#ffd700'),
-          outline: 2,
-          label: true,
+          size: 18, color: Cesium.Color.fromCssColorString('#ffd700'),
+          outline: 2, label: true,
           labelColor: Cesium.Color.fromCssColorString('#ffd700'),
-          drawTrack: true,
-          trackWidth: 2.5,
+          drawTrack: true, trackWidth: 2.5,
           trackColor: new Cesium.PolylineGlowMaterialProperty({{
             color: Cesium.Color.fromCssColorString('#ffd700'),
             glowPower: 0.25,
@@ -311,35 +406,26 @@ def html(
         }});
       }} else if (isReal) {{
         addSat(t, {{
-          size: 14,
-          color: Cesium.Color.fromCssColorString('#ff3547'),
-          outline: 2,
-          label: true,
+          size: 14, color: Cesium.Color.fromCssColorString('#ff3547'),
+          outline: 2, label: true,
           labelColor: Cesium.Color.fromCssColorString('#ff7a85'),
-          drawTrack: true,
-          trackWidth: 2,
+          drawTrack: true, trackWidth: 2,
           trackColor: Cesium.Color.fromCssColorString('#ff3547').withAlpha(0.65),
         }});
       }} else if (!t.known) {{
         addSat(t, {{
-          size: 10,
-          color: Cesium.Color.fromCssColorString('#ffb300'),
-          outline: 1.5,
-          label: true,
+          size: 10, color: Cesium.Color.fromCssColorString('#ffb300'),
+          outline: 1.5, label: true,
           labelColor: Cesium.Color.fromCssColorString('#ffb300'),
-          drawTrack: true,
-          trackWidth: 1,
+          drawTrack: true, trackWidth: 1,
           trackColor: Cesium.Color.fromCssColorString('#ffb300').withAlpha(0.45),
         }});
       }} else {{
         addSat(t, {{
-          size: 7,
-          color: Cesium.Color.fromCssColorString('#7eff9e'),
-          outline: 1,
-          label: false,
+          size: 7, color: Cesium.Color.fromCssColorString('#7eff9e'),
+          outline: 1, label: false,
           labelColor: Cesium.Color.WHITE,
-          drawTrack: true,
-          trackWidth: 0.8,
+          drawTrack: true, trackWidth: 0.8,
           trackColor: Cesium.Color.fromCssColorString('#7eff9e').withAlpha(0.35),
         }});
       }}
@@ -347,13 +433,10 @@ def html(
 
     EXTRA.forEach(t => {{
       addSat(t, {{
-        size: 12,
-        color: Cesium.Color.fromCssColorString('#00d2c8'),
-        outline: 1.5,
-        label: true,
+        size: 12, color: Cesium.Color.fromCssColorString('#00d2c8'),
+        outline: 1.5, label: true,
         labelColor: Cesium.Color.fromCssColorString('#00d2c8'),
-        drawTrack: true,
-        trackWidth: 1.5,
+        drawTrack: true, trackWidth: 1.5,
         trackColor: Cesium.Color.fromCssColorString('#00d2c8').withAlpha(0.55),
       }});
     }});
