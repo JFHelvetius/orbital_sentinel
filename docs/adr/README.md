@@ -33,7 +33,7 @@ Ver [template.md](template.md) para el formato.
 | [0005](0005-sgp4-only-propagation.md) | SGP4 como único motor de propagación en v1 | Aceptado (enmienda 1) | 2026-06-03 |
 | [0006](0006-data-immutability.md) | Inmutabilidad de datos, capas raw/normalized/derived | Aceptado (enmienda 1) | 2026-06-03 |
 | [0007](0007-apache-license.md) | Licencia Apache-2.0 | Aceptado | 2026-06-03 |
-| [0008](0008-cesium-uncertainty.md) | Visualización con Cesium y honestidad sobre incertidumbre | Aceptado | 2026-06-03 |
+| [0008](0008-cesium-uncertainty.md) | Visualización con Cesium y honestidad sobre incertidumbre | Aceptado (enmienda 1) | 2026-06-03 |
 | [0009](0009-no-agent-frameworks.md) | Sin frameworks de agentes; Ollama por defecto, Claude opcional | Aceptado (enmienda 1) | 2026-06-03 |
 | [0010](0010-versioning-policy.md) | Versioning Policy | Aceptado | 2026-06-03 |
 | [0011](0011-secrets-management.md) | Secrets Management | Aceptado | 2026-06-03 |

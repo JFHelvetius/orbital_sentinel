@@ -1,6 +1,6 @@
 # ADR-0008: Visualización con Cesium embebido y honestidad sobre incertidumbre
 
-**Estado:** Aceptado
+**Estado:** Aceptado (enmienda 1)
 **Fecha:** 2026-06-03
 **Autor:** Orbital Sentinel
 **Supersede a:** ninguno
@@ -78,4 +78,23 @@
 
 ## Historial de enmiendas
 
-*Sin enmiendas a fecha de aceptación.*
+### Enmienda 1 (2026-06-10) — Bridge Streamlit, no Dash
+
+**Contexto que ha cambiado:** la app distribuida públicamente (`app/streamlit_app.py`, desplegada en Streamlit Cloud) es Streamlit, no Dash. Dash quedó como aspiración no realizada. La decisión central del ADR (Cesium como motor 3D) se mantiene; cambia el mecanismo de embebido.
+
+**Aclaraciones:**
+
+1. **Bridge revisado.** Donde el ADR original decía "Cesium embebido vía Dash bridge", léase: "Cesium embebido vía `streamlit.components.v1.html`". Es un iframe sandboxed; los datos (tracks, época, highlight) se serializan a JSON y se inyectan al `<script>` del template. Streamlit → Cesium es unidireccional en el MVP (no hay event bridge JS → Python).
+
+2. **Tiles en el contexto deploy-público.** El ADR original prefería tiles open bundleados como default (alineación con ADR-0012 local-first). Para la app desplegada en Streamlit Cloud — que ya es online por construcción y no satisface ADR-0012 — se permite **Cesium Ion default token público** como imagery provider (Bing Aerial), por dos razones:
+   - El componente público sirve adopción/divulgación, no operación local. ADR-0022 ya formalizó que el scheduling vive en el OS del operador; análogamente, la app web es escaparate, no infraestructura.
+   - Bundlear los assets de Cesium (~12 MB JS + tiles) en el repo es viable pero degrada la experiencia de install local que sí sigue siendo objetivo. Deferimos el bundling a una iteración posterior cuando exista un build distinto "offline desktop".
+   - Cuando exista la versión offline-first del frontend (separada del deploy público), el default se invierte: tiles open bundleados, Ion como opt-in. Esto NO es una violación del ADR — es una segmentación entre dos consumidores con propiedades P3/P8 distintas.
+
+3. **Honestidad sobre incertidumbre — deuda técnica reconocida.** El frontend actual usa líneas finas como trayectoria, lo cual el ADR explícitamente prohíbe. La integración inicial de Cesium hereda esa deuda y la traslada al MVP. Plan de remediación:
+   - **v0.1 (MVP, este commit):** entidades puntuales animadas; trayectoria como línea fina, igual que hoy en plotly. Inadecuado pero no peor que el estado actual.
+   - **v0.2 (siguiente iteración):** opacidad de la traza proporcional a la edad del TLE; banda de error visible para los objetos con detección de conjunción.
+   - **v0.3:** tubos de error verdaderos (`PolylineVolumeGraphics` en Cesium) para los objetos con covarianza declarada por ADR-0020.
+   La deuda se cierra en v0.2 / v0.3, no en el MVP. Esto se trackea como issue.
+
+**Estado tras la enmienda:** Aceptado (enmienda 1). El ADR sigue gobernando la decisión "Cesium es el motor 3D"; lo que cambia es el bridge y la política de tiles en el contexto deploy-público.

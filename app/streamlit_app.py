@@ -43,6 +43,15 @@ except Exception:
     except Exception:
         _embedded = None
 
+# Módulo Cesium (ADR-0008 enmienda 1)
+try:
+    from app import cesium_globe as _cesium
+except Exception:
+    try:
+        import cesium_globe as _cesium  # type: ignore
+    except Exception:
+        _cesium = None
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Constantes de dominio
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1787,11 +1796,15 @@ def _page_map() -> None:
                   "Lanzamientos: últimos 30 días.  "
                   "Starlink/Activos: miles de objetos en modo lite (solo posiciones)."),
         )
+        _modes = ["🌐 Cesium 3D"] if _cesium is not None else []
+        _modes += ["🛰 Satélite (Esri)", "🌍 Globo 3D"]
         view_mode = st.radio(
             "Modo de vista",
-            ["🛰 Satélite (Esri)", "🌍 Globo 3D"],
+            _modes,
             key="map_view_mode",
-            help="Satélite: tiles fotorealistas Esri/Maxar/USGS. Globo 3D: orthographic vectorial Blue-Marble.",
+            help=("Cesium 3D: globo esférico fotorealista con tiles Bing/Maxar (ADR-0008). "
+                  "Satélite: tiles fotorealistas Esri plano. "
+                  "Globo 3D: orthographic vectorial Blue-Marble."),
         )
 
     # ── Selección de dataset ─────────────────────────────────────────────────
@@ -1893,9 +1906,39 @@ def _page_map() -> None:
     # ── Globe + resultados (columna izquierda) ────────────────────────────────
     with col_globe:
         try:
-            if view_mode and "Satélite" in view_mode:
+            if view_mode and "Cesium" in view_mode and _cesium is not None:
+                # Cesium 3D fotorealista (ADR-0008 enmienda 1)
+                real_norads: set[int] = set()
+                for be in case.evidence_bundle.evidence_payloads:
+                    hp = be.derived_evidence.honesty_payload
+                    if float(hp.get("miss_distance_km", 0)) > 10:
+                        real_norads.add(int(hp.get("other_norad_cat_id", 0)))
+                html_doc = _cesium.html(
+                    track_list,
+                    primary_norad=case.evidence_bundle.object_id,
+                    real_norads=real_norads,
+                    extra_tracks=extra_tracks,
+                    height=880,
+                )
+                import streamlit.components.v1 as components
+                components.html(html_doc, height=900, scrolling=False)
+                event = None  # Cesium no propaga selección al backend en v0.1
+            elif view_mode and "Satélite" in view_mode:
                 fig = _satellite_figure(track_list, case,
                                          highlight=highlight, extra_tracks=extra_tracks)
+                event = st.plotly_chart(
+                    fig, use_container_width=True,
+                    config={
+                        "displayModeBar": "hover", "scrollZoom": True,
+                        "doubleClick": "reset+autosize", "displaylogo": False,
+                        "modeBarButtonsToRemove": [
+                            "lasso2d", "select2d", "autoScale2d",
+                            "hoverClosestGeo", "toggleSpikelines",
+                        ],
+                        "toImageButtonOptions": {"format": "png", "filename": "orbital-sentinel", "scale": 2},
+                    },
+                    on_select="rerun", selection_mode=["points"], key="globe_chart",
+                )
             else:
                 fig = _globe_figure(
                     track_list, case, t0_offset,
@@ -1910,29 +1953,19 @@ def _page_map() -> None:
                         rivers=layer_rivers,
                     ),
                 )
-            # scrollZoom sí en satélite (mapbox plano), NO en orthographic
-            # (el orthographic se recorta lateralmente al ampliar la projection.scale)
-            _is_sat = bool(view_mode and "Satélite" in view_mode)
-            event = st.plotly_chart(
-                fig, use_container_width=True,
-                config={
-                    "displayModeBar": "hover",
-                    "scrollZoom": _is_sat,
-                    "doubleClick": "reset" if not _is_sat else "reset+autosize",
-                    "displaylogo": False,
-                    "modeBarButtonsToRemove": [
-                        "lasso2d", "select2d", "autoScale2d",
-                        "hoverClosestGeo", "toggleSpikelines",
-                    ],
-                    "toImageButtonOptions": {
-                        "format": "png", "filename": "orbital-sentinel",
-                        "scale": 2,
+                event = st.plotly_chart(
+                    fig, use_container_width=True,
+                    config={
+                        "displayModeBar": "hover", "scrollZoom": False,
+                        "doubleClick": "reset", "displaylogo": False,
+                        "modeBarButtonsToRemove": [
+                            "lasso2d", "select2d", "autoScale2d",
+                            "hoverClosestGeo", "toggleSpikelines",
+                        ],
+                        "toImageButtonOptions": {"format": "png", "filename": "orbital-sentinel", "scale": 2},
                     },
-                },
-                on_select="rerun",
-                selection_mode=["points"],
-                key="globe_chart",
-            )
+                    on_select="rerun", selection_mode=["points"], key="globe_chart",
+                )
         except Exception as exc:
             st.error(f"❌ {type(exc).__name__}: {exc}")
             import traceback
