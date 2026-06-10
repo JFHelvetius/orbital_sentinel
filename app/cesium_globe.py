@@ -215,6 +215,7 @@ def html(
     <div class="row"><span class="lbl">Globe show</span><span id="d-show" class="wait">…</span></div>
     <div class="row"><span class="lbl">Layers count</span><span id="d-layers" class="wait">…</span></div>
     <div class="row"><span class="lbl">Frames</span><span id="d-frames" class="wait">…</span></div>
+    <div class="row"><span class="lbl">Esri fetch</span><span id="d-esri" class="wait">…</span></div>
     <div class="row"><span class="lbl">Errores</span><span id="d-errs" class="wait">0</span></div>
     <div style="margin-top:8px;pointer-events:auto;">
       <button id="forceRenderBtn" style="
@@ -389,19 +390,16 @@ def html(
 
     let viewer;
     try {{
-      // Inicializa SIN baseLayer del picker — luego añadimos a mano para
-      // garantizar imagery activa.
+      // VERSIÓN MINIMALISTA: sin baseLayerPicker (genera capas fantasma
+      // que se cuelgan eternas). Una sola capa Esri añadida a mano.
       viewer = new Cesium.Viewer('cesiumContainer', {{
         animation: false,
         timeline: false,
         baseLayer: false,
-        baseLayerPicker: true,
-        imageryProviderViewModels: imageryModels,
-        selectedImageryProviderViewModel: imageryModels[0],  // Blue Marble
-        terrainProviderViewModels: [],
+        baseLayerPicker: false,
         geocoder: false,
         homeButton: true,
-        sceneModePicker: true,
+        sceneModePicker: false,
         navigationHelpButton: false,
         fullscreenButton: true,
         infoBox: true,
@@ -419,7 +417,8 @@ def html(
         DIAG.addErr('webgl', e.message);
       }}
 
-      // GARANTIZA que haya una capa de imagery, capturando errores por provider
+      // Una sola capa: Esri World Imagery (sin token, sin viewModels que
+      // generen capas fantasma). Si esta carga, el globo se ve.
       function attachErrHook(provider, name) {{
         if (provider && provider.errorEvent && provider.errorEvent.addEventListener) {{
           provider.errorEvent.addEventListener(function(err) {{
@@ -429,13 +428,10 @@ def html(
         }}
       }}
       try {{
-        const osmProv = osmStandard();
-        attachErrHook(osmProv, 'osm');
-        viewer.imageryLayers.addImageryProvider(osmProv);
-        const bmProv = nasaGibsBlueMarble();
-        attachErrHook(bmProv, 'blueMarble');
-        viewer.imageryLayers.addImageryProvider(bmProv);
-        DIAG.set('d-imagery', 'ok', 'OSM + Blue Marble');
+        const esriProv = esriImagery();
+        attachErrHook(esriProv, 'esri');
+        viewer.imageryLayers.addImageryProvider(esriProv);
+        DIAG.set('d-imagery', 'ok', 'Esri solamente');
       }} catch (e) {{
         DIAG.set('d-imagery', 'ko', 'falla: ' + e.message);
         DIAG.addErr('imagery', e.message);
@@ -523,6 +519,22 @@ def html(
       scene.render();
       viewer.resize();
     }});
+
+    // ── Test directo de red: ¿puede el iframe alcanzar Esri tiles? ──
+    // Si esto falla, el problema es CORS/sandbox/red — los tiles no
+    // llegan aunque Cesium piense que están cargando.
+    fetch('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/2/1/1', {{
+      mode: 'cors',
+      cache: 'no-cache',
+    }})
+      .then(function(r) {{
+        DIAG.set('d-esri', r.ok ? 'ok' : 'ko', 'HTTP ' + r.status);
+        if (!r.ok) DIAG.addErr('esri-fetch', 'HTTP ' + r.status + ' ' + r.statusText);
+      }})
+      .catch(function(e) {{
+        DIAG.set('d-esri', 'ko', 'falla');
+        DIAG.addErr('esri-fetch', e.message.slice(0, 150));
+      }});
 
     try {{ viewer.cesiumWidget.creditContainer.style.display = 'none'; }} catch (e) {{}}
 
