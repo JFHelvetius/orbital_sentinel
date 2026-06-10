@@ -507,12 +507,10 @@ button[kind="primary"], button[data-testid*="baseButton-primary"] {
 }
 button[kind="primary"]:hover { background: var(--accent-bri) !important; }
 
-/* ── Expanders (mínimo — no tocar summary/chevron de Streamlit) ────────── */
-.stExpander, [data-testid="stExpander"] {
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius) !important;
-  margin: .8rem 0 !important;
-}
+/* ── Expanders: dejar el default de Streamlit (no tocar) ───────────────── */
+/* Cualquier border/background propio entra en conflicto con el padding   */
+/* interno del summary y solapa el texto con el chevron. Solo margen.     */
+.stExpander, [data-testid="stExpander"] { margin: .8rem 0 !important; }
 
 /* ── DataFrame ─────────────────────────────────────────────────────────── */
 [data-testid="stDataFrame"] {
