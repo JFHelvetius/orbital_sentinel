@@ -432,51 +432,84 @@ def html(
       // Forzar EllipsoidTerrainProvider — sin terreno 3D, sin workers
       viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
 
-      // SingleTileImageryProvider — Cesium 1.119+ usa API async fromUrl()
-      // (el constructor síncrono está deprecated y falla en silencio).
-      DIAG.set('d-imagery', 'wait', 'cargando Blue Marble…');
-      const blueMarbleUrl = 'https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57752/land_shallow_topo_2048.jpg';
-      if (Cesium.SingleTileImageryProvider.fromUrl) {{
-        Cesium.SingleTileImageryProvider.fromUrl(blueMarbleUrl, {{
-          credit: 'NASA Visible Earth',
+      // Limpia capas fantasma que el viewer pueda haber creado
+      viewer.imageryLayers.removeAll();
+
+      // ── Textura procedural fallback: globo generado en canvas ──────
+      // Garantiza visibilidad incluso si TODAS las URLs externas fallan.
+      function proceduralEarthDataURL() {{
+        const c = document.createElement('canvas');
+        c.width = 2048; c.height = 1024;
+        const ctx = c.getContext('2d');
+        // Océano azul gradient (vertical)
+        const grad = ctx.createLinearGradient(0, 0, 0, 1024);
+        grad.addColorStop(0, '#0a2849');
+        grad.addColorStop(0.5, '#1a4a8a');
+        grad.addColorStop(1, '#0a2849');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 2048, 1024);
+        // "Continentes" estilizados como manchas verdes
+        ctx.fillStyle = 'rgba(90, 120, 70, 0.85)';
+        const blobs = [
+          [200, 250, 180, 200], [350, 350, 140, 160],   // Norteamérica
+          [550, 600, 90, 220],                            // Sudamérica
+          [950, 280, 230, 180], [1100, 200, 110, 100],   // Eurasia
+          [1080, 480, 180, 240],                          // África
+          [1350, 320, 290, 180],                          // Asia
+          [1450, 700, 170, 130],                          // Australia
+          [50, 100, 1948, 80], [50, 880, 1948, 80],      // Polos
+        ];
+        for (const [x, y, w, h] of blobs) {{
+          ctx.beginPath();
+          ctx.ellipse(x, y, w, h, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }}
+        return c.toDataURL('image/png');
+      }}
+
+      function addImagery(url, label, isFallback) {{
+        const opts = {{
+          credit: label,
           rectangle: Cesium.Rectangle.fromDegrees(-180, -90, 180, 90),
-        }})
-          .then(function(prov) {{
-            attachErrHook(prov, 'blueMarble');
-            viewer.imageryLayers.addImageryProvider(prov);
-            DIAG.set('d-imagery', 'ok', 'Blue Marble (async)');
-            DIAG.set('d-layers', 'ok', String(viewer.imageryLayers.length));
-            scene.requestRender();
-          }})
-          .catch(function(e) {{
-            DIAG.set('d-imagery', 'ko', 'async falla');
-            DIAG.addErr('blueMarble-async', e.message);
-            // Fallback: probar con constructor viejo
-            try {{
-              const prov = new Cesium.SingleTileImageryProvider({{
-                url: blueMarbleUrl,
-                rectangle: Cesium.Rectangle.fromDegrees(-180, -90, 180, 90),
-              }});
-              attachErrHook(prov, 'blueMarble-sync');
+        }};
+        if (Cesium.SingleTileImageryProvider.fromUrl) {{
+          return Cesium.SingleTileImageryProvider.fromUrl(url, opts)
+            .then(function(prov) {{
+              attachErrHook(prov, label);
               viewer.imageryLayers.addImageryProvider(prov);
-              DIAG.set('d-imagery', 'ok', 'Blue Marble (sync fallback)');
-            }} catch (e2) {{ DIAG.addErr('sync-fallback', e2.message); }}
-          }});
-      }} else {{
-        // API vieja
-        try {{
-          const prov = new Cesium.SingleTileImageryProvider({{
-            url: blueMarbleUrl,
-            rectangle: Cesium.Rectangle.fromDegrees(-180, -90, 180, 90),
-          }});
-          attachErrHook(prov, 'blueMarble');
+              DIAG.set('d-imagery', 'ok', label);
+              DIAG.set('d-layers', 'ok', String(viewer.imageryLayers.length));
+              scene.requestRender();
+              return true;
+            }});
+        }} else {{
+          const prov = new Cesium.SingleTileImageryProvider({{url: url, ...opts}});
           viewer.imageryLayers.addImageryProvider(prov);
-          DIAG.set('d-imagery', 'ok', 'Blue Marble (sync legacy)');
-        }} catch (e) {{
-          DIAG.set('d-imagery', 'ko', 'falla: ' + e.message);
-          DIAG.addErr('imagery', e.message);
+          DIAG.set('d-imagery', 'ok', label);
+          return Promise.resolve(true);
         }}
       }}
+
+      // Intentos en cascada: Wikimedia → NASA → textura procedural local
+      DIAG.set('d-imagery', 'wait', 'intentando Wikimedia…');
+      addImagery(
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Blue_Marble_2002.png/4096px-Blue_Marble_2002.png',
+        'Wikimedia Blue Marble', false
+      ).catch(function(e1) {{
+        DIAG.addErr('wikimedia', e1.message || String(e1));
+        DIAG.set('d-imagery', 'wait', 'intentando NASA…');
+        return addImagery(
+          'https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57752/land_shallow_topo_2048.jpg',
+          'NASA Visible Earth', false
+        );
+      }}).catch(function(e2) {{
+        DIAG.addErr('nasa', e2.message || String(e2));
+        DIAG.set('d-imagery', 'wait', 'fallback procedural…');
+        return addImagery(proceduralEarthDataURL(), 'Procedural (local)', true);
+      }}).catch(function(e3) {{
+        DIAG.set('d-imagery', 'ko', 'todos fallaron');
+        DIAG.addErr('procedural', e3.message || String(e3));
+      }});
 
       setHudSub('Blue Marble · NASA Earth Observatory');
     }} catch (e) {{
