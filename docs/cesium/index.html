@@ -211,11 +211,16 @@
         ],
       }),
       blueMarble: makeIcon({
-        bg: ['#3a5a78', '#1a3a68', '#04102c'],
+        bg: ['#2c5da5', '#143868', '#031026'],
         shapes: [
-          {type:'blob', color:'rgba(70,100,60,.75)', x:22, y:26, rx:10, ry:7},
-          {type:'blob', color:'rgba(70,100,60,.75)', x:44, y:38, rx:12, ry:9},
-          {type:'blob', color:'rgba(255,255,255,.25)', x:20, y:18, rx:8, ry:4},
+          // Continentes verdes más definidos
+          {type:'blob', color:'rgba(110,150,90,.92)', x:20, y:25, rx:11, ry:9},
+          {type:'blob', color:'rgba(110,150,90,.92)', x:43, y:36, rx:13, ry:10},
+          {type:'blob', color:'rgba(150,180,120,.85)', x:32, y:46, rx:8, ry:6},
+          // Casquete polar arctic
+          {type:'blob', color:'rgba(240,245,255,.55)', x:32, y:12, rx:14, ry:4},
+          // Reflejo atmosférico
+          {type:'blob', color:'rgba(255,255,255,.18)', x:22, y:18, rx:9, ry:3},
         ],
       }),
       esriTopo: makeIcon({
@@ -357,6 +362,9 @@
       }
     });
 
+    // Flag para evitar resetear la cámara cada vez que llegue un payload
+    let initialFlyDone = false;
+
     // ── Render de satélites desde datos recibidos por postMessage ────
     function renderTracks(payload) {
       try {
@@ -468,17 +476,22 @@
           });
         });
 
-        // Vuela al primary
-        const primary = (tracks || []).find(t => t.norad === primary_norad);
-        if (primary) {
-          setTimeout(function() {
-            viewer.camera.flyTo({
-              destination: Cesium.Cartesian3.fromDegrees(
-                primary.lon0, primary.lat0, 22_000_000
-              ),
-              duration: 2.0,
-            });
-          }, 800);
+        // Vuela al primary SOLO en la primera carga. Las subsiguientes
+        // (toggle de capas, refresh de datos) NO mueven la cámara, así
+        // que el zoom/posición del usuario se conserva.
+        if (!initialFlyDone) {
+          const primary = (tracks || []).find(t => t.norad === primary_norad);
+          if (primary) {
+            setTimeout(function() {
+              viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(
+                  primary.lon0, primary.lat0, 22_000_000
+                ),
+                duration: 2.0,
+              });
+            }, 800);
+          }
+          initialFlyDone = true;
         }
       } catch (e) {
         console.error('renderTracks failed:', e);
@@ -486,43 +499,33 @@
     }
 
     // ── Overlays toggleables (etiquetas, fronteras) ─────────────────
-    // Mapeo de toggles de Streamlit → capas overlay reales de Esri.
-    function makeOverlay(url) {
+    // Una única overlay Esri Reference (Boundaries + Places) que se
+    // muestra/oculta según las toggles de Streamlit. URLs Esri Reference
+    // alternativas no son fiables — esta sí es estable.
+    let labelsLayer = null;
+    function makeReferenceOverlay() {
       return new Cesium.UrlTemplateImageryProvider({
-        url: url,
-        credit: 'Esri Reference',
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+        credit: 'Esri Reference · Boundaries and Places',
         maximumLevel: 19,
       });
-    }
-    const OVERLAY_URLS = {
-      labels:    'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-      boundaries:'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Reference_Overlay/MapServer/tile/{z}/{y}/{x}',
-      transport: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
-    };
-    const activeOverlays = {};  // key → Cesium.ImageryLayer
-
-    function ensureOverlay(key, on) {
-      if (on && !activeOverlays[key]) {
-        const prov = makeOverlay(OVERLAY_URLS[key]);
-        activeOverlays[key] = viewer.imageryLayers.addImageryProvider(prov);
-      } else if (!on && activeOverlays[key]) {
-        viewer.imageryLayers.remove(activeOverlays[key], true);
-        delete activeOverlays[key];
-      }
     }
 
     function applyLayers(layers) {
       if (!layers) return;
-      // Etiquetas (nombres de países, estados, ciudades)
-      const wantLabels = !!(layers.country_names || layers.state_names || layers.cities);
-      ensureOverlay('labels', wantLabels);
-      // Fronteras (nacionales y subnacionales)
-      const wantBorders = !!(layers.countries || layers.subunits);
-      ensureOverlay('boundaries', wantBorders);
-      // Ríos/Lagos en Cesium se aproximan con World_Transportation (incluye
-      // hidrografía menor en zoom alto). No es 1:1 pero da indicación visual.
-      const wantHydro = !!(layers.rivers || layers.lakes);
-      ensureOverlay('transport', wantHydro);
+      // Cualquier toggle relacionada con etiquetas o fronteras activa
+      // la única overlay. rivers/lakes no tienen equivalente raster
+      // gratuito y son ignoradas (el orthographic vectorial sí los soporta).
+      const wantOverlay = !!(
+        layers.country_names || layers.state_names || layers.cities ||
+        layers.countries || layers.subunits
+      );
+      if (wantOverlay && !labelsLayer) {
+        labelsLayer = viewer.imageryLayers.addImageryProvider(makeReferenceOverlay());
+      } else if (!wantOverlay && labelsLayer) {
+        viewer.imageryLayers.remove(labelsLayer, true);
+        labelsLayer = null;
+      }
     }
 
     // ── Recibe datos del parent via postMessage ──────────────────────
