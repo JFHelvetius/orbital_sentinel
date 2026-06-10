@@ -432,19 +432,50 @@ def html(
       // Forzar EllipsoidTerrainProvider — sin terreno 3D, sin workers
       viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
 
-      // Imagen Blue Marble 4096×2048 servida por NASA Visible Earth (CORS OK)
-      try {{
-        const singleProv = new Cesium.SingleTileImageryProvider({{
-          url: 'https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57752/land_shallow_topo_2048.jpg',
-          credit: 'NASA Visible Earth — Blue Marble',
+      // SingleTileImageryProvider — Cesium 1.119+ usa API async fromUrl()
+      // (el constructor síncrono está deprecated y falla en silencio).
+      DIAG.set('d-imagery', 'wait', 'cargando Blue Marble…');
+      const blueMarbleUrl = 'https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57752/land_shallow_topo_2048.jpg';
+      if (Cesium.SingleTileImageryProvider.fromUrl) {{
+        Cesium.SingleTileImageryProvider.fromUrl(blueMarbleUrl, {{
+          credit: 'NASA Visible Earth',
           rectangle: Cesium.Rectangle.fromDegrees(-180, -90, 180, 90),
-        }});
-        attachErrHook(singleProv, 'blueMarble');
-        viewer.imageryLayers.addImageryProvider(singleProv);
-        DIAG.set('d-imagery', 'ok', 'Blue Marble (single tile)');
-      }} catch (e) {{
-        DIAG.set('d-imagery', 'ko', 'falla: ' + e.message);
-        DIAG.addErr('imagery', e.message);
+        }})
+          .then(function(prov) {{
+            attachErrHook(prov, 'blueMarble');
+            viewer.imageryLayers.addImageryProvider(prov);
+            DIAG.set('d-imagery', 'ok', 'Blue Marble (async)');
+            DIAG.set('d-layers', 'ok', String(viewer.imageryLayers.length));
+            scene.requestRender();
+          }})
+          .catch(function(e) {{
+            DIAG.set('d-imagery', 'ko', 'async falla');
+            DIAG.addErr('blueMarble-async', e.message);
+            // Fallback: probar con constructor viejo
+            try {{
+              const prov = new Cesium.SingleTileImageryProvider({{
+                url: blueMarbleUrl,
+                rectangle: Cesium.Rectangle.fromDegrees(-180, -90, 180, 90),
+              }});
+              attachErrHook(prov, 'blueMarble-sync');
+              viewer.imageryLayers.addImageryProvider(prov);
+              DIAG.set('d-imagery', 'ok', 'Blue Marble (sync fallback)');
+            }} catch (e2) {{ DIAG.addErr('sync-fallback', e2.message); }}
+          }});
+      }} else {{
+        // API vieja
+        try {{
+          const prov = new Cesium.SingleTileImageryProvider({{
+            url: blueMarbleUrl,
+            rectangle: Cesium.Rectangle.fromDegrees(-180, -90, 180, 90),
+          }});
+          attachErrHook(prov, 'blueMarble');
+          viewer.imageryLayers.addImageryProvider(prov);
+          DIAG.set('d-imagery', 'ok', 'Blue Marble (sync legacy)');
+        }} catch (e) {{
+          DIAG.set('d-imagery', 'ko', 'falla: ' + e.message);
+          DIAG.addErr('imagery', e.message);
+        }}
       }}
 
       setHudSub('Blue Marble · NASA Earth Observatory');
