@@ -536,18 +536,35 @@ button[kind="primary"]:hover { background: var(--accent-bri) !important; }
   font-size: .85rem !important;
 }
 
-/* ── Globo: marco con halo atmosférico realista ────────────────────────── */
+/* ── Globo: marco brutal con halo atmosférico realista y starfield ──────── */
 [data-testid="stPlotlyChart"] {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: rgb(2,4,12);
+  border: 1px solid rgba(74,144,226,.18);
+  border-radius: 16px;
+  background:
+    /* starfield: dots SVG tiled */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><circle cx='15' cy='25' r='.6' fill='%23fff' opacity='.5'/><circle cx='90' cy='10' r='.5' fill='%23fff' opacity='.35'/><circle cx='160' cy='40' r='.8' fill='%23fff' opacity='.6'/><circle cx='200' cy='95' r='.4' fill='%23fff' opacity='.3'/><circle cx='40' cy='130' r='.7' fill='%23fff' opacity='.55'/><circle cx='110' cy='170' r='.5' fill='%23fff' opacity='.4'/><circle cx='175' cy='205' r='.6' fill='%23fff' opacity='.45'/><circle cx='60' cy='75' r='.4' fill='%23fff' opacity='.3'/><circle cx='195' cy='150' r='.5' fill='%23fff' opacity='.4'/></svg>"),
+    radial-gradient(ellipse at center, rgb(6,12,32) 0%, rgb(1,2,10) 70%);
+  background-size: 220px 220px, 100% 100%;
   box-shadow:
-    inset 0 0 80px rgba(60,120,200,0.06),
-    0 0 0 1px rgba(74,144,226,0.08),
-    0 0 40px rgba(30,90,200,0.18),
-    0 0 120px rgba(15,60,160,0.10);
+    inset 0 0 120px rgba(60,120,200,0.10),
+    0 0 0 1px rgba(74,144,226,0.18),
+    0 0 80px rgba(30,90,200,0.30),
+    0 0 240px rgba(15,60,160,0.18);
   overflow: hidden;
+  margin: .4rem 0 .8rem;
 }
+[data-testid="stPlotlyChart"]:hover {
+  box-shadow:
+    inset 0 0 120px rgba(60,120,200,0.14),
+    0 0 0 1px rgba(95,168,245,0.32),
+    0 0 100px rgba(30,90,200,0.40),
+    0 0 280px rgba(15,60,160,0.22);
+}
+/* Modebar compacta */
+.modebar-container { top: 8px !important; right: 8px !important; }
+.modebar { background: rgba(21,27,44,.85) !important; border-radius: 6px !important; }
+.modebar-btn path { fill: rgba(180,200,230,.7) !important; }
+.modebar-btn:hover path { fill: var(--accent-bri) !important; }
 
 /* ── Panel lateral de control: sticky para no perderse al hacer scroll ──*/
 /* Targetea la SEGUNDA columna del primer st.columns en la tab Mapa */
@@ -1223,7 +1240,7 @@ def _globe_figure(
             ))
         if prim:
             t = prim[0]
-            for gs, ga in ((32, 0.04), (24, 0.09), (18, 0.14)):
+            for gs, ga in ((48, 0.025), (38, 0.05), (28, 0.10), (20, 0.18), (14, 0.28)):
                 fig.add_trace(go.Scattergeo(
                     lat=[t.lat0], lon=[t.lon0], mode="markers",
                     marker=dict(size=gs, color=f"rgba(255,215,0,{ga})", symbol="circle"),
@@ -1269,7 +1286,7 @@ def _globe_figure(
 
         # Glow para primary/real
         if is_primary and not dim:
-            for gs, ga in ((32, 0.04), (24, 0.09), (18, 0.14)):
+            for gs, ga in ((48, 0.025), (38, 0.05), (28, 0.10), (20, 0.18), (14, 0.28)):
                 fig.add_trace(go.Scattergeo(
                     lat=[t.lat0], lon=[t.lon0], mode="markers",
                     marker=dict(size=gs, color=f"rgba(255,215,0,{ga})", symbol="circle"),
@@ -1422,28 +1439,25 @@ def _globe_figure(
         geo=dict(
             projection=_projection,
             resolution=50,
-            showland=True,    landcolor="rgb(112,128,77)",
-            showocean=True,   oceancolor="rgb(11,42,98)",
-            showlakes=show_lakes,   lakecolor="rgb(28,90,180)",
-            showrivers=show_rivers, rivercolor="rgb(80,170,240)", riverwidth=1.0,
-            showcoastlines=True,    coastlinecolor="rgba(245,250,225,0.7)", coastlinewidth=0.8,
-            showcountries=show_countries, countrycolor="rgb(255,230,140)", countrywidth=1.0,
-            showsubunits=show_subunits,   subunitcolor="rgba(220,200,150,0.55)", subunitwidth=0.6,
-            bgcolor="rgb(2,4,12)",
+            # Paleta Blue Marble: tierra cálida tonificada, océano profundo
+            showland=True,    landcolor="rgb(86,110,76)",
+            showocean=True,   oceancolor="rgb(6,22,55)",
+            showlakes=show_lakes,   lakecolor="rgb(18,58,130)",
+            showrivers=show_rivers, rivercolor="rgba(95,170,235,0.55)", riverwidth=0.7,
+            showcoastlines=True,    coastlinecolor="rgba(240,248,225,0.45)", coastlinewidth=0.6,
+            showcountries=show_countries, countrycolor="rgba(255,210,120,0.45)", countrywidth=0.7,
+            showsubunits=show_subunits,   subunitcolor="rgba(220,200,150,0.4)", subunitwidth=0.5,
+            bgcolor="rgba(0,0,0,0)",
         ),
-        paper_bgcolor="rgb(10,15,30)",
-        height=760,
-        margin=dict(l=0, r=0, t=40, b=0),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        height=880,
+        margin=dict(l=0, r=0, t=8, b=0),
         showlegend=False,
-        title=dict(
-            text=f"<b style='color:#e8eef7'>Vista orbital</b>  "
-                 f"<span style='font-size:11px;color:#5a6a84'>· {t_label}</span>",
-            font=dict(color="#e8eef7", size=14), x=0.02, y=0.97,
-        ),
         font=dict(color="#94a3b8", size=11),
         updatemenus=[dict(
             type="buttons", showactive=True,
-            y=1.0, x=1.0, xanchor="right", yanchor="top", direction="left",
+            y=0.99, x=0.99, xanchor="right", yanchor="top", direction="left",
             buttons=[
                 dict(label="▶ Rotar", method="animate",
                      args=[None, {"frame": {"duration": 40, "redraw": True},
@@ -1453,10 +1467,16 @@ def _globe_figure(
                      args=[[None], {"frame": {"duration": 0}, "mode": "immediate",
                                     "transition": {"duration": 0}}]),
             ],
-            bgcolor="rgba(21,27,44,0.92)",
-            bordercolor="rgba(160,180,220,0.2)",
+            bgcolor="rgba(21,27,44,0.85)",
+            bordercolor="rgba(95,168,245,0.25)",
             font=dict(color="#e8eef7", size=11),
             pad=dict(r=8, t=4, b=4),
+        )],
+        annotations=[dict(
+            x=0.015, y=0.985, xref="paper", yref="paper", showarrow=False,
+            text=f"<b style='color:#e8eef7;font-size:13px;'>VISTA ORBITAL</b>"
+                 f"<br><span style='color:#5fa8f5;font-family:monospace;font-size:10px;'>{t_label}</span>",
+            align="left", xanchor="left", yanchor="top",
         )],
     )
     return fig
@@ -1576,7 +1596,7 @@ def _satellite_figure(
         mapbox=dict(
             style="white-bg",
             layers=[
-                dict(  # base: imágenes satelitales Esri
+                dict(  # base: imágenes satelitales Esri (Maxar/USGS)
                     below="traces",
                     sourcetype="raster",
                     sourceattribution="Esri · Maxar · Earthstar Geographics · USGS",
@@ -1595,12 +1615,20 @@ def _satellite_figure(
                 ),
             ],
             center=dict(lat=20, lon=0),
-            zoom=1.2,
+            zoom=1.4,
         ),
-        paper_bgcolor="rgb(10,15,30)",
-        height=760,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        height=880,
         margin=dict(l=0, r=0, t=0, b=0),
         showlegend=False,
+        annotations=[dict(
+            x=0.015, y=0.985, xref="paper", yref="paper", showarrow=False,
+            text="<b style='color:#fff;font-size:13px;text-shadow:0 1px 4px rgba(0,0,0,.9);'>VISTA SATELITAL</b>"
+                 "<br><span style='color:#c9d8e8;font-family:monospace;font-size:10px;text-shadow:0 1px 4px rgba(0,0,0,.9);'>Esri World Imagery</span>",
+            align="left", xanchor="left", yanchor="top",
+            bgcolor="rgba(15,25,50,.55)", borderpad=6, bordercolor="rgba(95,168,245,.25)", borderwidth=1,
+        )],
     )
     return fig
 
@@ -1699,7 +1727,7 @@ def _page_map() -> None:
     tle_text, tle_source = _fetch_live_tles()
 
     # ── Layout: globo izquierda · panel control derecha ───────────────────────
-    col_globe, col_ctrl = st.columns([4, 1], gap="small")
+    col_globe, col_ctrl = st.columns([5, 1], gap="medium")
 
     with col_ctrl:
         now_utc = datetime.now(timezone.utc)
@@ -1761,9 +1789,9 @@ def _page_map() -> None:
         )
         view_mode = st.radio(
             "Modo de vista",
-            ["🌍 Globo 3D", "🛰 Satélite (Esri)"],
+            ["🛰 Satélite (Esri)", "🌍 Globo 3D"],
             key="map_view_mode",
-            help="Globo 3D: orthographic vectorial realista. Satélite: tiles Esri World Imagery.",
+            help="Satélite: tiles fotorealistas Esri/Maxar/USGS. Globo 3D: orthographic vectorial Blue-Marble.",
         )
 
     # ── Selección de dataset ─────────────────────────────────────────────────
@@ -1884,7 +1912,19 @@ def _page_map() -> None:
                 )
             event = st.plotly_chart(
                 fig, use_container_width=True,
-                config={"displayModeBar": True, "scrollZoom": True, "displaylogo": False},
+                config={
+                    "displayModeBar": "hover",
+                    "scrollZoom": True,
+                    "displaylogo": False,
+                    "modeBarButtonsToRemove": [
+                        "lasso2d", "select2d", "autoScale2d",
+                        "hoverClosestGeo", "toggleSpikelines",
+                    ],
+                    "toImageButtonOptions": {
+                        "format": "png", "filename": "orbital-sentinel",
+                        "scale": 2,
+                    },
+                },
                 on_select="rerun",
                 selection_mode=["points"],
                 key="globe_chart",
