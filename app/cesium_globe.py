@@ -207,6 +207,8 @@ def html(
     <div class="row"><span class="lbl">Viewer</span><span id="d-viewer" class="wait">…</span></div>
     <div class="row"><span class="lbl">WebGL</span><span id="d-webgl" class="wait">…</span></div>
     <div class="row"><span class="lbl">Imagery</span><span id="d-imagery" class="wait">…</span></div>
+    <div class="row"><span class="lbl">Canvas</span><span id="d-canvas" class="wait">…</span></div>
+    <div class="row"><span class="lbl">Tiles cargados</span><span id="d-tiles" class="wait">…</span></div>
     <div class="row"><span class="lbl">Errores</span><span id="d-errs" class="wait">0</span></div>
   </div>
   <div class="err-banner" id="errBanner"></div>
@@ -447,8 +449,25 @@ def html(
     scene.fog.enabled = true;
     scene.fog.density = 0.00006;
     scene.backgroundColor = Cesium.Color.fromCssColorString('#01020a');
-    // Color base por si los tiles tardan en cargar — globo azul tenue
-    scene.globe.baseColor = Cesium.Color.fromCssColorString('#0a1838');
+    // DIAGNÓSTICO: rojo brillante temporal — si ves esfera roja, el globo
+    // se renderiza correctamente y los tiles no llegan; si no la ves,
+    // hay problema de cámara/canvas/contexto.
+    scene.globe.baseColor = Cesium.Color.fromCssColorString('#ff2244');
+
+    // Reporta tamaño del canvas y progreso de tiles en el panel diag
+    try {{
+      const cnv = viewer.canvas;
+      DIAG.set('d-canvas', cnv.width > 0 ? 'ok' : 'ko',
+        cnv.width + ' × ' + cnv.height + ' px');
+    }} catch (e) {{ DIAG.set('d-canvas', 'ko', 'sin canvas'); }}
+    let lastTilePending = -1;
+    scene.globe.tileLoadProgressEvent.addEventListener(function(pending) {{
+      if (pending !== lastTilePending) {{
+        lastTilePending = pending;
+        DIAG.set('d-tiles', pending === 0 ? 'ok' : 'wait',
+          pending === 0 ? 'completos' : (pending + ' pendientes'));
+      }}
+    }});
 
     try {{ viewer.cesiumWidget.creditContainer.style.display = 'none'; }} catch (e) {{}}
 
@@ -562,18 +581,25 @@ def html(
       }});
     }});
 
+    // Vista global garantizada — primero un setView (instantáneo) para
+    // dejar la cámara en una posición conocida. Luego, opcionalmente,
+    // vuela al primary si existe.
+    viewer.camera.setView({{
+      destination: Cesium.Cartesian3.fromDegrees(0, 15, 28_000_000),
+      orientation: {{
+        heading: 0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0,
+      }},
+    }});
     const primary = TRACKS.find(t => t.is_primary);
     if (primary) {{
-      viewer.camera.flyTo({{
-        destination: Cesium.Cartesian3.fromDegrees(
-          primary.lon0, primary.lat0, 24_000_000
-        ),
-        duration: 1.5,
-      }});
-    }} else {{
-      viewer.camera.setView({{
-        destination: Cesium.Cartesian3.fromDegrees(0, 15, 32_000_000),
-      }});
+      setTimeout(function() {{
+        viewer.camera.flyTo({{
+          destination: Cesium.Cartesian3.fromDegrees(
+            primary.lon0, primary.lat0, 22_000_000
+          ),
+          duration: 2.0,
+        }});
+      }}, 1500);
     }}
   </script>
 </body>
