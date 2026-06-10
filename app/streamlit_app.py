@@ -1913,20 +1913,15 @@ def _page_map() -> None:
                     hp = be.derived_evidence.honesty_payload
                     if float(hp.get("miss_distance_km", 0)) > 10:
                         real_norads.add(int(hp.get("other_norad_cat_id", 0)))
+                # NO pasamos las layers de Streamlit — el modo Cesium tiene
+                # su propio panel de capas dentro del iframe (HUD), para no
+                # forzar un re-render que reinicie zoom y cámara cada vez
+                # que el usuario toca una toggle del panel lateral.
                 html_doc = _cesium.html(
                     track_list,
                     primary_norad=case.evidence_bundle.object_id,
                     real_norads=real_norads,
                     extra_tracks=extra_tracks,
-                    layers=dict(
-                        cities=layer_cities,
-                        country_names=layer_country_names,
-                        countries=layer_countries,
-                        state_names=layer_state_names,
-                        subunits=layer_subunits,
-                        lakes=layer_lakes,
-                        rivers=layer_rivers,
-                    ),
                     height=880,
                 )
                 import streamlit.components.v1 as components

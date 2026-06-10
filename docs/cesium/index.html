@@ -68,14 +68,35 @@
     }
     .hud {
       position: absolute; top: 12px; left: 14px; z-index: 999;
-      color: #e8eef7; padding: 8px 12px;
-      background: rgba(15,25,50,.65);
+      color: #e8eef7; padding: 10px 14px;
+      background: rgba(15,25,50,.7);
       border: 1px solid rgba(95,168,245,.3);
-      border-radius: 6px; backdrop-filter: blur(8px);
-      pointer-events: none;
+      border-radius: 8px; backdrop-filter: blur(8px);
+      pointer-events: auto;
+      min-width: 220px;
     }
     .hud .title { font-size: 13px; font-weight: 700; letter-spacing: .03em; }
     .hud .sub { font-size: 10px; color: #5fa8f5; font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+    .hud .lyr-panel {
+      margin-top: 10px; padding-top: 10px;
+      border-top: 1px solid rgba(95,168,245,.2);
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .hud .lyr-panel .lp-title {
+      font-size: 10px; text-transform: uppercase;
+      letter-spacing: .08em; color: rgba(180,200,230,.7);
+      margin-bottom: 4px;
+    }
+    .hud .lyr-panel label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: #e8eef7;
+      cursor: pointer; user-select: none;
+    }
+    .hud .lyr-panel label:hover { color: #5fa8f5; }
+    .hud .lyr-panel input[type="checkbox"] {
+      width: 14px; height: 14px;
+      accent-color: #5fa8f5; cursor: pointer;
+    }
     .loading {
       position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
       color: #5fa8f5; font-size: 14px;
@@ -92,6 +113,21 @@
   <div class="hud">
     <div class="title">🌐 VISTA CESIUM · 3D fotorealístico</div>
     <div class="sub" id="hudSub">Esperando datos…</div>
+    <div class="lyr-panel">
+      <div class="lp-title">Capas del globo</div>
+      <label>
+        <input type="checkbox" id="lyr-labels">
+        Etiquetas (países, ciudades)
+      </label>
+      <label>
+        <input type="checkbox" id="lyr-atmosphere" checked>
+        Atmósfera
+      </label>
+      <label>
+        <input type="checkbox" id="lyr-lighting">
+        Iluminación día/noche
+      </label>
+    </div>
   </div>
   <script>
     // ── Providers públicos (sin token) ───────────────────────────────
@@ -498,10 +534,8 @@
       }
     }
 
-    // ── Overlays toggleables (etiquetas, fronteras) ─────────────────
-    // Una única overlay Esri Reference (Boundaries + Places) que se
-    // muestra/oculta según las toggles de Streamlit. URLs Esri Reference
-    // alternativas no son fiables — esta sí es estable.
+    // ── Controles de capas DENTRO del iframe (no afectan al re-render
+    // del wrapper Streamlit, así el zoom/cámara se preservan) ────────
     let labelsLayer = null;
     function makeReferenceOverlay() {
       return new Cesium.UrlTemplateImageryProvider({
@@ -511,31 +545,28 @@
       });
     }
 
-    function applyLayers(layers) {
-      if (!layers) return;
-      // Cualquier toggle relacionada con etiquetas o fronteras activa
-      // la única overlay. rivers/lakes no tienen equivalente raster
-      // gratuito y son ignoradas (el orthographic vectorial sí los soporta).
-      const wantOverlay = !!(
-        layers.country_names || layers.state_names || layers.cities ||
-        layers.countries || layers.subunits
-      );
-      if (wantOverlay && !labelsLayer) {
+    document.getElementById('lyr-labels').addEventListener('change', function (e) {
+      if (e.target.checked && !labelsLayer) {
         labelsLayer = viewer.imageryLayers.addImageryProvider(makeReferenceOverlay());
-      } else if (!wantOverlay && labelsLayer) {
+      } else if (!e.target.checked && labelsLayer) {
         viewer.imageryLayers.remove(labelsLayer, true);
         labelsLayer = null;
       }
-    }
+    });
+
+    document.getElementById('lyr-atmosphere').addEventListener('change', function (e) {
+      scene.skyAtmosphere.show = e.target.checked;
+      scene.globe.showGroundAtmosphere = e.target.checked;
+    });
+
+    document.getElementById('lyr-lighting').addEventListener('change', function (e) {
+      scene.globe.enableLighting = e.target.checked;
+    });
 
     // ── Recibe datos del parent via postMessage ──────────────────────
     window.addEventListener('message', function(event) {
       if (event.data && event.data.type === 'orbital-sentinel-tracks') {
         renderTracks(event.data.payload);
-        applyLayers(event.data.payload.layers);
-      } else if (event.data && event.data.type === 'orbital-sentinel-layers') {
-        // Mensaje sólo de layers, sin reenviar tracks
-        applyLayers(event.data.payload);
       }
     });
 
