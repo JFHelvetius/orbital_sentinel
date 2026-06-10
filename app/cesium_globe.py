@@ -1,12 +1,9 @@
-"""Cesium 3D globe — render fotorealístico con tiles satelitales reales.
+"""Cesium 3D globe — render fotorealístico con tiles satelitales públicos.
 
 Implementa la decisión de ADR-0008 (enmienda 1): Cesium embebido vía
-`streamlit.components.v1.html`, Cesium Ion default token en el contexto
-deploy-público (Streamlit Cloud).
-
-API mínima: `render(tracks, *, primary_norad, height=880)` → renderiza
-un iframe sandboxed con un globo 3D Cesium centrado y rotable, mostrando
-cada TLE como una entidad puntual con label y altitud real.
+`streamlit.components.v1.html`. Sin dependencia de Cesium Ion para
+imagery — usa tiles públicos sin token (Esri World Imagery por default,
+con baseLayerPicker para alternar a OSM, Esri Topo, etc.).
 
 Deuda técnica (ADR-0008 enmienda 1, plan v0.1 → v0.3):
 - v0.1 (este módulo): puntos animados + línea fina como traza.
@@ -19,26 +16,11 @@ from __future__ import annotations
 import json
 from typing import Any
 
-# Cesium Ion default token público — válido para apps de demostración
-# públicas. Si se excede la cuota mensual, el usuario debe registrar su
-# propio token gratuito en cesium.com/ion y reemplazar esta constante.
-# Ver ADR-0008 enmienda 1.
-_CESIUM_ION_TOKEN = (
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-    "eyJqdGkiOiJhYWQ3OTM5NS00NWIyLTRiMWUtOWQzMC1mYmNkNzg2NjQ1MzciLCJpZCI6"
-    "MjU5LCJpYXQiOjE2NzcxNzYzNzh9.0Mh7VVgvJVOpJ7CCdyB5lDxsZdHX9wqXrLrYWBlhUtg"
-)
-
 
 def _tracks_to_json(tracks: list[Any], primary_norad: int) -> str:
-    """Serializa los tracks a JSON consumible por Cesium JS.
-
-    Cada track: { norad, name, lat0, lon0, alt0, lats[], lons[], known,
-                  is_primary, period_min, incl }
-    """
+    """Serializa los tracks a JSON consumible por Cesium JS."""
     payload = []
     for t in tracks:
-        # Filtrar Nones del path para no romper PolylinePositions
         lats = [v for v in (t.lats or []) if v is not None]
         lons = [v for v in (t.lons or []) if v is not None]
         payload.append({
@@ -52,7 +34,7 @@ def _tracks_to_json(tracks: list[Any], primary_norad: int) -> str:
             "period_min": float(t.period_min),
             "known": bool(t.known),
             "is_primary": int(t.norad) == int(primary_norad),
-            "lats": lats[:200],  # cap para no inflar el iframe
+            "lats": lats[:200],
             "lons": lons[:200],
         })
     return json.dumps(payload, separators=(",", ":"))
@@ -94,6 +76,13 @@ def html(
       color: #5fa8f5 !important;
     }}
     .cesium-button:hover {{ background: rgba(74,144,226,.2) !important; }}
+    .cesium-baseLayerPicker-dropDown {{
+      background: rgba(15,20,38,.97) !important;
+      border: 1px solid rgba(95,168,245,.3) !important;
+      color: #e8eef7 !important;
+    }}
+    .cesium-baseLayerPicker-sectionTitle {{ color: #5fa8f5 !important; }}
+    .cesium-baseLayerPicker-itemLabel {{ color: #e8eef7 !important; }}
     .hud {{
       position: absolute; top: 12px; left: 14px; z-index: 999;
       color: #e8eef7; padding: 8px 12px;
@@ -104,56 +93,157 @@ def html(
     }}
     .hud .title {{ font-size: 13px; font-weight: 700; letter-spacing: .03em; }}
     .hud .sub   {{ font-size: 10px; color: #5fa8f5; font-family: 'JetBrains Mono',monospace; margin-top: 2px; }}
+    .err-banner {{
+      position: absolute; bottom: 16px; left: 14px; right: 14px;
+      background: rgba(80,20,30,.92); color: #ffcfd6;
+      padding: 8px 12px; border-radius: 6px; font-size: 12px;
+      border: 1px solid rgba(239,68,68,.4); display: none;
+    }}
   </style>
 </head>
 <body>
   <div id="cesiumContainer"></div>
   <div class="hud">
     <div class="title">🌐 VISTA CESIUM · 3D fotorealístico</div>
-    <div class="sub">Cesium Ion · Bing Maps Aerial · ECEF</div>
+    <div class="sub" id="hudSub">Esri World Imagery · ArcGIS · Tile-textured globe</div>
   </div>
+  <div class="err-banner" id="errBanner"></div>
   <script>
-    Cesium.Ion.defaultAccessToken = "{_CESIUM_ION_TOKEN}";
-
     const TRACKS = {tracks_json};
     const EXTRA  = {extra_json};
     const REAL_NORADS = new Set({real_json});
 
-    const viewer = new Cesium.Viewer('cesiumContainer', {{
-      animation: false,
-      timeline: false,
-      baseLayerPicker: true,
-      geocoder: false,
-      homeButton: true,
-      sceneModePicker: false,
-      navigationHelpButton: false,
-      fullscreenButton: true,
-      infoBox: true,
-      selectionIndicator: true,
-      shouldAnimate: false,
-      terrainProvider: undefined,
-    }});
+    // ── Imagery providers públicos (sin Cesium Ion) ─────────────────
+    // Esri World Imagery: fotorealistic, gratis, sin token
+    function esriImagery() {{
+      return new Cesium.UrlTemplateImageryProvider({{
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}',
+        credit: new Cesium.Credit('Esri · Maxar · Earthstar Geographics · USGS'),
+        maximumLevel: 19,
+      }});
+    }}
+    function esriHybridLabels() {{
+      return new Cesium.UrlTemplateImageryProvider({{
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{{z}}/{{y}}/{{x}}',
+        credit: new Cesium.Credit('Esri Reference'),
+        maximumLevel: 19,
+      }});
+    }}
+    function esriTopo() {{
+      return new Cesium.UrlTemplateImageryProvider({{
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{{z}}/{{y}}/{{x}}',
+        credit: new Cesium.Credit('Esri Topo'),
+        maximumLevel: 19,
+      }});
+    }}
+    function esriOcean() {{
+      return new Cesium.UrlTemplateImageryProvider({{
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{{z}}/{{y}}/{{x}}',
+        credit: new Cesium.Credit('Esri Ocean'),
+        maximumLevel: 13,
+      }});
+    }}
+    function osm() {{
+      return new Cesium.OpenStreetMapImageryProvider({{
+        url: 'https://tile.openstreetmap.org/',
+        credit: new Cesium.Credit('© OpenStreetMap contributors'),
+      }});
+    }}
+    function natgeo() {{
+      return new Cesium.UrlTemplateImageryProvider({{
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{{z}}/{{y}}/{{x}}',
+        credit: new Cesium.Credit('Esri · National Geographic'),
+        maximumLevel: 16,
+      }});
+    }}
 
-    // Atmósfera + ground lighting estilo NASA Blue Marble
+    const imageryModels = [
+      new Cesium.ProviderViewModel({{
+        name: 'Esri World Imagery',
+        iconUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/2/1/1',
+        tooltip: 'Imagery satelital fotorealista — Esri/Maxar',
+        creationFunction: esriImagery,
+      }}),
+      new Cesium.ProviderViewModel({{
+        name: 'Esri Imagery + etiquetas',
+        iconUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/2/1/2',
+        tooltip: 'Satelital con etiquetas de países y ciudades',
+        creationFunction: function() {{ return [esriImagery(), esriHybridLabels()]; }},
+      }}),
+      new Cesium.ProviderViewModel({{
+        name: 'Esri Topográfico',
+        iconUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/2/1/1',
+        tooltip: 'Mapa topográfico mundial',
+        creationFunction: esriTopo,
+      }}),
+      new Cesium.ProviderViewModel({{
+        name: 'Esri Océanos',
+        iconUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/2/1/1',
+        tooltip: 'Batimetría oceánica',
+        creationFunction: esriOcean,
+      }}),
+      new Cesium.ProviderViewModel({{
+        name: 'OpenStreetMap',
+        iconUrl: 'https://tile.openstreetmap.org/2/1/1.png',
+        tooltip: 'OSM clásico',
+        creationFunction: osm,
+      }}),
+      new Cesium.ProviderViewModel({{
+        name: 'National Geographic',
+        iconUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/2/1/1',
+        tooltip: 'Estilo Nat Geo',
+        creationFunction: natgeo,
+      }}),
+    ];
+
+    let viewer;
+    try {{
+      viewer = new Cesium.Viewer('cesiumContainer', {{
+        animation: false,
+        timeline: false,
+        baseLayerPicker: true,
+        imageryProviderViewModels: imageryModels,
+        selectedImageryProviderViewModel: imageryModels[1],  // Esri Imagery + labels default
+        terrainProviderViewModels: [],  // sin terreno por ahora (no requiere Ion)
+        geocoder: false,
+        homeButton: true,
+        sceneModePicker: true,
+        navigationHelpButton: false,
+        fullscreenButton: true,
+        infoBox: true,
+        selectionIndicator: true,
+        shouldAnimate: false,
+        skyBox: undefined,
+        contextOptions: {{ webgl: {{ alpha: true, antialias: true, preserveDrawingBuffer: true }} }},
+      }});
+    }} catch (e) {{
+      document.getElementById('errBanner').style.display = 'block';
+      document.getElementById('errBanner').textContent =
+        'Error inicializando Cesium: ' + e.message;
+      throw e;
+    }}
+
+    // Atmósfera + lighting estilo Blue Marble
     const scene = viewer.scene;
     scene.globe.enableLighting = true;
-    scene.globe.atmosphereLightIntensity = 12.0;
     scene.globe.showGroundAtmosphere = true;
+    if (scene.globe.atmosphereLightIntensity !== undefined)
+      scene.globe.atmosphereLightIntensity = 10.0;
     scene.skyAtmosphere.show = true;
     scene.skyAtmosphere.hueShift = 0.0;
-    scene.skyAtmosphere.saturationShift = 0.1;
-    scene.skyAtmosphere.brightnessShift = 0.05;
+    scene.skyAtmosphere.saturationShift = 0.05;
+    scene.skyAtmosphere.brightnessShift = 0.0;
     scene.fog.enabled = true;
-    scene.fog.density = 0.0001;
+    scene.fog.density = 0.00008;
     scene.backgroundColor = Cesium.Color.fromCssColorString('#01020a');
 
-    // Quitar logo/credits visualmente (estamos atribuyendo en HUD)
+    // Ocultar credits visual (los atribuimos en HUD propio)
     try {{ viewer.cesiumWidget.creditContainer.style.display = 'none'; }} catch (e) {{}}
 
-    // Render satélites — altitud REAL en km (Cesium acepta metros)
+    // ── Render satélites ────────────────────────────────────────────
     function addSat(t, opts) {{
       const pos = Cesium.Cartesian3.fromDegrees(t.lon0, t.lat0, t.alt0 * 1000.0);
-      const entity = viewer.entities.add({{
+      viewer.entities.add({{
         name: t.name,
         position: pos,
         point: {{
@@ -186,7 +276,6 @@ def html(
         `,
       }});
 
-      // Traza orbital (línea fina por ahora — v0.1, según ADR-0008 enmienda 1)
       if (t.lats && t.lats.length > 1 && opts.drawTrack) {{
         const positions = [];
         for (let i = 0; i < t.lats.length; i++) {{
@@ -199,13 +288,11 @@ def html(
             positions: Cesium.Cartesian3.fromDegreesArrayHeights(positions),
             width: opts.trackWidth,
             material: opts.trackColor,
-            clampToGround: false,
           }},
         }});
       }}
     }}
 
-    // Estilos por tipo
     TRACKS.forEach(t => {{
       const isReal = REAL_NORADS.has(t.norad);
       if (t.is_primary) {{
@@ -258,7 +345,6 @@ def html(
       }}
     }});
 
-    // Objetos de proximidad (color cyan)
     EXTRA.forEach(t => {{
       addSat(t, {{
         size: 12,
@@ -272,7 +358,6 @@ def html(
       }});
     }});
 
-    // Centrar en el primary, si existe; si no, vista global
     const primary = TRACKS.find(t => t.is_primary);
     if (primary) {{
       viewer.camera.flyTo({{
