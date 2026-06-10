@@ -64,8 +64,21 @@ def html(
 <html lang="es">
 <head>
   <meta charset="utf-8">
+  <!-- CRÍTICO: CESIUM_BASE_URL debe definirse ANTES de cargar Cesium.js,
+       porque el iframe srcdoc de Streamlit no resuelve rutas relativas
+       (workers, shaders, asset images) sin un base URL absoluto. -->
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/';
+  </script>
   <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/Widgets/widgets.css">
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/Cesium.js"></script>
+  <script>
+    // Doble-asegura el base URL después de que Cesium se cargue, para
+    // las llamadas a buildModuleUrl() que se hagan posteriormente.
+    if (typeof Cesium !== 'undefined' && Cesium.buildModuleUrl && Cesium.buildModuleUrl.setBaseUrl) {{
+      Cesium.buildModuleUrl.setBaseUrl(window.CESIUM_BASE_URL);
+    }}
+  </script>
   <style>
     html, body {{
       width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
