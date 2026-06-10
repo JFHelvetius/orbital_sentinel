@@ -2089,14 +2089,15 @@ def _page_cases() -> None:
     st.dataframe(df.style.apply(_color, axis=1), use_container_width=True, hide_index=True)
 
     # ── Cadena de custodia ────────────────────────────────────────────────────
-    with st.expander("🔗 Cadena de custodia criptográfica", expanded=False):
+    st.divider()
+    if st.toggle("🔗 Cadena de custodia criptográfica", key=f"show_chain_{selected}"):
         st.markdown(_chain_html(case, report), unsafe_allow_html=True)
         st.caption(
             "Cada hash se computa sobre el contenido del artefacto anterior. "
             "Si cualquier byte fue modificado, el hash siguiente no coincide."
         )
 
-    with st.expander("📄 Texto de explicación (verbatim, determinístico)", expanded=False):
+    if st.toggle("📄 Texto de explicación (verbatim, determinístico)", key=f"show_explanation_{selected}"):
         st.code(case.explanation_artifact.explanation_text, language=None)
 
 
@@ -2172,7 +2173,7 @@ La verificación ejecuta los mismos verifiers que CI y **no envía ningún dato 
         st.plotly_chart(_scatter_figure(rows), use_container_width=True,
                         config={"displayModeBar": False})
 
-    with st.expander("Reporte completo (JSON)", expanded=False):
+    if st.toggle("📦 Reporte completo (JSON)", key="show_verify_report"):
         st.json(report.model_dump(mode="json"))
 
 
