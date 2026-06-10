@@ -507,15 +507,12 @@ button[kind="primary"], button[data-testid*="baseButton-primary"] {
 }
 button[kind="primary"]:hover { background: var(--accent-bri) !important; }
 
-/* ── Expanders ─────────────────────────────────────────────────────────── */
+/* ── Expanders (mínimo — no tocar summary/chevron de Streamlit) ────────── */
 .stExpander, [data-testid="stExpander"] {
   border: 1px solid var(--border) !important;
   border-radius: var(--radius) !important;
   margin: .8rem 0 !important;
-  background: var(--bg-card) !important;
 }
-.stExpander summary { padding: .65rem .9rem !important; }
-.stExpander summary:hover { background: var(--bg-elevated) !important; }
 
 /* ── DataFrame ─────────────────────────────────────────────────────────── */
 [data-testid="stDataFrame"] {
