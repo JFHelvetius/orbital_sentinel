@@ -167,7 +167,25 @@ def html(
       padding: 10px 14px; border-radius: 6px; font-size: 12px;
       border: 1px solid rgba(239,68,68,.5); display: none;
       z-index: 1000;
+      max-height: 200px; overflow: auto;
+      font-family: 'JetBrains Mono', monospace;
     }}
+    /* Panel diagnóstico siempre visible */
+    .diag {{
+      position: absolute; top: 12px; right: 14px; z-index: 999;
+      max-width: 320px;
+      background: rgba(15,20,38,.92); color: #c9d8e8;
+      padding: 10px 12px; border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace; font-size: 11px;
+      border: 1px solid rgba(95,168,245,.3);
+      line-height: 1.5;
+      pointer-events: none;
+    }}
+    .diag .row {{ display: flex; gap: 6px; }}
+    .diag .lbl {{ color: #5fa8f5; min-width: 90px; }}
+    .diag .ok {{ color: #10b981; }}
+    .diag .ko {{ color: #ef4444; }}
+    .diag .wait {{ color: #f59e0b; }}
   </style>
 </head>
 <body>
@@ -178,8 +196,53 @@ def html(
     <div class="title">🌐 VISTA CESIUM · 3D fotorealístico</div>
     <div class="sub" id="hudSub">Iniciando…</div>
   </div>
+  <div class="diag" id="diagPanel">
+    <div style="font-weight:700;color:#5fa8f5;margin-bottom:6px;">DIAGNÓSTICO</div>
+    <div class="row"><span class="lbl">Cesium SDK</span><span id="d-sdk" class="wait">…</span></div>
+    <div class="row"><span class="lbl">BASE_URL</span><span id="d-base" class="wait">…</span></div>
+    <div class="row"><span class="lbl">Viewer</span><span id="d-viewer" class="wait">…</span></div>
+    <div class="row"><span class="lbl">WebGL</span><span id="d-webgl" class="wait">…</span></div>
+    <div class="row"><span class="lbl">Imagery</span><span id="d-imagery" class="wait">…</span></div>
+    <div class="row"><span class="lbl">Errores</span><span id="d-errs" class="wait">0</span></div>
+  </div>
   <div class="err-banner" id="errBanner"></div>
   <script>
+    // ── Diagnóstico visible: cualquier error en la consola se ve en pantalla
+    const DIAG = {{
+      errors: [],
+      set(id, status, msg) {{
+        const el = document.getElementById(id);
+        if (el) {{
+          el.className = status;
+          el.textContent = msg;
+        }}
+      }},
+      addErr(src, msg) {{
+        this.errors.push(src + ': ' + msg);
+        this.set('d-errs', 'ko', String(this.errors.length));
+        const banner = document.getElementById('errBanner');
+        banner.style.display = 'block';
+        banner.textContent = this.errors.join('\\n\\n');
+      }},
+    }};
+
+    window.addEventListener('error', function(e) {{
+      DIAG.addErr('error', (e.message || 'unknown') + ' @ ' + (e.filename || '?') + ':' + (e.lineno || '?'));
+    }});
+    window.addEventListener('unhandledrejection', function(e) {{
+      DIAG.addErr('promise', String(e.reason));
+    }});
+
+    DIAG.set('d-base', (window.CESIUM_BASE_URL ? 'ok' : 'ko'),
+      window.CESIUM_BASE_URL ? 'definido' : 'NO DEFINIDO');
+
+    if (typeof Cesium === 'undefined') {{
+      DIAG.set('d-sdk', 'ko', 'NO CARGÓ');
+      DIAG.addErr('sdk', 'window.Cesium es undefined — el script Cesium.js no se evaluó');
+    }} else {{
+      DIAG.set('d-sdk', 'ok', 'v' + Cesium.VERSION);
+    }}
+
     const TRACKS = {tracks_json};
     const EXTRA  = {extra_json};
     const REAL_NORADS = new Set({real_json});
@@ -314,16 +377,43 @@ def html(
         selectionIndicator: true,
         shouldAnimate: false,
       }});
+      DIAG.set('d-viewer', 'ok', 'creado');
 
-      // GARANTIZA que haya una capa de imagery — el flag baseLayer:false
-      // y el picker juntos a veces dejan el globo vacío en Cesium 1.119.
-      // Añadimos OSM siempre como fallback al fondo, y encima el Blue Marble.
-      const fallbackLayer = viewer.imageryLayers.addImageryProvider(osmStandard());
-      const blueMarbleLayer = viewer.imageryLayers.addImageryProvider(nasaGibsBlueMarble());
+      // Verifica WebGL
+      try {{
+        const ctx = viewer.scene.context;
+        DIAG.set('d-webgl', 'ok', ctx.webgl2 ? 'WebGL 2' : 'WebGL 1');
+      }} catch (e) {{
+        DIAG.set('d-webgl', 'ko', 'falla: ' + e.message);
+        DIAG.addErr('webgl', e.message);
+      }}
+
+      // GARANTIZA que haya una capa de imagery
+      try {{
+        viewer.imageryLayers.addImageryProvider(osmStandard());
+        viewer.imageryLayers.addImageryProvider(nasaGibsBlueMarble());
+        DIAG.set('d-imagery', 'ok', 'OSM + Blue Marble');
+      }} catch (e) {{
+        DIAG.set('d-imagery', 'ko', 'falla: ' + e.message);
+        DIAG.addErr('imagery', e.message);
+      }}
+
+      // Listener de errores de tile (tiles que fallan al cargar)
+      let tileErrors = 0;
+      viewer.scene.globe.tileLoadProgressEvent.addEventListener(function(n) {{
+        // n = tiles pendientes (informativo)
+      }});
+      if (viewer.scene.imageryLayers && viewer.scene.imageryLayers.tileProviderError) {{
+        viewer.scene.imageryLayers.tileProviderError.addEventListener(function(e) {{
+          tileErrors++;
+          DIAG.addErr('tile', e.error ? e.error.toString() : 'tile error');
+        }});
+      }}
 
       setHudSub('Blue Marble · NASA Earth Observatory');
     }} catch (e) {{
-      showError('Error inicializando Cesium: ' + e.message);
+      DIAG.set('d-viewer', 'ko', 'FALLA');
+      DIAG.addErr('viewer-init', e.message + ' | stack: ' + (e.stack || '').slice(0, 300));
       document.getElementById('loadingMsg').style.display = 'none';
       throw e;
     }}
