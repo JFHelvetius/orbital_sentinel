@@ -388,6 +388,15 @@
     scene.fog.enabled = true;
     scene.fog.density = 0.00006;
     scene.backgroundColor = Cesium.Color.fromCssColorString('#01020a');
+    // Globo OPACO — depth test contra el terreno habilitado para que los
+    // satélites del hemisferio oculto queden ocluidos por la geometría
+    // del planeta. Sin esto, los entities con position en altitud pueden
+    // dibujarse "a través" del globo cuando la cámara los mira de frente
+    // pero ellos están físicamente detrás del centro de la Tierra.
+    scene.globe.depthTestAgainstTerrain = true;
+    if (scene.globe.translucency) {
+      scene.globe.translucency.enabled = false;
+    }
 
     document.getElementById('hudSub').textContent = 'Esri World Imagery';
 

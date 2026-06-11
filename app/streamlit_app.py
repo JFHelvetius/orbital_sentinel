@@ -599,6 +599,15 @@ button[kind="primary"]:hover { background: var(--accent-bri) !important; }
   margin-top: 0 !important;
   padding-top: 0 !important;
 }
+/* GAP NUCLEAR — afecta TODO stVerticalBlock en la app, no solo dentro
+   de columnas. La pestaña Mapa orbital es la que más se beneficia;
+   el resto tampoco gana nada con gaps grandes. */
+.stApp [data-testid="stVerticalBlock"] {
+  gap: .25rem !important;
+}
+.stApp [data-testid="element-container"] {
+  margin-bottom: 0 !important;
+}
 /* HorizontalBlock — sin gap inferior */
 [data-testid="stHorizontalBlock"] { margin-bottom: 0 !important; gap: 1rem !important; }
 /* Apretar el gap interno del contenedor vertical de la columna del globo */

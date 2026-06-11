@@ -28,6 +28,11 @@ from typing import Any
 # usuario, actualizar aquí.
 _PAGES_URL = "https://jfhelvetius.github.io/orbital_sentinel/cesium/"
 
+# Cache buster — incrementar cuando se cambia docs/cesium/index.html
+# para invalidar el cache CDN de GitHub Pages y forzar fetch fresco
+# desde el navegador. Versión sigue ADR-0008 enmienda 1.
+_CACHE_BUSTER = "2026.06.10.6"
+
 # Carga opcional del catálogo satcat embebido. Si falta, los infobox
 # muestran solo la info derivada del TLE (altitud, inclinación, etc.).
 try:
@@ -137,7 +142,7 @@ def html(
 </head>
 <body>
   <iframe id="cesium-frame"
-          src="{_PAGES_URL}"
+          src="{_PAGES_URL}?v={_CACHE_BUSTER}"
           allow="fullscreen"
           loading="eager"></iframe>
   <div class="err" id="errMsg">
