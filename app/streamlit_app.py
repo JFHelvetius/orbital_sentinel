@@ -578,15 +578,24 @@ button[kind="primary"]:hover { background: var(--accent-bri) !important; }
   border: 1px solid rgba(74,144,226,.18) !important;
   display: block !important;
 }
-/* Cero margin extra del bloque que contiene el iframe/chart */
+/* Cero margin extra de los wrappers entre el globo y el toggle */
 [data-testid="element-container"]:has([data-testid="stIFrame"]),
-[data-testid="element-container"]:has([data-testid="stPlotlyChart"]) {
+[data-testid="element-container"]:has([data-testid="stPlotlyChart"]),
+[data-testid="element-container"]:has([data-testid="stCaptionContainer"]),
+[data-testid="element-container"]:has([data-testid="stHorizontalBlock"]) {
   margin-bottom: 0 !important;
+}
+/* Caption compacto */
+[data-testid="stCaptionContainer"] {
+  margin: 0 !important;
+  padding: .15rem 0 !important;
 }
 /* El toggle de tabla pegado al globo */
 [data-testid="stToggle"] {
   margin-top: .15rem !important;
 }
+/* HorizontalBlock — sin gap inferior */
+[data-testid="stHorizontalBlock"] { margin-bottom: 0 !important; gap: 1rem !important; }
 [data-testid="stPlotlyChart"]:hover {
   box-shadow:
     inset 0 0 120px rgba(60,120,200,0.14),
@@ -923,6 +932,53 @@ _EMBEDDED_GROUPS = {
     "cubesat":      "TLE_CUBESAT",
     "science":      "TLE_SCIENCE",
 }
+
+
+def _meta_type(norad: int) -> str:
+    """Tipo desde satcat, normalizado a 3 categorías para filtros."""
+    m = _SATCAT.get(int(norad))
+    if not m:
+        return "Desconocido"
+    t = (m.get("type") or "").lower()
+    if "payload" in t or "sat" in t:
+        return "Satélite"
+    if "cohete" in t or "r/b" in t or "rocket" in t:
+        return "Cuerpo de cohete"
+    if "debris" in t:
+        return "Debris"
+    return "Otro"
+
+
+def _meta_owner(norad: int) -> str:
+    m = _SATCAT.get(int(norad))
+    return m.get("owner", "Desconocido") if m else "Desconocido"
+
+
+def _filter_tracks(
+    tracks: list[Any],
+    *,
+    types: set[str] | None = None,
+    owners: set[str] | None = None,
+    primary_norad: int | None = None,
+) -> list[Any]:
+    """Filtra tracks por tipo y operador usando metadata satcat.
+
+    El primary siempre se mantiene aunque no pase el filtro (UX: el
+    usuario quiere ver al menos su objeto de interés).
+    """
+    if not types and not owners:
+        return tracks
+    out = []
+    for t in tracks:
+        if primary_norad is not None and int(t.norad) == int(primary_norad):
+            out.append(t)
+            continue
+        if types and _meta_type(t.norad) not in types:
+            continue
+        if owners and _meta_owner(t.norad) not in owners:
+            continue
+        out.append(t)
+    return out
 
 
 def _plain_lang(name: str, norad: int, alt: float, incl: float, period_min: float) -> str:
@@ -1896,6 +1952,28 @@ def _page_map() -> None:
             else:
                 st.caption("ℹ Las capas del globo solo aplican en modo Globo 3D vectorial.")
 
+        # ── Filtros por categoría (usa metadata satcat) ──────────────────
+        st.markdown("**🔍 Filtros**")
+        filt_types = st.multiselect(
+            "Tipo de objeto",
+            ["Satélite", "Cuerpo de cohete", "Debris", "Otro", "Desconocido"],
+            default=[], key="filt_types",
+            help="Filtra usando la columna OBJECT_TYPE del satcat de CelesTrak. Vacío = sin filtro.",
+        )
+        # Solo ofrecer los operadores presentes en el dataset activo, no toda la lista
+        # (eso sucede tras la propagación; aquí ofrecemos top operators conocidos).
+        _common_owners = [
+            "United States", "Russia/CIS", "China (PRC)", "ISS (multinational)",
+            "European Space Agency", "Japan", "India", "United Kingdom",
+            "France", "Germany", "Italy", "Canada", "Brazil", "Mexico",
+            "Iridium", "ORBCOMM", "Globalstar", "Intelsat", "SES", "EUTELSAT",
+        ]
+        filt_owners = st.multiselect(
+            "Operador / país",
+            _common_owners, default=[], key="filt_owners",
+            help="Filtra por el campo OWNER del satcat. Vacío = sin filtro.",
+        )
+
     # ── Selección de dataset ─────────────────────────────────────────────────
     ds_group, ds_mode = _DATASETS[dataset_label]
     ds_tle: str | None = None
@@ -1937,6 +2015,18 @@ def _page_map() -> None:
             case = _load(selected)
         except Exception as exc:
             st.error(f"Error: {exc}"); return
+
+    # ── Aplicar filtros por categoría (después de propagar, antes de render)
+    _n_total = len(track_list)
+    if filt_types or filt_owners:
+        track_list = _filter_tracks(
+            track_list,
+            types=set(filt_types) if filt_types else None,
+            owners=set(filt_owners) if filt_owners else None,
+            primary_norad=case.evidence_bundle.object_id,
+        )
+        _n_after = len(track_list)
+        active_source = active_source + f"  ·  filtro {_n_after}/{_n_total}"
 
     # Diagnóstico visible (compacto)
     with col_globe:
