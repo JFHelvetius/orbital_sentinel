@@ -401,6 +401,36 @@
     // Flag para evitar resetear la cámara cada vez que llegue un payload
     let initialFlyDone = false;
 
+    // Construye el HTML del infobox enriquecido para un satélite
+    function buildDescription(t) {
+      const rows = [];
+      // Header con full name si está disponible
+      if (t.full_name && t.full_name !== t.name) {
+        rows.push(`<h3 style="margin:0 0 4px;">${t.name}</h3>`);
+        rows.push(`<p style="margin:0 0 10px;color:#9bb;font-size:12px;">${t.full_name}</p>`);
+      } else {
+        rows.push(`<h3 style="margin:0 0 10px;">${t.name}</h3>`);
+      }
+      // Sección "Identificación"
+      rows.push('<div style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px;">');
+      rows.push(`<b>NORAD:</b><span>${t.norad}</span>`);
+      if (t.intl_id) rows.push(`<b>Internacional:</b><span>${t.intl_id}</span>`);
+      if (t.sat_type) rows.push(`<b>Tipo:</b><span>${t.sat_type}</span>`);
+      if (t.owner) rows.push(`<b>Operador:</b><span>${t.owner}</span>`);
+      if (t.launch_date) rows.push(`<b>Lanzamiento:</b><span>${t.launch_date}${t.launch_site ? ' · '+t.launch_site : ''}</span>`);
+      if (t.status) rows.push(`<b>Estado:</b><span>${t.status}</span>`);
+      rows.push('</div>');
+      // Sección "Órbita"
+      rows.push('<h4 style="margin:14px 0 6px;font-size:13px;">Órbita</h4>');
+      rows.push('<div style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px;">');
+      rows.push(`<b>Altitud:</b><span>${t.alt0.toFixed(0)} km</span>`);
+      rows.push(`<b>Altitud media:</b><span>${t.alt_mean.toFixed(0)} km</span>`);
+      rows.push(`<b>Inclinación:</b><span>${t.incl.toFixed(2)}°</span>`);
+      rows.push(`<b>Período:</b><span>${t.period_min.toFixed(1)} min</span>`);
+      rows.push('</div>');
+      return rows.join('\n');
+    }
+
     // ── Render de satélites desde datos recibidos por postMessage ────
     function renderTracks(payload) {
       try {
@@ -434,14 +464,7 @@
               backgroundPadding: new Cesium.Cartesian2(6, 4),
               disableDepthTestDistance: Number.POSITIVE_INFINITY,
             } : undefined,
-            description: `
-              <h3>${t.name}</h3>
-              <p><b>NORAD:</b> ${t.norad}</p>
-              <p><b>Altitud:</b> ${t.alt0.toFixed(0)} km</p>
-              <p><b>Altitud media:</b> ${t.alt_mean.toFixed(0)} km</p>
-              <p><b>Inclinación:</b> ${t.incl.toFixed(2)}°</p>
-              <p><b>Período:</b> ${t.period_min.toFixed(1)} min</p>
-            `,
+            description: buildDescription(t),
           });
 
           if (t.lats && t.lats.length > 1 && opts.drawTrack) {

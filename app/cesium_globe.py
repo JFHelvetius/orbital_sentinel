@@ -28,12 +28,23 @@ from typing import Any
 # usuario, actualizar aquí.
 _PAGES_URL = "https://jfhelvetius.github.io/orbital_sentinel/cesium/"
 
+# Carga opcional del catálogo satcat embebido. Si falta, los infobox
+# muestran solo la info derivada del TLE (altitud, inclinación, etc.).
+try:
+    from app.satcat_embedded import SATCAT as _SATCAT
+except Exception:
+    try:
+        from satcat_embedded import SATCAT as _SATCAT  # type: ignore
+    except Exception:
+        _SATCAT = {}
+
 
 def _tracks_to_dict(tracks: list[Any], primary_norad: int) -> list[dict]:
     out = []
     for t in tracks:
         lats = [v for v in (t.lats or []) if v is not None]
         lons = [v for v in (t.lons or []) if v is not None]
+        meta = _SATCAT.get(int(t.norad), {}) if _SATCAT else {}
         out.append({
             "norad": int(t.norad),
             "name": str(t.name),
@@ -46,6 +57,14 @@ def _tracks_to_dict(tracks: list[Any], primary_norad: int) -> list[dict]:
             "known": bool(t.known),
             "lats": lats[:200],
             "lons": lons[:200],
+            # Metadata satcat — claves opcionales
+            "full_name": meta.get("name", ""),
+            "intl_id":   meta.get("intl_id", ""),
+            "sat_type":  meta.get("type", ""),
+            "status":    meta.get("status", ""),
+            "owner":     meta.get("owner", ""),
+            "launch_date": meta.get("launch_date", ""),
+            "launch_site": meta.get("launch_site", ""),
         })
     return out
 
@@ -82,8 +101,10 @@ def html(
       width: 100%; height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }}
+    /* iframe ocupa el 100% del wrapper — el contenedor padre fija la
+       altura, evitando el gap negro que había con height fijo en px */
     #cesium-frame {{
-      width: 100%; height: {height}px;
+      width: 100%; height: 100%;
       border: 0; border-radius: 14px;
       display: block;
       background: #01020a;

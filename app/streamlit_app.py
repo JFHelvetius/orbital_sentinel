@@ -52,6 +52,15 @@ except Exception:
     except Exception:
         _cesium = None
 
+# Catálogo satcat embebido — metadata por NORAD (opcional)
+try:
+    from app.satcat_embedded import SATCAT as _SATCAT
+except Exception:
+    try:
+        from satcat_embedded import SATCAT as _SATCAT  # type: ignore
+    except Exception:
+        _SATCAT = {}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Constantes de dominio
 # ─────────────────────────────────────────────────────────────────────────────
@@ -880,6 +889,28 @@ _EMBEDDED_GROUPS = {
 def _plain_lang(name: str, norad: int, alt: float, incl: float, period_min: float) -> str:
     """Descripción del objeto en lenguaje accesible para no técnicos."""
     parts = [f"**🛰 {name}**  ·  identificador internacional NORAD `{norad}`"]
+
+    # Enriquecer con metadata satcat si está disponible
+    meta = _SATCAT.get(int(norad))
+    if meta:
+        fact_lines = []
+        if meta.get("full_name") or meta.get("name"):
+            full = meta.get("name") or meta.get("full_name")
+            if full and full.strip().upper() != name.strip().upper():
+                fact_lines.append(f"📛 **Nombre catalogado:** {full}")
+        if meta.get("intl_id"):
+            fact_lines.append(f"🔖 **Designación internacional:** `{meta['intl_id']}`")
+        if meta.get("owner"):
+            fact_lines.append(f"🏛 **Operador / país:** {meta['owner']}")
+        if meta.get("sat_type") or meta.get("type"):
+            fact_lines.append(f"🛠 **Tipo:** {meta.get('type') or meta.get('sat_type')}")
+        if meta.get("status"):
+            fact_lines.append(f"⚙ **Estado:** {meta['status']}")
+        if meta.get("launch_date"):
+            site = meta.get("launch_site") or ""
+            fact_lines.append(f"🚀 **Lanzado:** {meta['launch_date']}{(' desde ' + site) if site else ''}")
+        if fact_lines:
+            parts.append("  \n".join(fact_lines))
 
     # Categoría por altitud
     if alt < 700:
@@ -1925,7 +1956,9 @@ def _page_map() -> None:
                     height=880,
                 )
                 import streamlit.components.v1 as components
-                components.html(html_doc, height=900, scrolling=False)
+                # Altura exacta = altura del iframe interno (880) — sin
+                # gap inferior negro. El iframe interno usa 100% del wrapper.
+                components.html(html_doc, height=880, scrolling=False)
                 event = None  # Cesium no propaga selección al backend en v0.1
             elif view_mode and "Satélite" in view_mode:
                 fig = _satellite_figure(track_list, case,
