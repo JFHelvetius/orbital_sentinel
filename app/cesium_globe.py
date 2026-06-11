@@ -31,7 +31,7 @@ _PAGES_URL = "https://jfhelvetius.github.io/orbital_sentinel/cesium/"
 # Cache buster — incrementar cuando se cambia docs/cesium/index.html
 # para invalidar el cache CDN de GitHub Pages y forzar fetch fresco
 # desde el navegador. Versión sigue ADR-0008 enmienda 1.
-_CACHE_BUSTER = "2026.06.10.7"
+_CACHE_BUSTER = "2026.06.10.8"
 
 # Carga opcional del catálogo satcat embebido. Si falta, los infobox
 # muestran solo la info derivada del TLE (altitud, inclinación, etc.).

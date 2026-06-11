@@ -809,24 +809,10 @@ a:hover { color: var(--accent) !important; text-decoration: underline !important
   border-color: var(--border) !important;
 }
 
-/* ── File uploader: mínima personalización para no romper layout interno ── */
-[data-testid="stFileUploader"] section {
-  background: var(--bg-card) !important;
-  border: 1px dashed var(--border-strong) !important;
-  border-radius: var(--radius) !important;
-}
-[data-testid="stFileUploader"] section:hover {
-  border-color: var(--accent) !important;
-}
-/* Color del texto del dropzone — sin tocar display ni posicionamiento.
-   El layout interno de Streamlit (flex con icono + textos) se respeta. */
-[data-testid="stFileUploader"] section,
-[data-testid="stFileUploader"] section * {
-  color: var(--text-pri) !important;
-}
-[data-testid="stFileUploader"] section small {
-  color: var(--text-sec) !important;
-}
+/* ── File uploader: cero override — Streamlit default funciona en dark ── */
+/* El uploader nativo de Streamlit ya respeta el tema oscuro vía sus
+   propios estilos. Cualquier override CSS personalizado producía
+   superposición de texto en el botón "Browse files". Sin reglas aquí. */
 </style>
 """
 
@@ -2546,9 +2532,9 @@ def _page_map() -> None:
                     height=880,
                 )
                 import streamlit.components.v1 as components
-                # Altura exacta = altura del iframe interno (880) — sin
-                # gap inferior negro. El iframe interno usa 100% del wrapper.
-                components.html(html_doc, height=880, scrolling=False)
+                # Altura subida a 940 — más superficie para el globo +
+                # absorbe el gap residual entre iframe y siguiente bloque.
+                components.html(html_doc, height=940, scrolling=False)
                 event = None  # Cesium no propaga selección al backend en v0.1
             elif view_mode and "Satélite" in view_mode:
                 fig = _satellite_figure(track_list, case,
