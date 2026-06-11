@@ -105,6 +105,70 @@ _CASE_META = {
         "highlight": "HMU-SAT2 aparece en ambos casos",
         "color": "#ff6b6b",
     },
+    # ── Casos sintéticos generados en batch (2026-06-10) ─────────────
+    "gps_iiia_conjunction_001": {
+        "title": "GPS BIIF  ·  NORAD 40730",
+        "icon": "📡",
+        "summary": "8 conjunciones contra otros GPS",
+        "highlight": "Constelación GPS en MEO ~20200 km",
+        "color": "#5fa8f5",
+    },
+    "galileo_conjunction_001": {
+        "title": "Galileo FOC  ·  NORAD 41859",
+        "icon": "🇪🇺",
+        "summary": "6 conjunciones contra otros Galileo",
+        "highlight": "Constelación Galileo en MEO ~23222 km",
+        "color": "#5fa8f5",
+    },
+    "glonass_conjunction_001": {
+        "title": "GLONASS  ·  NORAD 32276",
+        "icon": "🇷🇺",
+        "summary": "5 conjunciones contra otros GLONASS",
+        "highlight": "Constelación GLONASS en MEO ~19100 km",
+        "color": "#5fa8f5",
+    },
+    "beidou_conjunction_001": {
+        "title": "BeiDou  ·  NORAD 38953",
+        "icon": "🇨🇳",
+        "summary": "5 conjunciones contra otros BeiDou",
+        "highlight": "Constelación BeiDou MEO/IGSO",
+        "color": "#5fa8f5",
+    },
+    "iridium_conjunction_001": {
+        "title": "Iridium NEXT  ·  NORAD 41917",
+        "icon": "🛰",
+        "summary": "7 conjunciones intra-constelación",
+        "highlight": "Fly-by entre Iridium NEXT adyacentes en LEO ~780 km",
+        "color": "#7eff9e",
+    },
+    "intelsat_geo_conjunction_001": {
+        "title": "INTELSAT GEO  ·  NORAD 26900",
+        "icon": "📺",
+        "summary": "8 conjunciones contra otros INTELSAT",
+        "highlight": "Comms geoestacionarios ~35786 km",
+        "color": "#5fa8f5",
+    },
+    "earth_obs_conjunction_001": {
+        "title": "Earth Observation  ·  NORAD 39634",
+        "icon": "🌍",
+        "summary": "1 conjunción detectada",
+        "highlight": "Constelación EO en SSO ~700 km",
+        "color": "#7eff9e",
+    },
+    "weather_conjunction_001": {
+        "title": "DMSP weather  ·  NORAD 28054",
+        "icon": "🌦",
+        "summary": "8 conjunciones meteorológicas",
+        "highlight": "DMSP y NOAA en LEO sun-synchronous",
+        "color": "#7eff9e",
+    },
+    "cubesat_conjunction_001": {
+        "title": "CubeSat constellation  ·  NORAD 27844",
+        "icon": "🚀",
+        "summary": "8 conjunciones intra-CubeSat",
+        "highlight": "CubeSats co-orbitales en LEO",
+        "color": "#ffb300",
+    },
 }
 
 # ─────────────────────────────────────────────────────────────────────────────

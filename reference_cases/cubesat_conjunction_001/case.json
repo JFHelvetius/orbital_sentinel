@@ -1,0 +1,1332 @@
+{
+  "case_id": "60819f48ebdb780ff2b79b1b521d3ab4d41b430d152c968114612d8da92bde0e",
+  "case_signature": "60819f48ebdb780ff2b79b1b521d3ab4d41b430d152c968114612d8da92bde0e",
+  "case_label": "Investigation case for object 27844: 1 hypothesis(es) from 8 claim(s) over 8 evidence record(s).",
+  "case_label_hash": "0d9d41b831b340ade9746b27de9f99101ce233cb2ac257d909116bd8c5938ff2",
+  "referenced_chain_id": "c0fd65977867cc70fde43539e446e5b4f8ea4e602c9a8cf0a1c2805a0a913f98",
+  "referenced_hypothesis_registry_id": "42b841b1724bc5d986500849a47cb53f9f5a598c785182be54e954309d5b07fc",
+  "referenced_claim_registry_id": "0e2218719e63ccb9c9510b470e6b3503f42b0ae6204cbbf9aad87869f8df5a0f",
+  "referenced_explanation_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+  "referenced_agent_input_id": "8f5f3eac8b12d9140a3f8578e4217e7f53de54bfcdc78cfd1c3c95661b9179ab",
+  "referenced_bundle_id": "de6f56c75b68e9fab481a0308486f50a7a24b7655d40244dc0834eb5ed2a8bc2",
+  "chain": {
+    "chain_id": "c0fd65977867cc70fde43539e446e5b4f8ea4e602c9a8cf0a1c2805a0a913f98",
+    "chain_hash": "c0fd65977867cc70fde43539e446e5b4f8ea4e602c9a8cf0a1c2805a0a913f98",
+    "source_hypothesis_registry_id": "42b841b1724bc5d986500849a47cb53f9f5a598c785182be54e954309d5b07fc",
+    "source_claim_registry_id": "0e2218719e63ccb9c9510b470e6b3503f42b0ae6204cbbf9aad87869f8df5a0f",
+    "source_explanation_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+    "source_agent_input_id": "8f5f3eac8b12d9140a3f8578e4217e7f53de54bfcdc78cfd1c3c95661b9179ab",
+    "source_bundle_id": "de6f56c75b68e9fab481a0308486f50a7a24b7655d40244dc0834eb5ed2a8bc2",
+    "raw_evidence_ids": [
+      "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0",
+      "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733",
+      "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b",
+      "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9",
+      "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e",
+      "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f",
+      "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d",
+      "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948"
+    ],
+    "nodes": [
+      {
+        "link_type": "raw_evidence",
+        "link_id": "b6baba0c8732733f66fa651e5424df5679a94059c9b4cd419a53a4dce2c169e7",
+        "link_signature": "b6baba0c8732733f66fa651e5424df5679a94059c9b4cd419a53a4dce2c169e7",
+        "upstream_link_id": "",
+        "node_hash": "4ab1364baf18463b84023db4d81ab2d4f8ba2eadd141d4b024f8e2d4a2faa952"
+      },
+      {
+        "link_type": "evidence_bundle",
+        "link_id": "de6f56c75b68e9fab481a0308486f50a7a24b7655d40244dc0834eb5ed2a8bc2",
+        "link_signature": "de6f56c75b68e9fab481a0308486f50a7a24b7655d40244dc0834eb5ed2a8bc2",
+        "upstream_link_id": "b6baba0c8732733f66fa651e5424df5679a94059c9b4cd419a53a4dce2c169e7",
+        "node_hash": "34e0c980f497a94439a321ece585bd645aa1883c6fe0febca73d1b6056cb9ede"
+      },
+      {
+        "link_type": "agent_input",
+        "link_id": "8f5f3eac8b12d9140a3f8578e4217e7f53de54bfcdc78cfd1c3c95661b9179ab",
+        "link_signature": "8f5f3eac8b12d9140a3f8578e4217e7f53de54bfcdc78cfd1c3c95661b9179ab",
+        "upstream_link_id": "de6f56c75b68e9fab481a0308486f50a7a24b7655d40244dc0834eb5ed2a8bc2",
+        "node_hash": "0bcdab8431adbf0dcab1bfc116edcdeb719f284d0883ebbe6926757ae80a0c5e"
+      },
+      {
+        "link_type": "explanation_artifact",
+        "link_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+        "link_signature": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+        "upstream_link_id": "8f5f3eac8b12d9140a3f8578e4217e7f53de54bfcdc78cfd1c3c95661b9179ab",
+        "node_hash": "11dafe5d12988e92f092f43508b86f9a45b32c918ca65bc6ab6b6748fe3f3ab5"
+      },
+      {
+        "link_type": "claim_registry",
+        "link_id": "0e2218719e63ccb9c9510b470e6b3503f42b0ae6204cbbf9aad87869f8df5a0f",
+        "link_signature": "0e2218719e63ccb9c9510b470e6b3503f42b0ae6204cbbf9aad87869f8df5a0f",
+        "upstream_link_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+        "node_hash": "755a75686068602064c0837d30c0063de14316873bbb003f66f1bfa8e0cf12fe"
+      },
+      {
+        "link_type": "hypothesis_registry",
+        "link_id": "42b841b1724bc5d986500849a47cb53f9f5a598c785182be54e954309d5b07fc",
+        "link_signature": "42b841b1724bc5d986500849a47cb53f9f5a598c785182be54e954309d5b07fc",
+        "upstream_link_id": "0e2218719e63ccb9c9510b470e6b3503f42b0ae6204cbbf9aad87869f8df5a0f",
+        "node_hash": "44552249f6e7fd65b30b88ea9624eedde43b94fc5f667e3f8b97e3f8f2edb7b0"
+      }
+    ],
+    "n_nodes": 6,
+    "chain_emit_reason": "full_chain",
+    "schema_version": "1.0.0",
+    "chain_layer_engine_version": "1.0.0",
+    "derived_at": "2026-06-10T12:00:00Z"
+  },
+  "hypothesis_registry": {
+    "registry_id": "42b841b1724bc5d986500849a47cb53f9f5a598c785182be54e954309d5b07fc",
+    "registry_hash": "42b841b1724bc5d986500849a47cb53f9f5a598c785182be54e954309d5b07fc",
+    "source_claim_registry_id": "0e2218719e63ccb9c9510b470e6b3503f42b0ae6204cbbf9aad87869f8df5a0f",
+    "source_bundle_id": "de6f56c75b68e9fab481a0308486f50a7a24b7655d40244dc0834eb5ed2a8bc2",
+    "source_agent_input_id": "8f5f3eac8b12d9140a3f8578e4217e7f53de54bfcdc78cfd1c3c95661b9179ab",
+    "source_explanation_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+    "source_model_identifier": "template_hypothesis_grouping_v01",
+    "source_claim_layer_engine_version": "0.1.0",
+    "n_hypotheses": 1,
+    "hypotheses": [
+      {
+        "hypothesis_id": "e0a4d8bcfd2c436c6c7649a77a907e34dc10aca57965ad136c997d67626316d5",
+        "source_claim_registry_id": "0e2218719e63ccb9c9510b470e6b3503f42b0ae6204cbbf9aad87869f8df5a0f",
+        "hypothesis_index": 0,
+        "grouping_key": "27844|conjunction_detected",
+        "supporting_claim_ids": [
+          "164a1a734b39348fa259135df87b09ae863f60b19b15c89a8697fbd5a6a2ccfa",
+          "3be95a1b93a5dcb4a23270755f4b76d33fc33c22adc4808a7a99752433c7a7fd",
+          "3e955cddecee88b2086f7d2cc2a020825d087e7c01c8685302dd10478868ea75",
+          "5182ca30da0fe6ef46a8e78ec3543a79c9bb1f686682aa121bf0f13bf76c734c",
+          "6b8912848e2a256f8a3ec702b001ceeb3860345f42897bd47cf1488478a8b473",
+          "b02c774b6c5d613860acfebcb791b20079b3298b1c1efe02561ccc3154ab0413",
+          "e40b3c554feabf1a9d5712d18efdcce7221e6361672b8feb129ffd9f874d2d14",
+          "fcfd98ef54bc1a7830a7f1a2569db62a2c3443cb019e472ab39a22d0ad756c1b"
+        ],
+        "hypothesis_label": "Object 27844 exhibits conjunction_detected evidence (8 claims).",
+        "schema_version": "1.0.0"
+      }
+    ],
+    "hypothesis_to_claim_index": {
+      "e0a4d8bcfd2c436c6c7649a77a907e34dc10aca57965ad136c997d67626316d5": [
+        "164a1a734b39348fa259135df87b09ae863f60b19b15c89a8697fbd5a6a2ccfa",
+        "3be95a1b93a5dcb4a23270755f4b76d33fc33c22adc4808a7a99752433c7a7fd",
+        "3e955cddecee88b2086f7d2cc2a020825d087e7c01c8685302dd10478868ea75",
+        "5182ca30da0fe6ef46a8e78ec3543a79c9bb1f686682aa121bf0f13bf76c734c",
+        "6b8912848e2a256f8a3ec702b001ceeb3860345f42897bd47cf1488478a8b473",
+        "b02c774b6c5d613860acfebcb791b20079b3298b1c1efe02561ccc3154ab0413",
+        "e40b3c554feabf1a9d5712d18efdcce7221e6361672b8feb129ffd9f874d2d14",
+        "fcfd98ef54bc1a7830a7f1a2569db62a2c3443cb019e472ab39a22d0ad756c1b"
+      ]
+    },
+    "claim_to_hypothesis_index": {
+      "164a1a734b39348fa259135df87b09ae863f60b19b15c89a8697fbd5a6a2ccfa": [
+        "e0a4d8bcfd2c436c6c7649a77a907e34dc10aca57965ad136c997d67626316d5"
+      ],
+      "3be95a1b93a5dcb4a23270755f4b76d33fc33c22adc4808a7a99752433c7a7fd": [
+        "e0a4d8bcfd2c436c6c7649a77a907e34dc10aca57965ad136c997d67626316d5"
+      ],
+      "3e955cddecee88b2086f7d2cc2a020825d087e7c01c8685302dd10478868ea75": [
+        "e0a4d8bcfd2c436c6c7649a77a907e34dc10aca57965ad136c997d67626316d5"
+      ],
+      "5182ca30da0fe6ef46a8e78ec3543a79c9bb1f686682aa121bf0f13bf76c734c": [
+        "e0a4d8bcfd2c436c6c7649a77a907e34dc10aca57965ad136c997d67626316d5"
+      ],
+      "6b8912848e2a256f8a3ec702b001ceeb3860345f42897bd47cf1488478a8b473": [
+        "e0a4d8bcfd2c436c6c7649a77a907e34dc10aca57965ad136c997d67626316d5"
+      ],
+      "b02c774b6c5d613860acfebcb791b20079b3298b1c1efe02561ccc3154ab0413": [
+        "e0a4d8bcfd2c436c6c7649a77a907e34dc10aca57965ad136c997d67626316d5"
+      ],
+      "e40b3c554feabf1a9d5712d18efdcce7221e6361672b8feb129ffd9f874d2d14": [
+        "e0a4d8bcfd2c436c6c7649a77a907e34dc10aca57965ad136c997d67626316d5"
+      ],
+      "fcfd98ef54bc1a7830a7f1a2569db62a2c3443cb019e472ab39a22d0ad756c1b": [
+        "e0a4d8bcfd2c436c6c7649a77a907e34dc10aca57965ad136c997d67626316d5"
+      ]
+    },
+    "registry_emit_reason": "claim_registry_populated",
+    "schema_version": "1.0.0",
+    "hypothesis_layer_engine_version": "1.0.0",
+    "derived_at": "2026-06-10T12:00:00Z"
+  },
+  "claim_registry": {
+    "registry_id": "0e2218719e63ccb9c9510b470e6b3503f42b0ae6204cbbf9aad87869f8df5a0f",
+    "registry_hash": "0e2218719e63ccb9c9510b470e6b3503f42b0ae6204cbbf9aad87869f8df5a0f",
+    "source_explanation_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+    "source_bundle_id": "de6f56c75b68e9fab481a0308486f50a7a24b7655d40244dc0834eb5ed2a8bc2",
+    "source_agent_input_id": "8f5f3eac8b12d9140a3f8578e4217e7f53de54bfcdc78cfd1c3c95661b9179ab",
+    "source_model_identifier": "template_explanation_v01",
+    "source_explanation_engine_version": "0.1.0",
+    "n_claims": 8,
+    "claims": [
+      {
+        "claim_id": "3e955cddecee88b2086f7d2cc2a020825d087e7c01c8685302dd10478868ea75",
+        "source_explanation_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+        "claim_index": 0,
+        "supporting_evidence_ids": [
+          "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733"
+        ],
+        "claim_text": "Evidence 3b5700085a11\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=28895 at TCA=2026-06-10T07:58:35.430874+00:00; miss_distance_km=3128.1353299757975, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=1.444681393016465; is_apparent_not_confirmed=True.",
+        "schema_version": "0.1.0"
+      },
+      {
+        "claim_id": "fcfd98ef54bc1a7830a7f1a2569db62a2c3443cb019e472ab39a22d0ad756c1b",
+        "source_explanation_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+        "claim_index": 1,
+        "supporting_evidence_ids": [
+          "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e"
+        ],
+        "claim_text": "Evidence 72da3d330845\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=32790 at TCA=2026-06-10T14:12:04.610561+00:00; miss_distance_km=372.1245094802924, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=1.9202298247995582; is_apparent_not_confirmed=True.",
+        "schema_version": "0.1.0"
+      },
+      {
+        "claim_id": "e40b3c554feabf1a9d5712d18efdcce7221e6361672b8feb129ffd9f874d2d14",
+        "source_explanation_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+        "claim_index": 2,
+        "supporting_evidence_ids": [
+          "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d"
+        ],
+        "claim_text": "Evidence 9dde8baf1503\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=32791 at TCA=2026-06-11T00:21:56.407436+00:00; miss_distance_km=768.0927847245247, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=2.309485850006037; is_apparent_not_confirmed=True.",
+        "schema_version": "0.1.0"
+      },
+      {
+        "claim_id": "b02c774b6c5d613860acfebcb791b20079b3298b1c1efe02561ccc3154ab0413",
+        "source_explanation_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+        "claim_index": 3,
+        "supporting_evidence_ids": [
+          "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0"
+        ],
+        "claim_text": "Evidence 0701ea5d8590\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=35935 at TCA=2026-06-11T02:53:48.907436+00:00; miss_distance_km=126.69920330416542, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=2.8183120422493433; is_apparent_not_confirmed=True.",
+        "schema_version": "0.1.0"
+      },
+      {
+        "claim_id": "5182ca30da0fe6ef46a8e78ec3543a79c9bb1f686682aa121bf0f13bf76c734c",
+        "source_explanation_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+        "claim_index": 4,
+        "supporting_evidence_ids": [
+          "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f"
+        ],
+        "claim_text": "Evidence 880b942b579f\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=32785 at TCA=2026-06-11T07:08:18.438686+00:00; miss_distance_km=2451.5449040483427, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=2.6137165631173285; is_apparent_not_confirmed=True.",
+        "schema_version": "0.1.0"
+      },
+      {
+        "claim_id": "164a1a734b39348fa259135df87b09ae863f60b19b15c89a8697fbd5a6a2ccfa",
+        "source_explanation_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+        "claim_index": 5,
+        "supporting_evidence_ids": [
+          "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9"
+        ],
+        "claim_text": "Evidence 7158fc13e942\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=35932 at TCA=2026-06-11T07:09:21.133999+00:00; miss_distance_km=1474.0674970949458, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=3.2729153035260894; is_apparent_not_confirmed=True.",
+        "schema_version": "0.1.0"
+      },
+      {
+        "claim_id": "6b8912848e2a256f8a3ec702b001ceeb3860345f42897bd47cf1488478a8b473",
+        "source_explanation_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+        "claim_index": 6,
+        "supporting_evidence_ids": [
+          "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948"
+        ],
+        "claim_text": "Evidence b52eed606a66\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=35933 at TCA=2026-06-11T07:14:01.798061+00:00; miss_distance_km=3981.6846498172654, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=2.672350640423327; is_apparent_not_confirmed=True.",
+        "schema_version": "0.1.0"
+      },
+      {
+        "claim_id": "3be95a1b93a5dcb4a23270755f4b76d33fc33c22adc4808a7a99752433c7a7fd",
+        "source_explanation_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+        "claim_index": 7,
+        "supporting_evidence_ids": [
+          "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b"
+        ],
+        "claim_text": "Evidence 4d68444134b2\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=27848 at TCA=2026-06-11T07:32:25.997280+00:00; miss_distance_km=8674.348373818046, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=2.6763285644227306; is_apparent_not_confirmed=True.",
+        "schema_version": "0.1.0"
+      }
+    ],
+    "claim_to_evidence_index": {
+      "164a1a734b39348fa259135df87b09ae863f60b19b15c89a8697fbd5a6a2ccfa": [
+        "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9"
+      ],
+      "3be95a1b93a5dcb4a23270755f4b76d33fc33c22adc4808a7a99752433c7a7fd": [
+        "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b"
+      ],
+      "3e955cddecee88b2086f7d2cc2a020825d087e7c01c8685302dd10478868ea75": [
+        "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733"
+      ],
+      "5182ca30da0fe6ef46a8e78ec3543a79c9bb1f686682aa121bf0f13bf76c734c": [
+        "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f"
+      ],
+      "6b8912848e2a256f8a3ec702b001ceeb3860345f42897bd47cf1488478a8b473": [
+        "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948"
+      ],
+      "b02c774b6c5d613860acfebcb791b20079b3298b1c1efe02561ccc3154ab0413": [
+        "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0"
+      ],
+      "e40b3c554feabf1a9d5712d18efdcce7221e6361672b8feb129ffd9f874d2d14": [
+        "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d"
+      ],
+      "fcfd98ef54bc1a7830a7f1a2569db62a2c3443cb019e472ab39a22d0ad756c1b": [
+        "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e"
+      ]
+    },
+    "evidence_to_claim_index": {
+      "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0": [
+        "b02c774b6c5d613860acfebcb791b20079b3298b1c1efe02561ccc3154ab0413"
+      ],
+      "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733": [
+        "3e955cddecee88b2086f7d2cc2a020825d087e7c01c8685302dd10478868ea75"
+      ],
+      "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b": [
+        "3be95a1b93a5dcb4a23270755f4b76d33fc33c22adc4808a7a99752433c7a7fd"
+      ],
+      "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9": [
+        "164a1a734b39348fa259135df87b09ae863f60b19b15c89a8697fbd5a6a2ccfa"
+      ],
+      "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e": [
+        "fcfd98ef54bc1a7830a7f1a2569db62a2c3443cb019e472ab39a22d0ad756c1b"
+      ],
+      "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f": [
+        "5182ca30da0fe6ef46a8e78ec3543a79c9bb1f686682aa121bf0f13bf76c734c"
+      ],
+      "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d": [
+        "e40b3c554feabf1a9d5712d18efdcce7221e6361672b8feb129ffd9f874d2d14"
+      ],
+      "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948": [
+        "6b8912848e2a256f8a3ec702b001ceeb3860345f42897bd47cf1488478a8b473"
+      ]
+    },
+    "registry_emit_reason": "evidence_bundle",
+    "schema_version": "0.1.0",
+    "claim_layer_engine_version": "0.1.0",
+    "derived_at": "2026-06-10T12:00:00Z"
+  },
+  "explanation_artifact": {
+    "explanation_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+    "source_agent_input_id": "8f5f3eac8b12d9140a3f8578e4217e7f53de54bfcdc78cfd1c3c95661b9179ab",
+    "source_bundle_id": "de6f56c75b68e9fab481a0308486f50a7a24b7655d40244dc0834eb5ed2a8bc2",
+    "referenced_evidence_ids": [
+      "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733",
+      "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e",
+      "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d",
+      "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0",
+      "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f",
+      "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9",
+      "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948",
+      "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b"
+    ],
+    "explanation_text": "Evidence 3b5700085a11\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=28895 at TCA=2026-06-10T07:58:35.430874+00:00; miss_distance_km=3128.1353299757975, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=1.444681393016465; is_apparent_not_confirmed=True.\nEvidence 72da3d330845\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=32790 at TCA=2026-06-10T14:12:04.610561+00:00; miss_distance_km=372.1245094802924, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=1.9202298247995582; is_apparent_not_confirmed=True.\nEvidence 9dde8baf1503\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=32791 at TCA=2026-06-11T00:21:56.407436+00:00; miss_distance_km=768.0927847245247, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=2.309485850006037; is_apparent_not_confirmed=True.\nEvidence 0701ea5d8590\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=35935 at TCA=2026-06-11T02:53:48.907436+00:00; miss_distance_km=126.69920330416542, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=2.8183120422493433; is_apparent_not_confirmed=True.\nEvidence 880b942b579f\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=32785 at TCA=2026-06-11T07:08:18.438686+00:00; miss_distance_km=2451.5449040483427, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=2.6137165631173285; is_apparent_not_confirmed=True.\nEvidence 7158fc13e942\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=35932 at TCA=2026-06-11T07:09:21.133999+00:00; miss_distance_km=1474.0674970949458, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=3.2729153035260894; is_apparent_not_confirmed=True.\nEvidence b52eed606a66\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=35933 at TCA=2026-06-11T07:14:01.798061+00:00; miss_distance_km=3981.6846498172654, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=2.672350640423327; is_apparent_not_confirmed=True.\nEvidence 4d68444134b2\u2026: detector 'conjunction_detection_v01' identified conjunction with NORAD=27848 at TCA=2026-06-11T07:32:25.997280+00:00; miss_distance_km=8674.348373818046, Pc=0.0 (method='foster_1992_fast_approximation', covariance_model='tle_isotropic_spherical_v1'); combined_hard_body_radius_km=0.02, combined_sigma_at_tca_km=2.6763285644227306; is_apparent_not_confirmed=True.",
+    "generation_metadata": {
+      "model_identifier": "template_explanation_v01",
+      "generation_method": "deterministic_template_concatenation_v01",
+      "prompt_hash": "ac87137764b8c39814cb8f77c9d3819ece18a16be1f84edb9e1164f7454656b0",
+      "n_evidence_processed": 8
+    },
+    "audit_record": {
+      "explanation_id": "2e5a108d83d529dec4b51acb1cbe3e30623bf343f0e3058b303951a95019007f",
+      "agent_input_id": "8f5f3eac8b12d9140a3f8578e4217e7f53de54bfcdc78cfd1c3c95661b9179ab",
+      "bundle_id": "de6f56c75b68e9fab481a0308486f50a7a24b7655d40244dc0834eb5ed2a8bc2",
+      "evidence_ids_used": [
+        "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733",
+        "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e",
+        "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d",
+        "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0",
+        "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f",
+        "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9",
+        "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948",
+        "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b"
+      ],
+      "generation_timestamp": "2026-06-10T12:00:00Z",
+      "prompt_hash": "ac87137764b8c39814cb8f77c9d3819ece18a16be1f84edb9e1164f7454656b0",
+      "model_identifier": "template_explanation_v01"
+    },
+    "schema_version": "0.1.0",
+    "explanation_engine_version": "0.1.0",
+    "generated_at": "2026-06-10T12:00:00Z"
+  },
+  "agent_input": {
+    "agent_input_id": "8f5f3eac8b12d9140a3f8578e4217e7f53de54bfcdc78cfd1c3c95661b9179ab",
+    "bundle": {
+      "bundle_id": "de6f56c75b68e9fab481a0308486f50a7a24b7655d40244dc0834eb5ed2a8bc2",
+      "bundle_signature": "de6f56c75b68e9fab481a0308486f50a7a24b7655d40244dc0834eb5ed2a8bc2",
+      "bundle_payload_signature": "d6a693ecb0c0304783483bc9e363dc0d95fd26de2a3a0ff1fbf2784b147d08fe",
+      "object_id": 27844,
+      "context": {
+        "object_id": 27844,
+        "context_id": "b72ed550a3db2099a41127c9ece19b406580b8bc56723f076f89a8460c0869ea",
+        "source_catalog_signature": "0cab82356dfc3530ecf4c5d47dbae175d8cbe7c9b10071a4b56ac6d629ef7e2b",
+        "n_evidence_total": 8,
+        "coverage_window_start": "2026-06-10T07:58:35.430874Z",
+        "coverage_window_end": "2026-06-11T07:32:25.997280Z",
+        "coverage_duration_seconds": 84830.566406,
+        "evidence_type_counts": {
+          "conjunction_detected": 8
+        },
+        "detector_summaries": [
+          {
+            "source_detector": "anomaly_detection_v01",
+            "n_events": 0,
+            "first_event_epoch": null,
+            "last_event_epoch": null,
+            "evidence_ids": [],
+            "evidence_type_breakdown": {}
+          },
+          {
+            "source_detector": "conjunction_detection_v01",
+            "n_events": 8,
+            "first_event_epoch": "2026-06-10T07:58:35.430874Z",
+            "last_event_epoch": "2026-06-11T07:32:25.997280Z",
+            "evidence_ids": [
+              "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733",
+              "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e",
+              "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d",
+              "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0",
+              "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f",
+              "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9",
+              "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948",
+              "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b"
+            ],
+            "evidence_type_breakdown": {
+              "conjunction_detected": 8
+            }
+          },
+          {
+            "source_detector": "maneuver_detection_v01",
+            "n_events": 0,
+            "first_event_epoch": null,
+            "last_event_epoch": null,
+            "evidence_ids": [],
+            "evidence_type_breakdown": {}
+          }
+        ],
+        "timeline": {
+          "entries": [
+            {
+              "epoch": "2026-06-10T07:58:35.430874Z",
+              "evidence_id": "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733",
+              "source_detector": "conjunction_detection_v01",
+              "evidence_type": "conjunction_detected",
+              "honesty_payload_hash": "37f81567e2789863897f82b85d6f2cc0a58be1f0573f834b8c14ca07d05b0d0f"
+            },
+            {
+              "epoch": "2026-06-10T14:12:04.610561Z",
+              "evidence_id": "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e",
+              "source_detector": "conjunction_detection_v01",
+              "evidence_type": "conjunction_detected",
+              "honesty_payload_hash": "c81bf49ce3c1af06cbb2ea5fca36c7ba7ea3ff7d9a65cbefd75ac44c340310f1"
+            },
+            {
+              "epoch": "2026-06-11T00:21:56.407436Z",
+              "evidence_id": "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d",
+              "source_detector": "conjunction_detection_v01",
+              "evidence_type": "conjunction_detected",
+              "honesty_payload_hash": "20d9d5d921d7f078d9ec6980765d10b6a0064d671d868d37ba7e03e6ab691f34"
+            },
+            {
+              "epoch": "2026-06-11T02:53:48.907436Z",
+              "evidence_id": "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0",
+              "source_detector": "conjunction_detection_v01",
+              "evidence_type": "conjunction_detected",
+              "honesty_payload_hash": "aaaea72014d8509409713c5fe0873944f05834c7b7181203d13b49743cf0987b"
+            },
+            {
+              "epoch": "2026-06-11T07:08:18.438686Z",
+              "evidence_id": "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f",
+              "source_detector": "conjunction_detection_v01",
+              "evidence_type": "conjunction_detected",
+              "honesty_payload_hash": "13849e1aa0ead28435762bb48b23392d10b8d7eb0f60e9070d2e6703d74408c0"
+            },
+            {
+              "epoch": "2026-06-11T07:09:21.133999Z",
+              "evidence_id": "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9",
+              "source_detector": "conjunction_detection_v01",
+              "evidence_type": "conjunction_detected",
+              "honesty_payload_hash": "3790d0b5f93b2815e5ebae3ece2044a9320eb11ba2ba0d20420822cb67221548"
+            },
+            {
+              "epoch": "2026-06-11T07:14:01.798061Z",
+              "evidence_id": "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948",
+              "source_detector": "conjunction_detection_v01",
+              "evidence_type": "conjunction_detected",
+              "honesty_payload_hash": "c345e4975f53614466e716b856fa94d0d7fb353a38a59be778ba424ba1b75da1"
+            },
+            {
+              "epoch": "2026-06-11T07:32:25.997280Z",
+              "evidence_id": "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b",
+              "source_detector": "conjunction_detection_v01",
+              "evidence_type": "conjunction_detected",
+              "honesty_payload_hash": "760f96cfb2023bf4a9d8667463f0e6ab0138d5af96c2c16831064092adaac9bc"
+            }
+          ],
+          "n_entries": 8,
+          "first_epoch": "2026-06-10T07:58:35.430874Z",
+          "last_epoch": "2026-06-11T07:32:25.997280Z"
+        },
+        "evidence_references": [
+          {
+            "evidence_id": "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733",
+            "object_id": 27844,
+            "event_epoch": "2026-06-10T07:58:35.430874Z",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "detector_event_id": "60e665d097ac985e18ad73509745dd10f884c507145d67faa3aec970e177fa9b_side_a",
+            "honesty_payload_hash": "37f81567e2789863897f82b85d6f2cc0a58be1f0573f834b8c14ca07d05b0d0f",
+            "analysis_engine_version": "0.3.0"
+          },
+          {
+            "evidence_id": "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e",
+            "object_id": 27844,
+            "event_epoch": "2026-06-10T14:12:04.610561Z",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "detector_event_id": "69a90daa3021adc0dc320ecf2a5816d7bb96863f835262a4089f0f3322027d1c_side_a",
+            "honesty_payload_hash": "c81bf49ce3c1af06cbb2ea5fca36c7ba7ea3ff7d9a65cbefd75ac44c340310f1",
+            "analysis_engine_version": "0.3.0"
+          },
+          {
+            "evidence_id": "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d",
+            "object_id": 27844,
+            "event_epoch": "2026-06-11T00:21:56.407436Z",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "detector_event_id": "f71b156651badfd6ccafc81e11ff1df2f3bcfc89b0dbd254401bf0975a25f78c_side_a",
+            "honesty_payload_hash": "20d9d5d921d7f078d9ec6980765d10b6a0064d671d868d37ba7e03e6ab691f34",
+            "analysis_engine_version": "0.3.0"
+          },
+          {
+            "evidence_id": "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0",
+            "object_id": 27844,
+            "event_epoch": "2026-06-11T02:53:48.907436Z",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "detector_event_id": "7ad2f04c6c99e0972a50ee32898a675ed4dcd0c0b68a02e997ef1d6692696937_side_a",
+            "honesty_payload_hash": "aaaea72014d8509409713c5fe0873944f05834c7b7181203d13b49743cf0987b",
+            "analysis_engine_version": "0.3.0"
+          },
+          {
+            "evidence_id": "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f",
+            "object_id": 27844,
+            "event_epoch": "2026-06-11T07:08:18.438686Z",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "detector_event_id": "6f5f63e7ae54a1a173c6c306d66489d9f042f5543e48c239a0eb93e3d233ce35_side_a",
+            "honesty_payload_hash": "13849e1aa0ead28435762bb48b23392d10b8d7eb0f60e9070d2e6703d74408c0",
+            "analysis_engine_version": "0.3.0"
+          },
+          {
+            "evidence_id": "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9",
+            "object_id": 27844,
+            "event_epoch": "2026-06-11T07:09:21.133999Z",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "detector_event_id": "23e049be408be39558a7c900c64a04e33706eb2fa982b7bdb668d20b586f4389_side_a",
+            "honesty_payload_hash": "3790d0b5f93b2815e5ebae3ece2044a9320eb11ba2ba0d20420822cb67221548",
+            "analysis_engine_version": "0.3.0"
+          },
+          {
+            "evidence_id": "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948",
+            "object_id": 27844,
+            "event_epoch": "2026-06-11T07:14:01.798061Z",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "detector_event_id": "37023b165ca5d5bbd552564691dd5ee0a0acc733d55a310ef54809ff9ba9e8aa_side_a",
+            "honesty_payload_hash": "c345e4975f53614466e716b856fa94d0d7fb353a38a59be778ba424ba1b75da1",
+            "analysis_engine_version": "0.3.0"
+          },
+          {
+            "evidence_id": "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b",
+            "object_id": 27844,
+            "event_epoch": "2026-06-11T07:32:25.997280Z",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "detector_event_id": "2ef878dff9684e8647a33d1582d5159603da3f74589a8bb9bab264e604e21b68_side_a",
+            "honesty_payload_hash": "760f96cfb2023bf4a9d8667463f0e6ab0138d5af96c2c16831064092adaac9bc",
+            "analysis_engine_version": "0.3.0"
+          }
+        ],
+        "schema_version": "0.1.0",
+        "explanation_engine_version": "0.1.0",
+        "derived_at": "2026-06-10T12:00:00Z"
+      },
+      "evidence_payloads": [
+        {
+          "evidence_id": "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733",
+          "derived_evidence": {
+            "evidence_id": "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733",
+            "object_id": 27844,
+            "evidence_type": "conjunction_detected",
+            "source_detector": "conjunction_detection_v01",
+            "detector_event_id": "60e665d097ac985e18ad73509745dd10f884c507145d67faa3aec970e177fa9b_side_a",
+            "event_epoch": "2026-06-10T07:58:35.430874Z",
+            "honesty_payload": {
+              "miss_distance_km": 3128.1353299757975,
+              "relative_velocity_km_s": 14.56813407218546,
+              "pc": 0.0,
+              "pc_method": "foster_1992_fast_approximation",
+              "covariance_model_name": "tle_isotropic_spherical_v1",
+              "covariance_baseline_sigma_km": 1.0,
+              "covariance_growth_sigma_km_per_day": 1.0,
+              "combined_sigma_at_tca_km": 1.444681393016465,
+              "combined_hard_body_radius_km": 0.02,
+              "sgp4_uncertainty_baseline_km": 3.0,
+              "sgp4_uncertainty_growth_km_per_day": 3.0,
+              "tca_resolution_minutes": 0.016666666666666666,
+              "tca_was_refined": true,
+              "other_norad_cat_id": 28895,
+              "detection_content_hash": "60e665d097ac985e18ad73509745dd10f884c507145d67faa3aec970e177fa9b",
+              "side": "a"
+            },
+            "analysis_engine_version": "0.3.0",
+            "schema_version": "0.1.0",
+            "is_apparent_not_confirmed": true
+          },
+          "recomputed_payload_hash": "37f81567e2789863897f82b85d6f2cc0a58be1f0573f834b8c14ca07d05b0d0f",
+          "payload_integrity_verified_at_build": true
+        },
+        {
+          "evidence_id": "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e",
+          "derived_evidence": {
+            "evidence_id": "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e",
+            "object_id": 27844,
+            "evidence_type": "conjunction_detected",
+            "source_detector": "conjunction_detection_v01",
+            "detector_event_id": "69a90daa3021adc0dc320ecf2a5816d7bb96863f835262a4089f0f3322027d1c_side_a",
+            "event_epoch": "2026-06-10T14:12:04.610561Z",
+            "honesty_payload": {
+              "miss_distance_km": 372.1245094802924,
+              "relative_velocity_km_s": 3.7391304763063005,
+              "pc": 0.0,
+              "pc_method": "foster_1992_fast_approximation",
+              "covariance_model_name": "tle_isotropic_spherical_v1",
+              "covariance_baseline_sigma_km": 1.0,
+              "covariance_growth_sigma_km_per_day": 1.0,
+              "combined_sigma_at_tca_km": 1.9202298247995582,
+              "combined_hard_body_radius_km": 0.02,
+              "sgp4_uncertainty_baseline_km": 3.0,
+              "sgp4_uncertainty_growth_km_per_day": 3.0,
+              "tca_resolution_minutes": 0.016666666666666666,
+              "tca_was_refined": true,
+              "other_norad_cat_id": 32790,
+              "detection_content_hash": "69a90daa3021adc0dc320ecf2a5816d7bb96863f835262a4089f0f3322027d1c",
+              "side": "a"
+            },
+            "analysis_engine_version": "0.3.0",
+            "schema_version": "0.1.0",
+            "is_apparent_not_confirmed": true
+          },
+          "recomputed_payload_hash": "c81bf49ce3c1af06cbb2ea5fca36c7ba7ea3ff7d9a65cbefd75ac44c340310f1",
+          "payload_integrity_verified_at_build": true
+        },
+        {
+          "evidence_id": "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d",
+          "derived_evidence": {
+            "evidence_id": "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d",
+            "object_id": 27844,
+            "evidence_type": "conjunction_detected",
+            "source_detector": "conjunction_detection_v01",
+            "detector_event_id": "f71b156651badfd6ccafc81e11ff1df2f3bcfc89b0dbd254401bf0975a25f78c_side_a",
+            "event_epoch": "2026-06-11T00:21:56.407436Z",
+            "honesty_payload": {
+              "miss_distance_km": 768.0927847245247,
+              "relative_velocity_km_s": 1.5863562615566993,
+              "pc": 0.0,
+              "pc_method": "foster_1992_fast_approximation",
+              "covariance_model_name": "tle_isotropic_spherical_v1",
+              "covariance_baseline_sigma_km": 1.0,
+              "covariance_growth_sigma_km_per_day": 1.0,
+              "combined_sigma_at_tca_km": 2.309485850006037,
+              "combined_hard_body_radius_km": 0.02,
+              "sgp4_uncertainty_baseline_km": 3.0,
+              "sgp4_uncertainty_growth_km_per_day": 3.0,
+              "tca_resolution_minutes": 0.016666666666666666,
+              "tca_was_refined": true,
+              "other_norad_cat_id": 32791,
+              "detection_content_hash": "f71b156651badfd6ccafc81e11ff1df2f3bcfc89b0dbd254401bf0975a25f78c",
+              "side": "a"
+            },
+            "analysis_engine_version": "0.3.0",
+            "schema_version": "0.1.0",
+            "is_apparent_not_confirmed": true
+          },
+          "recomputed_payload_hash": "20d9d5d921d7f078d9ec6980765d10b6a0064d671d868d37ba7e03e6ab691f34",
+          "payload_integrity_verified_at_build": true
+        },
+        {
+          "evidence_id": "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0",
+          "derived_evidence": {
+            "evidence_id": "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0",
+            "object_id": 27844,
+            "evidence_type": "conjunction_detected",
+            "source_detector": "conjunction_detection_v01",
+            "detector_event_id": "7ad2f04c6c99e0972a50ee32898a675ed4dcd0c0b68a02e997ef1d6692696937_side_a",
+            "event_epoch": "2026-06-11T02:53:48.907436Z",
+            "honesty_payload": {
+              "miss_distance_km": 126.69920330416542,
+              "relative_velocity_km_s": 11.477189765608031,
+              "pc": 0.0,
+              "pc_method": "foster_1992_fast_approximation",
+              "covariance_model_name": "tle_isotropic_spherical_v1",
+              "covariance_baseline_sigma_km": 1.0,
+              "covariance_growth_sigma_km_per_day": 1.0,
+              "combined_sigma_at_tca_km": 2.8183120422493433,
+              "combined_hard_body_radius_km": 0.02,
+              "sgp4_uncertainty_baseline_km": 3.0,
+              "sgp4_uncertainty_growth_km_per_day": 3.0,
+              "tca_resolution_minutes": 0.016666666666666666,
+              "tca_was_refined": true,
+              "other_norad_cat_id": 35935,
+              "detection_content_hash": "7ad2f04c6c99e0972a50ee32898a675ed4dcd0c0b68a02e997ef1d6692696937",
+              "side": "a"
+            },
+            "analysis_engine_version": "0.3.0",
+            "schema_version": "0.1.0",
+            "is_apparent_not_confirmed": true
+          },
+          "recomputed_payload_hash": "aaaea72014d8509409713c5fe0873944f05834c7b7181203d13b49743cf0987b",
+          "payload_integrity_verified_at_build": true
+        },
+        {
+          "evidence_id": "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f",
+          "derived_evidence": {
+            "evidence_id": "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f",
+            "object_id": 27844,
+            "evidence_type": "conjunction_detected",
+            "source_detector": "conjunction_detection_v01",
+            "detector_event_id": "6f5f63e7ae54a1a173c6c306d66489d9f042f5543e48c239a0eb93e3d233ce35_side_a",
+            "event_epoch": "2026-06-11T07:08:18.438686Z",
+            "honesty_payload": {
+              "miss_distance_km": 2451.5449040483427,
+              "relative_velocity_km_s": 4.360326838107358,
+              "pc": 0.0,
+              "pc_method": "foster_1992_fast_approximation",
+              "covariance_model_name": "tle_isotropic_spherical_v1",
+              "covariance_baseline_sigma_km": 1.0,
+              "covariance_growth_sigma_km_per_day": 1.0,
+              "combined_sigma_at_tca_km": 2.6137165631173285,
+              "combined_hard_body_radius_km": 0.02,
+              "sgp4_uncertainty_baseline_km": 3.0,
+              "sgp4_uncertainty_growth_km_per_day": 3.0,
+              "tca_resolution_minutes": 0.016666666666666666,
+              "tca_was_refined": true,
+              "other_norad_cat_id": 32785,
+              "detection_content_hash": "6f5f63e7ae54a1a173c6c306d66489d9f042f5543e48c239a0eb93e3d233ce35",
+              "side": "a"
+            },
+            "analysis_engine_version": "0.3.0",
+            "schema_version": "0.1.0",
+            "is_apparent_not_confirmed": true
+          },
+          "recomputed_payload_hash": "13849e1aa0ead28435762bb48b23392d10b8d7eb0f60e9070d2e6703d74408c0",
+          "payload_integrity_verified_at_build": true
+        },
+        {
+          "evidence_id": "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9",
+          "derived_evidence": {
+            "evidence_id": "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9",
+            "object_id": 27844,
+            "evidence_type": "conjunction_detected",
+            "source_detector": "conjunction_detection_v01",
+            "detector_event_id": "23e049be408be39558a7c900c64a04e33706eb2fa982b7bdb668d20b586f4389_side_a",
+            "event_epoch": "2026-06-11T07:09:21.133999Z",
+            "honesty_payload": {
+              "miss_distance_km": 1474.0674970949458,
+              "relative_velocity_km_s": 11.506065478885862,
+              "pc": 0.0,
+              "pc_method": "foster_1992_fast_approximation",
+              "covariance_model_name": "tle_isotropic_spherical_v1",
+              "covariance_baseline_sigma_km": 1.0,
+              "covariance_growth_sigma_km_per_day": 1.0,
+              "combined_sigma_at_tca_km": 3.2729153035260894,
+              "combined_hard_body_radius_km": 0.02,
+              "sgp4_uncertainty_baseline_km": 3.0,
+              "sgp4_uncertainty_growth_km_per_day": 3.0,
+              "tca_resolution_minutes": 0.016666666666666666,
+              "tca_was_refined": true,
+              "other_norad_cat_id": 35932,
+              "detection_content_hash": "23e049be408be39558a7c900c64a04e33706eb2fa982b7bdb668d20b586f4389",
+              "side": "a"
+            },
+            "analysis_engine_version": "0.3.0",
+            "schema_version": "0.1.0",
+            "is_apparent_not_confirmed": true
+          },
+          "recomputed_payload_hash": "3790d0b5f93b2815e5ebae3ece2044a9320eb11ba2ba0d20420822cb67221548",
+          "payload_integrity_verified_at_build": true
+        },
+        {
+          "evidence_id": "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948",
+          "derived_evidence": {
+            "evidence_id": "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948",
+            "object_id": 27844,
+            "evidence_type": "conjunction_detected",
+            "source_detector": "conjunction_detection_v01",
+            "detector_event_id": "37023b165ca5d5bbd552564691dd5ee0a0acc733d55a310ef54809ff9ba9e8aa_side_a",
+            "event_epoch": "2026-06-11T07:14:01.798061Z",
+            "honesty_payload": {
+              "miss_distance_km": 3981.6846498172654,
+              "relative_velocity_km_s": 12.17198226867894,
+              "pc": 0.0,
+              "pc_method": "foster_1992_fast_approximation",
+              "covariance_model_name": "tle_isotropic_spherical_v1",
+              "covariance_baseline_sigma_km": 1.0,
+              "covariance_growth_sigma_km_per_day": 1.0,
+              "combined_sigma_at_tca_km": 2.672350640423327,
+              "combined_hard_body_radius_km": 0.02,
+              "sgp4_uncertainty_baseline_km": 3.0,
+              "sgp4_uncertainty_growth_km_per_day": 3.0,
+              "tca_resolution_minutes": 0.016666666666666666,
+              "tca_was_refined": true,
+              "other_norad_cat_id": 35933,
+              "detection_content_hash": "37023b165ca5d5bbd552564691dd5ee0a0acc733d55a310ef54809ff9ba9e8aa",
+              "side": "a"
+            },
+            "analysis_engine_version": "0.3.0",
+            "schema_version": "0.1.0",
+            "is_apparent_not_confirmed": true
+          },
+          "recomputed_payload_hash": "c345e4975f53614466e716b856fa94d0d7fb353a38a59be778ba424ba1b75da1",
+          "payload_integrity_verified_at_build": true
+        },
+        {
+          "evidence_id": "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b",
+          "derived_evidence": {
+            "evidence_id": "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b",
+            "object_id": 27844,
+            "evidence_type": "conjunction_detected",
+            "source_detector": "conjunction_detection_v01",
+            "detector_event_id": "2ef878dff9684e8647a33d1582d5159603da3f74589a8bb9bab264e604e21b68_side_a",
+            "event_epoch": "2026-06-11T07:32:25.997280Z",
+            "honesty_payload": {
+              "miss_distance_km": 8674.348373818046,
+              "relative_velocity_km_s": 8.979854447404476,
+              "pc": 0.0,
+              "pc_method": "foster_1992_fast_approximation",
+              "covariance_model_name": "tle_isotropic_spherical_v1",
+              "covariance_baseline_sigma_km": 1.0,
+              "covariance_growth_sigma_km_per_day": 1.0,
+              "combined_sigma_at_tca_km": 2.6763285644227306,
+              "combined_hard_body_radius_km": 0.02,
+              "sgp4_uncertainty_baseline_km": 3.0,
+              "sgp4_uncertainty_growth_km_per_day": 3.0,
+              "tca_resolution_minutes": 5.0,
+              "tca_was_refined": false,
+              "other_norad_cat_id": 27848,
+              "detection_content_hash": "2ef878dff9684e8647a33d1582d5159603da3f74589a8bb9bab264e604e21b68",
+              "side": "a"
+            },
+            "analysis_engine_version": "0.3.0",
+            "schema_version": "0.1.0",
+            "is_apparent_not_confirmed": true
+          },
+          "recomputed_payload_hash": "760f96cfb2023bf4a9d8667463f0e6ab0138d5af96c2c16831064092adaac9bc",
+          "payload_integrity_verified_at_build": true
+        }
+      ],
+      "n_evidence_payloads": 8,
+      "schema_version": "0.1.0",
+      "bundle_engine_version": "0.1.0",
+      "derived_at": "2026-06-10T12:00:00Z"
+    },
+    "verification_report": {
+      "bundle_id": "de6f56c75b68e9fab481a0308486f50a7a24b7655d40244dc0834eb5ed2a8bc2",
+      "is_valid": true,
+      "n_payloads_total": 8,
+      "n_payloads_with_valid_hash": 8,
+      "n_payloads_with_invalid_hash": 0,
+      "context_id_recomputes_correctly": true,
+      "source_catalog_signature_recomputes_correctly": true,
+      "bundle_payload_signature_recomputes_correctly": true,
+      "bundle_signature_recomputes_correctly": true,
+      "bundle_id_is_alias_of_bundle_signature": true,
+      "integrity_failures": [],
+      "verifier_engine_version": "0.1.0",
+      "verified_at": "2026-06-10T12:00:00Z"
+    },
+    "declared_consumer_class": "explanation_agent_v01",
+    "contract_schema_version": "0.1.0",
+    "contract_engine_version": "0.1.0",
+    "contract_acceptance_at": "2026-06-10T12:00:00Z"
+  },
+  "evidence_bundle": {
+    "bundle_id": "de6f56c75b68e9fab481a0308486f50a7a24b7655d40244dc0834eb5ed2a8bc2",
+    "bundle_signature": "de6f56c75b68e9fab481a0308486f50a7a24b7655d40244dc0834eb5ed2a8bc2",
+    "bundle_payload_signature": "d6a693ecb0c0304783483bc9e363dc0d95fd26de2a3a0ff1fbf2784b147d08fe",
+    "object_id": 27844,
+    "context": {
+      "object_id": 27844,
+      "context_id": "b72ed550a3db2099a41127c9ece19b406580b8bc56723f076f89a8460c0869ea",
+      "source_catalog_signature": "0cab82356dfc3530ecf4c5d47dbae175d8cbe7c9b10071a4b56ac6d629ef7e2b",
+      "n_evidence_total": 8,
+      "coverage_window_start": "2026-06-10T07:58:35.430874Z",
+      "coverage_window_end": "2026-06-11T07:32:25.997280Z",
+      "coverage_duration_seconds": 84830.566406,
+      "evidence_type_counts": {
+        "conjunction_detected": 8
+      },
+      "detector_summaries": [
+        {
+          "source_detector": "anomaly_detection_v01",
+          "n_events": 0,
+          "first_event_epoch": null,
+          "last_event_epoch": null,
+          "evidence_ids": [],
+          "evidence_type_breakdown": {}
+        },
+        {
+          "source_detector": "conjunction_detection_v01",
+          "n_events": 8,
+          "first_event_epoch": "2026-06-10T07:58:35.430874Z",
+          "last_event_epoch": "2026-06-11T07:32:25.997280Z",
+          "evidence_ids": [
+            "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733",
+            "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e",
+            "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d",
+            "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0",
+            "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f",
+            "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9",
+            "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948",
+            "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b"
+          ],
+          "evidence_type_breakdown": {
+            "conjunction_detected": 8
+          }
+        },
+        {
+          "source_detector": "maneuver_detection_v01",
+          "n_events": 0,
+          "first_event_epoch": null,
+          "last_event_epoch": null,
+          "evidence_ids": [],
+          "evidence_type_breakdown": {}
+        }
+      ],
+      "timeline": {
+        "entries": [
+          {
+            "epoch": "2026-06-10T07:58:35.430874Z",
+            "evidence_id": "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "honesty_payload_hash": "37f81567e2789863897f82b85d6f2cc0a58be1f0573f834b8c14ca07d05b0d0f"
+          },
+          {
+            "epoch": "2026-06-10T14:12:04.610561Z",
+            "evidence_id": "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "honesty_payload_hash": "c81bf49ce3c1af06cbb2ea5fca36c7ba7ea3ff7d9a65cbefd75ac44c340310f1"
+          },
+          {
+            "epoch": "2026-06-11T00:21:56.407436Z",
+            "evidence_id": "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "honesty_payload_hash": "20d9d5d921d7f078d9ec6980765d10b6a0064d671d868d37ba7e03e6ab691f34"
+          },
+          {
+            "epoch": "2026-06-11T02:53:48.907436Z",
+            "evidence_id": "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "honesty_payload_hash": "aaaea72014d8509409713c5fe0873944f05834c7b7181203d13b49743cf0987b"
+          },
+          {
+            "epoch": "2026-06-11T07:08:18.438686Z",
+            "evidence_id": "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "honesty_payload_hash": "13849e1aa0ead28435762bb48b23392d10b8d7eb0f60e9070d2e6703d74408c0"
+          },
+          {
+            "epoch": "2026-06-11T07:09:21.133999Z",
+            "evidence_id": "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "honesty_payload_hash": "3790d0b5f93b2815e5ebae3ece2044a9320eb11ba2ba0d20420822cb67221548"
+          },
+          {
+            "epoch": "2026-06-11T07:14:01.798061Z",
+            "evidence_id": "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "honesty_payload_hash": "c345e4975f53614466e716b856fa94d0d7fb353a38a59be778ba424ba1b75da1"
+          },
+          {
+            "epoch": "2026-06-11T07:32:25.997280Z",
+            "evidence_id": "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b",
+            "source_detector": "conjunction_detection_v01",
+            "evidence_type": "conjunction_detected",
+            "honesty_payload_hash": "760f96cfb2023bf4a9d8667463f0e6ab0138d5af96c2c16831064092adaac9bc"
+          }
+        ],
+        "n_entries": 8,
+        "first_epoch": "2026-06-10T07:58:35.430874Z",
+        "last_epoch": "2026-06-11T07:32:25.997280Z"
+      },
+      "evidence_references": [
+        {
+          "evidence_id": "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733",
+          "object_id": 27844,
+          "event_epoch": "2026-06-10T07:58:35.430874Z",
+          "source_detector": "conjunction_detection_v01",
+          "evidence_type": "conjunction_detected",
+          "detector_event_id": "60e665d097ac985e18ad73509745dd10f884c507145d67faa3aec970e177fa9b_side_a",
+          "honesty_payload_hash": "37f81567e2789863897f82b85d6f2cc0a58be1f0573f834b8c14ca07d05b0d0f",
+          "analysis_engine_version": "0.3.0"
+        },
+        {
+          "evidence_id": "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e",
+          "object_id": 27844,
+          "event_epoch": "2026-06-10T14:12:04.610561Z",
+          "source_detector": "conjunction_detection_v01",
+          "evidence_type": "conjunction_detected",
+          "detector_event_id": "69a90daa3021adc0dc320ecf2a5816d7bb96863f835262a4089f0f3322027d1c_side_a",
+          "honesty_payload_hash": "c81bf49ce3c1af06cbb2ea5fca36c7ba7ea3ff7d9a65cbefd75ac44c340310f1",
+          "analysis_engine_version": "0.3.0"
+        },
+        {
+          "evidence_id": "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d",
+          "object_id": 27844,
+          "event_epoch": "2026-06-11T00:21:56.407436Z",
+          "source_detector": "conjunction_detection_v01",
+          "evidence_type": "conjunction_detected",
+          "detector_event_id": "f71b156651badfd6ccafc81e11ff1df2f3bcfc89b0dbd254401bf0975a25f78c_side_a",
+          "honesty_payload_hash": "20d9d5d921d7f078d9ec6980765d10b6a0064d671d868d37ba7e03e6ab691f34",
+          "analysis_engine_version": "0.3.0"
+        },
+        {
+          "evidence_id": "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0",
+          "object_id": 27844,
+          "event_epoch": "2026-06-11T02:53:48.907436Z",
+          "source_detector": "conjunction_detection_v01",
+          "evidence_type": "conjunction_detected",
+          "detector_event_id": "7ad2f04c6c99e0972a50ee32898a675ed4dcd0c0b68a02e997ef1d6692696937_side_a",
+          "honesty_payload_hash": "aaaea72014d8509409713c5fe0873944f05834c7b7181203d13b49743cf0987b",
+          "analysis_engine_version": "0.3.0"
+        },
+        {
+          "evidence_id": "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f",
+          "object_id": 27844,
+          "event_epoch": "2026-06-11T07:08:18.438686Z",
+          "source_detector": "conjunction_detection_v01",
+          "evidence_type": "conjunction_detected",
+          "detector_event_id": "6f5f63e7ae54a1a173c6c306d66489d9f042f5543e48c239a0eb93e3d233ce35_side_a",
+          "honesty_payload_hash": "13849e1aa0ead28435762bb48b23392d10b8d7eb0f60e9070d2e6703d74408c0",
+          "analysis_engine_version": "0.3.0"
+        },
+        {
+          "evidence_id": "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9",
+          "object_id": 27844,
+          "event_epoch": "2026-06-11T07:09:21.133999Z",
+          "source_detector": "conjunction_detection_v01",
+          "evidence_type": "conjunction_detected",
+          "detector_event_id": "23e049be408be39558a7c900c64a04e33706eb2fa982b7bdb668d20b586f4389_side_a",
+          "honesty_payload_hash": "3790d0b5f93b2815e5ebae3ece2044a9320eb11ba2ba0d20420822cb67221548",
+          "analysis_engine_version": "0.3.0"
+        },
+        {
+          "evidence_id": "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948",
+          "object_id": 27844,
+          "event_epoch": "2026-06-11T07:14:01.798061Z",
+          "source_detector": "conjunction_detection_v01",
+          "evidence_type": "conjunction_detected",
+          "detector_event_id": "37023b165ca5d5bbd552564691dd5ee0a0acc733d55a310ef54809ff9ba9e8aa_side_a",
+          "honesty_payload_hash": "c345e4975f53614466e716b856fa94d0d7fb353a38a59be778ba424ba1b75da1",
+          "analysis_engine_version": "0.3.0"
+        },
+        {
+          "evidence_id": "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b",
+          "object_id": 27844,
+          "event_epoch": "2026-06-11T07:32:25.997280Z",
+          "source_detector": "conjunction_detection_v01",
+          "evidence_type": "conjunction_detected",
+          "detector_event_id": "2ef878dff9684e8647a33d1582d5159603da3f74589a8bb9bab264e604e21b68_side_a",
+          "honesty_payload_hash": "760f96cfb2023bf4a9d8667463f0e6ab0138d5af96c2c16831064092adaac9bc",
+          "analysis_engine_version": "0.3.0"
+        }
+      ],
+      "schema_version": "0.1.0",
+      "explanation_engine_version": "0.1.0",
+      "derived_at": "2026-06-10T12:00:00Z"
+    },
+    "evidence_payloads": [
+      {
+        "evidence_id": "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733",
+        "derived_evidence": {
+          "evidence_id": "3b5700085a11569eab71926f5896e214549c9a622b2f95ea7155940a83c55733",
+          "object_id": 27844,
+          "evidence_type": "conjunction_detected",
+          "source_detector": "conjunction_detection_v01",
+          "detector_event_id": "60e665d097ac985e18ad73509745dd10f884c507145d67faa3aec970e177fa9b_side_a",
+          "event_epoch": "2026-06-10T07:58:35.430874Z",
+          "honesty_payload": {
+            "miss_distance_km": 3128.1353299757975,
+            "relative_velocity_km_s": 14.56813407218546,
+            "pc": 0.0,
+            "pc_method": "foster_1992_fast_approximation",
+            "covariance_model_name": "tle_isotropic_spherical_v1",
+            "covariance_baseline_sigma_km": 1.0,
+            "covariance_growth_sigma_km_per_day": 1.0,
+            "combined_sigma_at_tca_km": 1.444681393016465,
+            "combined_hard_body_radius_km": 0.02,
+            "sgp4_uncertainty_baseline_km": 3.0,
+            "sgp4_uncertainty_growth_km_per_day": 3.0,
+            "tca_resolution_minutes": 0.016666666666666666,
+            "tca_was_refined": true,
+            "other_norad_cat_id": 28895,
+            "detection_content_hash": "60e665d097ac985e18ad73509745dd10f884c507145d67faa3aec970e177fa9b",
+            "side": "a"
+          },
+          "analysis_engine_version": "0.3.0",
+          "schema_version": "0.1.0",
+          "is_apparent_not_confirmed": true
+        },
+        "recomputed_payload_hash": "37f81567e2789863897f82b85d6f2cc0a58be1f0573f834b8c14ca07d05b0d0f",
+        "payload_integrity_verified_at_build": true
+      },
+      {
+        "evidence_id": "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e",
+        "derived_evidence": {
+          "evidence_id": "72da3d3308455d416b5531885f16b5aaa32d44e78585cb71c356a20fca36637e",
+          "object_id": 27844,
+          "evidence_type": "conjunction_detected",
+          "source_detector": "conjunction_detection_v01",
+          "detector_event_id": "69a90daa3021adc0dc320ecf2a5816d7bb96863f835262a4089f0f3322027d1c_side_a",
+          "event_epoch": "2026-06-10T14:12:04.610561Z",
+          "honesty_payload": {
+            "miss_distance_km": 372.1245094802924,
+            "relative_velocity_km_s": 3.7391304763063005,
+            "pc": 0.0,
+            "pc_method": "foster_1992_fast_approximation",
+            "covariance_model_name": "tle_isotropic_spherical_v1",
+            "covariance_baseline_sigma_km": 1.0,
+            "covariance_growth_sigma_km_per_day": 1.0,
+            "combined_sigma_at_tca_km": 1.9202298247995582,
+            "combined_hard_body_radius_km": 0.02,
+            "sgp4_uncertainty_baseline_km": 3.0,
+            "sgp4_uncertainty_growth_km_per_day": 3.0,
+            "tca_resolution_minutes": 0.016666666666666666,
+            "tca_was_refined": true,
+            "other_norad_cat_id": 32790,
+            "detection_content_hash": "69a90daa3021adc0dc320ecf2a5816d7bb96863f835262a4089f0f3322027d1c",
+            "side": "a"
+          },
+          "analysis_engine_version": "0.3.0",
+          "schema_version": "0.1.0",
+          "is_apparent_not_confirmed": true
+        },
+        "recomputed_payload_hash": "c81bf49ce3c1af06cbb2ea5fca36c7ba7ea3ff7d9a65cbefd75ac44c340310f1",
+        "payload_integrity_verified_at_build": true
+      },
+      {
+        "evidence_id": "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d",
+        "derived_evidence": {
+          "evidence_id": "9dde8baf1503bc04125f7cde8b45d33b01b69f9fbecdee056892f70b56f9351d",
+          "object_id": 27844,
+          "evidence_type": "conjunction_detected",
+          "source_detector": "conjunction_detection_v01",
+          "detector_event_id": "f71b156651badfd6ccafc81e11ff1df2f3bcfc89b0dbd254401bf0975a25f78c_side_a",
+          "event_epoch": "2026-06-11T00:21:56.407436Z",
+          "honesty_payload": {
+            "miss_distance_km": 768.0927847245247,
+            "relative_velocity_km_s": 1.5863562615566993,
+            "pc": 0.0,
+            "pc_method": "foster_1992_fast_approximation",
+            "covariance_model_name": "tle_isotropic_spherical_v1",
+            "covariance_baseline_sigma_km": 1.0,
+            "covariance_growth_sigma_km_per_day": 1.0,
+            "combined_sigma_at_tca_km": 2.309485850006037,
+            "combined_hard_body_radius_km": 0.02,
+            "sgp4_uncertainty_baseline_km": 3.0,
+            "sgp4_uncertainty_growth_km_per_day": 3.0,
+            "tca_resolution_minutes": 0.016666666666666666,
+            "tca_was_refined": true,
+            "other_norad_cat_id": 32791,
+            "detection_content_hash": "f71b156651badfd6ccafc81e11ff1df2f3bcfc89b0dbd254401bf0975a25f78c",
+            "side": "a"
+          },
+          "analysis_engine_version": "0.3.0",
+          "schema_version": "0.1.0",
+          "is_apparent_not_confirmed": true
+        },
+        "recomputed_payload_hash": "20d9d5d921d7f078d9ec6980765d10b6a0064d671d868d37ba7e03e6ab691f34",
+        "payload_integrity_verified_at_build": true
+      },
+      {
+        "evidence_id": "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0",
+        "derived_evidence": {
+          "evidence_id": "0701ea5d8590ff371d1c79a7092bc1a4ff8c87f8043ce378795707c9b29ee9d0",
+          "object_id": 27844,
+          "evidence_type": "conjunction_detected",
+          "source_detector": "conjunction_detection_v01",
+          "detector_event_id": "7ad2f04c6c99e0972a50ee32898a675ed4dcd0c0b68a02e997ef1d6692696937_side_a",
+          "event_epoch": "2026-06-11T02:53:48.907436Z",
+          "honesty_payload": {
+            "miss_distance_km": 126.69920330416542,
+            "relative_velocity_km_s": 11.477189765608031,
+            "pc": 0.0,
+            "pc_method": "foster_1992_fast_approximation",
+            "covariance_model_name": "tle_isotropic_spherical_v1",
+            "covariance_baseline_sigma_km": 1.0,
+            "covariance_growth_sigma_km_per_day": 1.0,
+            "combined_sigma_at_tca_km": 2.8183120422493433,
+            "combined_hard_body_radius_km": 0.02,
+            "sgp4_uncertainty_baseline_km": 3.0,
+            "sgp4_uncertainty_growth_km_per_day": 3.0,
+            "tca_resolution_minutes": 0.016666666666666666,
+            "tca_was_refined": true,
+            "other_norad_cat_id": 35935,
+            "detection_content_hash": "7ad2f04c6c99e0972a50ee32898a675ed4dcd0c0b68a02e997ef1d6692696937",
+            "side": "a"
+          },
+          "analysis_engine_version": "0.3.0",
+          "schema_version": "0.1.0",
+          "is_apparent_not_confirmed": true
+        },
+        "recomputed_payload_hash": "aaaea72014d8509409713c5fe0873944f05834c7b7181203d13b49743cf0987b",
+        "payload_integrity_verified_at_build": true
+      },
+      {
+        "evidence_id": "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f",
+        "derived_evidence": {
+          "evidence_id": "880b942b579faea77958b3688e5e0c941f7750402cb09fea513a2b8ade7dd08f",
+          "object_id": 27844,
+          "evidence_type": "conjunction_detected",
+          "source_detector": "conjunction_detection_v01",
+          "detector_event_id": "6f5f63e7ae54a1a173c6c306d66489d9f042f5543e48c239a0eb93e3d233ce35_side_a",
+          "event_epoch": "2026-06-11T07:08:18.438686Z",
+          "honesty_payload": {
+            "miss_distance_km": 2451.5449040483427,
+            "relative_velocity_km_s": 4.360326838107358,
+            "pc": 0.0,
+            "pc_method": "foster_1992_fast_approximation",
+            "covariance_model_name": "tle_isotropic_spherical_v1",
+            "covariance_baseline_sigma_km": 1.0,
+            "covariance_growth_sigma_km_per_day": 1.0,
+            "combined_sigma_at_tca_km": 2.6137165631173285,
+            "combined_hard_body_radius_km": 0.02,
+            "sgp4_uncertainty_baseline_km": 3.0,
+            "sgp4_uncertainty_growth_km_per_day": 3.0,
+            "tca_resolution_minutes": 0.016666666666666666,
+            "tca_was_refined": true,
+            "other_norad_cat_id": 32785,
+            "detection_content_hash": "6f5f63e7ae54a1a173c6c306d66489d9f042f5543e48c239a0eb93e3d233ce35",
+            "side": "a"
+          },
+          "analysis_engine_version": "0.3.0",
+          "schema_version": "0.1.0",
+          "is_apparent_not_confirmed": true
+        },
+        "recomputed_payload_hash": "13849e1aa0ead28435762bb48b23392d10b8d7eb0f60e9070d2e6703d74408c0",
+        "payload_integrity_verified_at_build": true
+      },
+      {
+        "evidence_id": "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9",
+        "derived_evidence": {
+          "evidence_id": "7158fc13e94218585756b938a75aa00660ba2abb2e44db117490d0012cc594f9",
+          "object_id": 27844,
+          "evidence_type": "conjunction_detected",
+          "source_detector": "conjunction_detection_v01",
+          "detector_event_id": "23e049be408be39558a7c900c64a04e33706eb2fa982b7bdb668d20b586f4389_side_a",
+          "event_epoch": "2026-06-11T07:09:21.133999Z",
+          "honesty_payload": {
+            "miss_distance_km": 1474.0674970949458,
+            "relative_velocity_km_s": 11.506065478885862,
+            "pc": 0.0,
+            "pc_method": "foster_1992_fast_approximation",
+            "covariance_model_name": "tle_isotropic_spherical_v1",
+            "covariance_baseline_sigma_km": 1.0,
+            "covariance_growth_sigma_km_per_day": 1.0,
+            "combined_sigma_at_tca_km": 3.2729153035260894,
+            "combined_hard_body_radius_km": 0.02,
+            "sgp4_uncertainty_baseline_km": 3.0,
+            "sgp4_uncertainty_growth_km_per_day": 3.0,
+            "tca_resolution_minutes": 0.016666666666666666,
+            "tca_was_refined": true,
+            "other_norad_cat_id": 35932,
+            "detection_content_hash": "23e049be408be39558a7c900c64a04e33706eb2fa982b7bdb668d20b586f4389",
+            "side": "a"
+          },
+          "analysis_engine_version": "0.3.0",
+          "schema_version": "0.1.0",
+          "is_apparent_not_confirmed": true
+        },
+        "recomputed_payload_hash": "3790d0b5f93b2815e5ebae3ece2044a9320eb11ba2ba0d20420822cb67221548",
+        "payload_integrity_verified_at_build": true
+      },
+      {
+        "evidence_id": "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948",
+        "derived_evidence": {
+          "evidence_id": "b52eed606a66d2018aabe29e175506dd50514d4e09d2fc1361ddc6aa5bb8a948",
+          "object_id": 27844,
+          "evidence_type": "conjunction_detected",
+          "source_detector": "conjunction_detection_v01",
+          "detector_event_id": "37023b165ca5d5bbd552564691dd5ee0a0acc733d55a310ef54809ff9ba9e8aa_side_a",
+          "event_epoch": "2026-06-11T07:14:01.798061Z",
+          "honesty_payload": {
+            "miss_distance_km": 3981.6846498172654,
+            "relative_velocity_km_s": 12.17198226867894,
+            "pc": 0.0,
+            "pc_method": "foster_1992_fast_approximation",
+            "covariance_model_name": "tle_isotropic_spherical_v1",
+            "covariance_baseline_sigma_km": 1.0,
+            "covariance_growth_sigma_km_per_day": 1.0,
+            "combined_sigma_at_tca_km": 2.672350640423327,
+            "combined_hard_body_radius_km": 0.02,
+            "sgp4_uncertainty_baseline_km": 3.0,
+            "sgp4_uncertainty_growth_km_per_day": 3.0,
+            "tca_resolution_minutes": 0.016666666666666666,
+            "tca_was_refined": true,
+            "other_norad_cat_id": 35933,
+            "detection_content_hash": "37023b165ca5d5bbd552564691dd5ee0a0acc733d55a310ef54809ff9ba9e8aa",
+            "side": "a"
+          },
+          "analysis_engine_version": "0.3.0",
+          "schema_version": "0.1.0",
+          "is_apparent_not_confirmed": true
+        },
+        "recomputed_payload_hash": "c345e4975f53614466e716b856fa94d0d7fb353a38a59be778ba424ba1b75da1",
+        "payload_integrity_verified_at_build": true
+      },
+      {
+        "evidence_id": "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b",
+        "derived_evidence": {
+          "evidence_id": "4d68444134b2de257d0ff957137773761468bcbc8749469dff57bc6488df305b",
+          "object_id": 27844,
+          "evidence_type": "conjunction_detected",
+          "source_detector": "conjunction_detection_v01",
+          "detector_event_id": "2ef878dff9684e8647a33d1582d5159603da3f74589a8bb9bab264e604e21b68_side_a",
+          "event_epoch": "2026-06-11T07:32:25.997280Z",
+          "honesty_payload": {
+            "miss_distance_km": 8674.348373818046,
+            "relative_velocity_km_s": 8.979854447404476,
+            "pc": 0.0,
+            "pc_method": "foster_1992_fast_approximation",
+            "covariance_model_name": "tle_isotropic_spherical_v1",
+            "covariance_baseline_sigma_km": 1.0,
+            "covariance_growth_sigma_km_per_day": 1.0,
+            "combined_sigma_at_tca_km": 2.6763285644227306,
+            "combined_hard_body_radius_km": 0.02,
+            "sgp4_uncertainty_baseline_km": 3.0,
+            "sgp4_uncertainty_growth_km_per_day": 3.0,
+            "tca_resolution_minutes": 5.0,
+            "tca_was_refined": false,
+            "other_norad_cat_id": 27848,
+            "detection_content_hash": "2ef878dff9684e8647a33d1582d5159603da3f74589a8bb9bab264e604e21b68",
+            "side": "a"
+          },
+          "analysis_engine_version": "0.3.0",
+          "schema_version": "0.1.0",
+          "is_apparent_not_confirmed": true
+        },
+        "recomputed_payload_hash": "760f96cfb2023bf4a9d8667463f0e6ab0138d5af96c2c16831064092adaac9bc",
+        "payload_integrity_verified_at_build": true
+      }
+    ],
+    "n_evidence_payloads": 8,
+    "schema_version": "0.1.0",
+    "bundle_engine_version": "0.1.0",
+    "derived_at": "2026-06-10T12:00:00Z"
+  },
+  "case_emit_reason": "full_case",
+  "schema_version": "1.0.0",
+  "case_layer_engine_version": "1.0.0",
+  "derived_at": "2026-06-10T12:00:00Z"
+}
