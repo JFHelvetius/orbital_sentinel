@@ -590,9 +590,14 @@ button[kind="primary"]:hover { background: var(--accent-bri) !important; }
   margin: 0 !important;
   padding: .15rem 0 !important;
 }
-/* El toggle de tabla pegado al globo */
+/* El toggle de tabla pegado al globo — tirado hacia arriba con margen
+   negativo para anular el gap que Streamlit añade entre bloques */
 [data-testid="stToggle"] {
-  margin-top: .15rem !important;
+  margin-top: -0.8rem !important;
+}
+[data-testid="element-container"]:has([data-testid="stToggle"]) {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 /* HorizontalBlock — sin gap inferior */
 [data-testid="stHorizontalBlock"] { margin-bottom: 0 !important; gap: 1rem !important; }

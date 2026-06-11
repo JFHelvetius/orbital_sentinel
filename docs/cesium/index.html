@@ -472,7 +472,10 @@
               color: opts.color,
               outlineColor: Cesium.Color.WHITE.withAlpha(0.8),
               outlineWidth: opts.outline,
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+              // Sin disableDepthTestDistance: el globo opaco oculta los
+              // puntos que están al otro lado del planeta. Mejor para
+              // navegación — no se ven entes "atrás" del globo confundiendo
+              // al usuario.
             },
             label: opts.label ? {
               text: t.name,
@@ -485,7 +488,7 @@
               showBackground: true,
               backgroundColor: new Cesium.Color(0.04, 0.06, 0.12, 0.75),
               backgroundPadding: new Cesium.Cartesian2(6, 4),
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+              // Labels también ocultos cuando están al otro lado del globo
             } : undefined,
             description: buildDescription(t),
           });
