@@ -127,6 +127,10 @@
         <input type="checkbox" id="lyr-lighting">
         Iluminación día/noche
       </label>
+      <label>
+        <input type="checkbox" id="lyr-footprint">
+        Footprint (área visible)
+      </label>
     </div>
   </div>
   <script>
@@ -586,10 +590,67 @@
       scene.globe.enableLighting = e.target.checked;
     });
 
+    // ── Footprint (área de cobertura visible desde el satélite) ──────
+    // Para una altitud `h` sobre la superficie de un planeta de radio R,
+    // el horizonte óptico (geométrico, sin atmósfera) cubre un casquete
+    // esférico con ángulo medio α tal que cos α = R/(R+h).
+    // El radio del círculo proyectado sobre la superficie es R·sin α.
+    const EARTH_R_M = 6_371_000;
+    function horizonRadiusMeters(altKm) {
+      const R = EARTH_R_M;
+      const h = altKm * 1000.0;
+      const cosA = R / (R + h);
+      const sinA = Math.sqrt(Math.max(0, 1 - cosA * cosA));
+      return R * sinA;
+    }
+    // Mantener footprints añadidos para poder quitarlos
+    const footprintEntities = [];
+    function clearFootprints() {
+      footprintEntities.forEach(e => viewer.entities.remove(e));
+      footprintEntities.length = 0;
+    }
+    function addFootprintFor(t, color) {
+      const radius = horizonRadiusMeters(t.alt0);
+      const ent = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(t.lon0, t.lat0, 0),
+        ellipse: {
+          semiMajorAxis: radius,
+          semiMinorAxis: radius,
+          material: color.withAlpha(0.12),
+          outline: true,
+          outlineColor: color.withAlpha(0.7),
+          outlineWidth: 1.5,
+          height: 0,
+          extrudedHeight: 0,
+        },
+      });
+      footprintEntities.push(ent);
+    }
+    let lastTracksPayload = null;
+    function repaintFootprints() {
+      clearFootprints();
+      if (!document.getElementById('lyr-footprint').checked) return;
+      if (!lastTracksPayload) return;
+      const { tracks, primary_norad, real_norads } = lastTracksPayload;
+      const realSet = new Set(real_norads || []);
+      (tracks || []).forEach(t => {
+        if (t.norad === primary_norad) {
+          addFootprintFor(t, Cesium.Color.fromCssColorString('#ffd700'));
+        } else if (realSet.has(t.norad)) {
+          addFootprintFor(t, Cesium.Color.fromCssColorString('#ff3547'));
+        } else if (!t.known) {
+          addFootprintFor(t, Cesium.Color.fromCssColorString('#ffb300'));
+        }
+      });
+    }
+    document.getElementById('lyr-footprint').addEventListener('change', repaintFootprints);
+
     // ── Recibe datos del parent via postMessage ──────────────────────
     window.addEventListener('message', function(event) {
       if (event.data && event.data.type === 'orbital-sentinel-tracks') {
+        lastTracksPayload = event.data.payload;
         renderTracks(event.data.payload);
+        repaintFootprints();
       }
     });
 

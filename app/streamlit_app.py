@@ -569,13 +569,23 @@ button[kind="primary"]:hover { background: var(--accent-bri) !important; }
     0 0 80px rgba(30,90,200,0.30),
     0 0 240px rgba(15,60,160,0.18);
   overflow: hidden;
-  margin: .4rem 0 .4rem;
+  margin: .4rem 0 0;
 }
 /* components.v1.html iframe (Cesium) — mismo trato que el chart Plotly */
 [data-testid="stIFrame"], iframe[title="streamlit_app"] {
-  margin: .4rem 0 .4rem !important;
+  margin: .4rem 0 0 !important;
   border-radius: 14px !important;
   border: 1px solid rgba(74,144,226,.18) !important;
+  display: block !important;
+}
+/* Cero margin extra del bloque que contiene el iframe/chart */
+[data-testid="element-container"]:has([data-testid="stIFrame"]),
+[data-testid="element-container"]:has([data-testid="stPlotlyChart"]) {
+  margin-bottom: 0 !important;
+}
+/* El toggle de tabla pegado al globo */
+[data-testid="stToggle"] {
+  margin-top: .15rem !important;
 }
 [data-testid="stPlotlyChart"]:hover {
   box-shadow:
@@ -1836,16 +1846,6 @@ def _page_map() -> None:
                   "de los últimos 30 días buscando objetos que orbitan cerca de las estaciones espaciales."),
         )
 
-        # ── Capas geográficas (defaults pensados para máxima definición) ─────
-        st.markdown("**🗺 Capas del globo**")
-        layer_cities       = st.toggle("Ciudades principales", value=False, key="lyr_cities")
-        layer_country_names = st.toggle("Nombres de países",   value=False, key="lyr_country_names")
-        layer_countries    = st.toggle("Fronteras nacionales", value=True,  key="lyr_countries")
-        layer_state_names  = st.toggle("Nombres de estados (USA)", value=False, key="lyr_state_names")
-        layer_subunits     = st.toggle("Fronteras de estados", value=True,  key="lyr_subunits")
-        layer_lakes        = st.toggle("Lagos",                value=True,  key="lyr_lakes")
-        layer_rivers       = st.toggle("Ríos",                 value=True,  key="lyr_rivers")
-
         dataset_label = st.selectbox(
             "Dataset a rastrear",
             list(_DATASETS.keys()),
@@ -1866,6 +1866,35 @@ def _page_map() -> None:
                   "Satélite: tiles fotorealistas Esri plano. "
                   "Globo 3D: orthographic vectorial Blue-Marble."),
         )
+
+        # ── Capas geográficas — solo aplican en modo Globo 3D vectorial.
+        # Cesium tiene su propio panel de capas dentro del HUD; Satélite
+        # Esri usa tiles raster y no expone toggles vectoriales.
+        _is_orth = "Globo 3D" in (view_mode or "")
+        if _is_orth:
+            st.markdown("**🗺 Capas del globo**")
+            layer_cities       = st.toggle("Ciudades principales", value=False, key="lyr_cities")
+            layer_country_names = st.toggle("Nombres de países",   value=False, key="lyr_country_names")
+            layer_countries    = st.toggle("Fronteras nacionales", value=True,  key="lyr_countries")
+            layer_state_names  = st.toggle("Nombres de estados (USA)", value=False, key="lyr_state_names")
+            layer_subunits     = st.toggle("Fronteras de estados", value=True,  key="lyr_subunits")
+            layer_lakes        = st.toggle("Lagos",                value=True,  key="lyr_lakes")
+            layer_rivers       = st.toggle("Ríos",                 value=True,  key="lyr_rivers")
+        else:
+            # Valores fijos cuando las toggles no son visibles. No afectan
+            # a Cesium ni a Satélite, pero los consumimos abajo en _globe_figure
+            # por si el usuario cambia de modo a Globo 3D mid-session.
+            layer_cities = st.session_state.get("lyr_cities", False)
+            layer_country_names = st.session_state.get("lyr_country_names", False)
+            layer_countries = st.session_state.get("lyr_countries", True)
+            layer_state_names = st.session_state.get("lyr_state_names", False)
+            layer_subunits = st.session_state.get("lyr_subunits", True)
+            layer_lakes = st.session_state.get("lyr_lakes", True)
+            layer_rivers = st.session_state.get("lyr_rivers", True)
+            if "Cesium" in (view_mode or ""):
+                st.caption("ℹ Las capas del globo están en el HUD del Cesium (esquina superior izquierda).")
+            else:
+                st.caption("ℹ Las capas del globo solo aplican en modo Globo 3D vectorial.")
 
     # ── Selección de dataset ─────────────────────────────────────────────────
     ds_group, ds_mode = _DATASETS[dataset_label]
