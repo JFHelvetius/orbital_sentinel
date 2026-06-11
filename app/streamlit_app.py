@@ -809,10 +809,25 @@ a:hover { color: var(--accent) !important; text-decoration: underline !important
   border-color: var(--border) !important;
 }
 
-/* ── File uploader: cero override — Streamlit default funciona en dark ── */
-/* El uploader nativo de Streamlit ya respeta el tema oscuro vía sus
-   propios estilos. Cualquier override CSS personalizado producía
-   superposición de texto en el botón "Browse files". Sin reglas aquí. */
+/* ── File uploader: solo el botón Browse files con contraste forzado ── */
+/* Mantenemos el dropzone con el render default de Streamlit (cualquier
+   override de su layout interno producía text-overlap). Pero el botón
+   "Browse files" se ve mal por default sobre nuestro bg-card oscuro:
+   forzamos accent azul + texto blanco para garantizar legibilidad. */
+[data-testid="stFileUploader"] button,
+section[data-testid="stFileUploaderDropzone"] button {
+  background: var(--accent) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--accent-bri) !important;
+  border-radius: 6px !important;
+  padding: .4rem .9rem !important;
+  font-weight: 600 !important;
+  font-size: .85rem !important;
+}
+[data-testid="stFileUploader"] button:hover,
+section[data-testid="stFileUploaderDropzone"] button:hover {
+  background: var(--accent-bri) !important;
+}
 </style>
 """
 
@@ -1917,7 +1932,7 @@ def _globe_figure(
         ),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        height=880,
+        height=980,
         margin=dict(l=0, r=0, t=8, b=0),
         showlegend=False,
         font=dict(color="#94a3b8", size=11),
@@ -2085,7 +2100,7 @@ def _satellite_figure(
         ),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        height=880,
+        height=980,
         margin=dict(l=0, r=0, t=0, b=0),
         showlegend=False,
         annotations=[dict(
@@ -2532,9 +2547,8 @@ def _page_map() -> None:
                     height=880,
                 )
                 import streamlit.components.v1 as components
-                # Altura subida a 940 — más superficie para el globo +
-                # absorbe el gap residual entre iframe y siguiente bloque.
-                components.html(html_doc, height=940, scrolling=False)
+                # Altura 1000 — globo grande + sin gap inferior visible.
+                components.html(html_doc, height=1000, scrolling=False)
                 event = None  # Cesium no propaga selección al backend en v0.1
             elif view_mode and "Satélite" in view_mode:
                 fig = _satellite_figure(track_list, case,
