@@ -922,13 +922,20 @@ _DATASETS = {
     "🇪🇺 Galileo (~33)":                  ("galileo",        "full"),
     "🇷🇺 GLONASS (~28)":                  ("glo-ops",        "full"),
     "🇨🇳 BeiDou (~54)":                   ("beidou",         "full"),
-    # ── Comunicaciones ────────────────────────────────────────────────
+    # ── Comunicaciones (constelaciones) ──────────────────────────────
     "🛰 Iridium NEXT (~75)":             ("iridium-NEXT",   "full"),
+    "📻 ORBCOMM (~15)":                  ("orbcomm",        "full"),
+    "🌐 Globalstar (~28)":               ("globalstar",     "full"),
+    "📡 SES (~69)":                      ("ses",            "full"),
+    "📺 INTELSAT (~56)":                 ("intelsat",       "full"),
     "📞 TDRS (~26)":                     ("tdrss",          "full"),
     # ── Meteorología y observación de la Tierra ──────────────────────
     "🌦 Meteorológicos (~60)":           ("weather",        "full"),
-    "🌍 Observación terrestre (~167)":   ("resource",       "full"),
-    # ── Visibles y exploración ───────────────────────────────────────
+    "🌍 Earth observation Esri (~167)":  ("resource",       "full"),
+    "🌎 Planet Labs (~135)":             ("planet",         "full"),
+    "🛰 Spire (~74)":                    ("spire",          "full"),
+    "🌡 GOES Geostacionarios (~6)":      ("goes",           "full"),
+    # ── Visibles, ciencia y especiales ───────────────────────────────
     "👁 Visibles a simple vista (~150)":  ("visual",         "full"),
     "🧪 Ciencia (~49)":                  ("science",        "full"),
     "🆘 Search & Rescue (~84)":          ("sarsat",         "full"),
@@ -939,7 +946,7 @@ _DATASETS = {
     "🌐 Geoestacionarios (~600)":        ("geo",            "lite"),
     # ── Datasets grandes — solo desde CelesTrak en runtime (pueden fallar)
     "📞 OneWeb (~650) ⚠️":               ("oneweb",         "lite"),
-    "📡 Starlink (~6000) ⚠️":             ("starlink",       "lite"),
+    "📡 Starlink (~6000+) ⚠️":            ("starlink",       "lite"),
     "🌍 Activos LEO (~3000) ⚠️":          ("active",         "lite"),
 }
 
@@ -960,7 +967,91 @@ _EMBEDDED_GROUPS = {
     "amateur":      "TLE_AMATEUR",
     "cubesat":      "TLE_CUBESAT",
     "science":      "TLE_SCIENCE",
+    "orbcomm":      "TLE_ORBCOMM",
+    "globalstar":   "TLE_GLOBALSTAR",
+    "intelsat":     "TLE_INTELSAT",
+    "planet":       "TLE_PLANET",
+    "goes":         "TLE_GOES",
+    "spire":        "TLE_SPIRE",
+    "ses":          "TLE_SES",
 }
+
+
+def _conjunction_risk_label(miss_km: float, sigma_km: float) -> tuple[str, str]:
+    """Etiqueta cualitativa del riesgo según miss_distance y σ combinado.
+
+    Devuelve (nivel, descripción accesible). NO afirma colisión, solo
+    contextualiza la magnitud de la distancia mínima en términos del
+    grado de incertidumbre del modelo. ADR-0000 P2 (honestidad sobre
+    incertidumbre): "alto" no significa "va a chocar"; significa que el
+    miss está dentro del rango donde el error propio del modelo es
+    relevante respecto a la distancia.
+    """
+    # Razón miss/σ — si <3, la incertidumbre cubre el miss
+    if sigma_km <= 0:
+        return ("indeterminado", "Sin σ declarado: el riesgo no es comparable.")
+    ratio = miss_km / sigma_km
+    if ratio < 1:
+        return ("crítico",
+                f"La distancia mínima ({miss_km:.1f} km) es menor que la "
+                f"incertidumbre del propio modelo ({sigma_km:.1f} km). "
+                f"En términos prácticos, no se puede descartar un pase mucho más cercano.")
+    if ratio < 3:
+        return ("alto",
+                f"La distancia mínima ({miss_km:.1f} km) es del mismo orden "
+                f"que la incertidumbre del modelo ({sigma_km:.1f} km). "
+                f"El acercamiento se considera no descartable.")
+    if ratio < 10:
+        return ("moderado",
+                f"La distancia mínima ({miss_km:.1f} km) supera la "
+                f"incertidumbre ({sigma_km:.1f} km) pero no por mucho. "
+                f"Se justifica seguimiento.")
+    return ("bajo",
+            f"La distancia mínima ({miss_km:.1f} km) es mucho mayor que "
+            f"la incertidumbre ({sigma_km:.1f} km). El paso es de control rutinario.")
+
+
+def _conjunction_explainer_md() -> str:
+    """Texto Markdown explicando qué es una conjunción para no técnicos."""
+    return """\
+### ¿Qué es una conjunción orbital?
+
+Una **conjunción** es el momento en que dos objetos en órbita pasan
+a su distancia mínima mutua. No implica colisión — la inmensa
+mayoría son pases rutinarios a cientos o miles de kilómetros. El
+sistema reporta la **geometría**: dónde, cuándo y a qué distancia.
+
+**Conceptos clave:**
+
+- **TCA** *(Time of Closest Approach)*: el instante exacto en que los dos
+  objetos están a su distancia mínima. Calculado por bisección con
+  resolución de 1 segundo (ADR-0017).
+- **Miss distance**: la distancia que los separa en ese instante. Si es
+  centenares de km, no hay riesgo; si es decenas, requiere atención;
+  si es metros, puede ser una colisión.
+- **σ combinada**: la incertidumbre del modelo SGP4 al momento del TCA,
+  declarada explícitamente (ADR-0020). Crece con la edad del TLE
+  (~1 km en época, ~3 km por día). Una conjunción a 5 km con σ=10 km
+  no es comparable a una conjunción a 5 km con σ=1 km.
+- **Pc** *(Probability of collision)*: la probabilidad calculada bajo la
+  covarianza declarada. Solo significativa si declaras un radio físico
+  combinado (de lo contrario Pc=0 honestamente, ADR-0020).
+
+**Cómo lee Orbital Sentinel un caso:**
+
+Cada caso lista las evidencias detectadas — todas las conjunciones
+generadas por el primary durante la ventana analizada. Las que están
+debajo de cierto umbral de miss (configurable) quedan marcadas como
+"acercamientos reales" y se destacan en rojo. Las demás son
+"co-orbitales": objetos en órbitas muy similares (módulos atracados,
+piezas de cohetes del mismo lanzamiento, etc.) que aparecen
+sistemáticamente cerca pero sin riesgo operacional.
+
+Los hashes SHA-256 al final de cada caso garantizan que la
+geometría reportada **no ha sido modificada** desde su generación.
+Cualquier cambio en TLEs, configuración o código se reflejaría en
+los hashes — verificable por cualquier tercero.
+"""
 
 
 def _meta_type(norad: int) -> str:
@@ -2302,8 +2393,16 @@ def _page_map() -> None:
                 hp    = be.derived_evidence.honesty_payload
                 norad = int(hp.get("other_norad_cat_id", 0))
                 miss  = float(hp.get("miss_distance_km", 0))
+                sigma = float(hp.get("combined_sigma_at_tca_km", 0))
                 tca   = be.derived_evidence.event_epoch.strftime("%d %b %H:%M")
-                st.error(f"**{_label(norad)}**  \n{miss:.2f} km · {tca} UTC", icon="⚠")
+                level, expl = _conjunction_risk_label(miss, sigma)
+                st.error(
+                    f"**{_label(norad)}**  \n{miss:.2f} km · σ {sigma:.1f} km · {tca} UTC  \n"
+                    f"🎯 Nivel **{level}** · {expl}",
+                    icon="⚠",
+                )
+            with st.expander("¿Cómo interpretar estos datos?"):
+                st.markdown(_conjunction_explainer_md())
 
         if extra_tracks:
             st.divider()
@@ -2403,6 +2502,10 @@ def _page_cases() -> None:
 
     for hyp in case.hypothesis_registry.hypotheses:
         st.info(f"**Hipótesis:** {hyp.hypothesis_label}", icon="📋")
+
+    if st.toggle("📖 ¿Qué es una conjunción y cómo se lee este caso?",
+                  key=f"conj_help_{selected}"):
+        st.markdown(_conjunction_explainer_md())
 
     # ── Scatter + Tabla ───────────────────────────────────────────────────────
     rows = _ev_rows(case)
