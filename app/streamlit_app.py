@@ -596,6 +596,21 @@ button[kind="primary"]:hover { background: var(--accent-bri) !important; }
 }
 /* HorizontalBlock — sin gap inferior */
 [data-testid="stHorizontalBlock"] { margin-bottom: 0 !important; gap: 1rem !important; }
+/* Apretar el gap interno del contenedor vertical de la columna del globo */
+[data-testid="column"] [data-testid="stVerticalBlock"] {
+  gap: .35rem !important;
+}
+/* Caption sin padding y line-height compacto */
+[data-testid="stCaptionContainer"], .stCaption {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.3 !important;
+}
+/* El último element-container del col_globe sin margen inferior */
+[data-testid="column"]:first-child [data-testid="element-container"]:last-child {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
 [data-testid="stPlotlyChart"]:hover {
   box-shadow:
     inset 0 0 120px rgba(60,120,200,0.14),
@@ -2092,6 +2107,42 @@ def _page_map() -> None:
                     hp = be.derived_evidence.honesty_payload
                     if float(hp.get("miss_distance_km", 0)) > 10:
                         real_norads.add(int(hp.get("other_norad_cat_id", 0)))
+
+                # Time slider — construir series temporales para los
+                # objetos importantes (ADR-0008 roadmap #4). Catalogados
+                # regulares quedan estáticos para no inflar el payload.
+                _imp_norads = ({case.evidence_bundle.object_id} | real_norads
+                               | {t.norad for t in track_list if not t.known}
+                               | {t.norad for t in extra_tracks})
+                series_dict: dict[int, dict] = {}
+                clock_dict: dict | None = None
+                if blocks_ref and ds_mode == "full":
+                    sat_ref = Satrec.twoline2rv(blocks_ref[0][1], blocks_ref[0][2])
+                    base_epoch = _epoch_dt(sat_ref) + timedelta(minutes=t0_offset)
+                    n_steps = min(n_min_steps, 200)
+                    for tr in track_list + extra_tracks:
+                        if int(tr.norad) not in _imp_norads or not tr.lats:
+                            continue
+                        times = []
+                        positions = []
+                        for i, (la, lo) in enumerate(zip(tr.lats, tr.lons)):
+                            if la is None or lo is None or i >= n_steps:
+                                continue
+                            ts = (base_epoch + timedelta(minutes=i)).isoformat()
+                            times.append(ts)
+                            positions.append([float(lo), float(la), float(tr.alt0)])
+                        if len(times) > 2:
+                            series_dict[int(tr.norad)] = {
+                                "times": times,
+                                "positions": positions,
+                            }
+                    if series_dict:
+                        stop_epoch = base_epoch + timedelta(minutes=n_steps - 1)
+                        clock_dict = {
+                            "start_iso":   base_epoch.isoformat(),
+                            "stop_iso":    stop_epoch.isoformat(),
+                            "current_iso": base_epoch.isoformat(),
+                        }
                 # NO pasamos las layers de Streamlit — el modo Cesium tiene
                 # su propio panel de capas dentro del iframe (HUD), para no
                 # forzar un re-render que reinicie zoom y cámara cada vez
@@ -2101,6 +2152,8 @@ def _page_map() -> None:
                     primary_norad=case.evidence_bundle.object_id,
                     real_norads=real_norads,
                     extra_tracks=extra_tracks,
+                    series=series_dict,
+                    clock=clock_dict,
                     height=880,
                 )
                 import streamlit.components.v1 as components

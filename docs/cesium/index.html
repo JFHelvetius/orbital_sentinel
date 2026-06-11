@@ -97,6 +97,21 @@
       width: 14px; height: 14px;
       accent-color: #5fa8f5; cursor: pointer;
     }
+    /* Timeline + animation widgets — tono del design system */
+    .cesium-viewer-timelineContainer {
+      background: rgba(15,20,38,.92) !important;
+      border-top: 1px solid rgba(95,168,245,.25) !important;
+    }
+    .cesium-viewer-animationContainer {
+      background: rgba(15,20,38,.92) !important;
+    }
+    .cesium-animation-svgText { fill: #5fa8f5 !important; }
+    .cesium-animation-themeNormal { fill: #1a2236 !important; }
+    .cesium-animation-themeHover { fill: #2a3450 !important; }
+    .cesium-animation-themeSelect { fill: #4a90e2 !important; }
+    .cesium-animation-themeDisabled { fill: #2a3450 !important; }
+    .cesium-animation-themePauseHovered { fill: #5fa8f5 !important; }
+    .cesium-timeline-bar { background: rgba(15,20,38,.85) !important; }
     .loading {
       position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
       color: #5fa8f5; font-size: 14px;
@@ -346,11 +361,11 @@
     ];
 
     const viewer = new Cesium.Viewer('cesiumContainer', {
-      animation: false,
-      timeline: false,
+      animation: true,
+      timeline: true,
       baseLayerPicker: true,
       imageryProviderViewModels: imageryModels,
-      selectedImageryProviderViewModel: imageryModels[0],  // Esri sin etiquetas
+      selectedImageryProviderViewModel: imageryModels[0],
       terrainProviderViewModels: [],
       geocoder: false,
       homeButton: true,
@@ -435,17 +450,21 @@
       return rows.join('\n');
     }
 
+    // Map norad → entity para luego adjuntar SampledPositionProperty
+    let entityByNorad = {};
+
     // ── Render de satélites desde datos recibidos por postMessage ────
     function renderTracks(payload) {
       try {
-        const { tracks, primary_norad, real_norads, extra_tracks } = payload;
+        const { tracks, primary_norad, real_norads, extra_tracks, series, clock } = payload;
         const realSet = new Set(real_norads || []);
 
         viewer.entities.removeAll();
+        entityByNorad = {};
 
         function addSat(t, opts) {
           const pos = Cesium.Cartesian3.fromDegrees(t.lon0, t.lat0, t.alt0 * 1000.0);
-          viewer.entities.add({
+          const ent = viewer.entities.add({
             name: t.name,
             position: pos,
             point: {
@@ -486,6 +505,8 @@
               },
             });
           }
+          entityByNorad[t.norad] = ent;
+          return ent;
         }
 
         (tracks || []).forEach(t => {
@@ -555,6 +576,43 @@
             }, 800);
           }
           initialFlyDone = true;
+        }
+
+        // ── Time slider (ADR-0008 roadmap #4) ────────────────────────
+        // Si llegan series temporales, adjunta SampledPositionProperty
+        // a cada entity importante y configura el reloj del viewer.
+        if (series && clock && Object.keys(series).length > 0) {
+          try {
+            const start = Cesium.JulianDate.fromIso8601(clock.start_iso);
+            const stop  = Cesium.JulianDate.fromIso8601(clock.stop_iso);
+            const cur   = Cesium.JulianDate.fromIso8601(clock.current_iso || clock.start_iso);
+            viewer.clock.startTime   = start.clone();
+            viewer.clock.stopTime    = stop.clone();
+            viewer.clock.currentTime = cur.clone();
+            viewer.clock.clockRange  = Cesium.ClockRange.LOOP_STOP;
+            viewer.clock.multiplier  = 60;   // 1 s real = 1 min sim
+            viewer.clock.shouldAnimate = false;  // arranca pausado
+            if (viewer.timeline) {
+              viewer.timeline.zoomTo(start, stop);
+            }
+            for (const [norad, s] of Object.entries(series)) {
+              const ent = entityByNorad[parseInt(norad)];
+              if (!ent) continue;
+              const prop = new Cesium.SampledPositionProperty();
+              for (let i = 0; i < s.times.length; i++) {
+                const t = Cesium.JulianDate.fromIso8601(s.times[i]);
+                const p = Cesium.Cartesian3.fromDegrees(
+                  s.positions[i][0], s.positions[i][1], s.positions[i][2] * 1000.0
+                );
+                prop.addSample(t, p);
+              }
+              ent.position = prop;
+            }
+            document.getElementById('hudSub').textContent =
+              'Esri World Imagery · Animación temporal disponible';
+          } catch (clockErr) {
+            console.warn('series/clock setup failed:', clockErr);
+          }
         }
       } catch (e) {
         console.error('renderTracks failed:', e);

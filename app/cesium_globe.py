@@ -76,9 +76,17 @@ def html(
     real_norads: set[int] | None = None,
     extra_tracks: list[Any] | None = None,
     layers: dict[str, bool] | None = None,
+    series: dict[int, dict] | None = None,
+    clock: dict | None = None,
     height: int = 880,
 ) -> str:
-    """Genera el wrapper HTML que carga el iframe Cesium desde GitHub Pages."""
+    """Genera el wrapper HTML que carga el iframe Cesium desde GitHub Pages.
+
+    series: dict de NORAD → {"times":[iso8601...], "positions":[[lon,lat,alt_km]...]}
+            para los objetos importantes que deben animarse en el timeline.
+    clock:  {"start_iso": ..., "stop_iso": ..., "current_iso": ...} para
+            inicializar el reloj del viewer.
+    """
     real_norads = real_norads or set()
     extra_tracks = extra_tracks or []
     layers = layers or {}
@@ -88,6 +96,8 @@ def html(
         "real_norads": [int(n) for n in real_norads],
         "extra_tracks": _tracks_to_dict(extra_tracks, primary_norad),
         "layers": {k: bool(v) for k, v in layers.items()},
+        "series": {str(k): v for k, v in (series or {}).items()},
+        "clock": clock,
     }
     payload_json = json.dumps(payload, separators=(",", ":"))
 
