@@ -977,6 +977,109 @@ _EMBEDDED_GROUPS = {
 }
 
 
+def _tracks_to_czml(
+    tracks: list[Any],
+    *,
+    primary_norad: int,
+    case_label: str = "Orbital Sentinel export",
+    base_epoch: datetime | None = None,
+) -> str:
+    """Genera un documento CZML para abrir la escena en Cesium standalone.
+
+    CZML es el formato JSON de Cesium para visualización 4D (espacio + tiempo).
+    Cada satélite se serializa con su posición como serie temporal cuando
+    hay traza, o como punto fijo cuando solo hay posición actual.
+    Compatible con cesium.com/Apps/CesiumViewer/ o cualquier viewer Cesium.
+    """
+    import json as _json
+    if base_epoch is None:
+        base_epoch = datetime.now(timezone.utc)
+    span_minutes = max((len(t.lats) for t in tracks if t.lats), default=120)
+    start_iso = base_epoch.isoformat()
+    stop_iso = (base_epoch + timedelta(minutes=span_minutes - 1)).isoformat()
+    czml = [
+        {
+            "id": "document",
+            "name": case_label,
+            "version": "1.0",
+            "clock": {
+                "interval": f"{start_iso}/{stop_iso}",
+                "currentTime": start_iso,
+                "multiplier": 60,
+                "range": "LOOP_STOP",
+                "step": "SYSTEM_CLOCK_MULTIPLIER",
+            },
+        }
+    ]
+    for t in tracks:
+        is_primary = int(t.norad) == int(primary_norad)
+        color_rgba = [255, 215, 0, 255] if is_primary else (
+            [126, 255, 158, 220] if t.known else [255, 179, 0, 220]
+        )
+        entry: dict[str, Any] = {
+            "id": f"sat_{t.norad}",
+            "name": t.name,
+            "description": (
+                f"NORAD {t.norad} · alt {t.alt0:.0f} km · "
+                f"incl {t.incl:.2f}° · período {t.period_min:.1f} min"
+            ),
+            "point": {
+                "pixelSize": 16 if is_primary else 8,
+                "color": {"rgba": color_rgba},
+                "outlineColor": {"rgba": [255, 255, 255, 200]},
+                "outlineWidth": 2,
+            },
+            "label": {
+                "text": t.name,
+                "font": "11pt Inter, sans-serif",
+                "fillColor": {"rgba": color_rgba},
+                "outlineColor": {"rgba": [0, 0, 0, 255]},
+                "outlineWidth": 2,
+                "style": "FILL_AND_OUTLINE",
+                "pixelOffset": {"cartesian2": [10, 0]},
+                "showBackground": True,
+                "backgroundColor": {"rgba": [10, 15, 30, 192]},
+            },
+        }
+        # Posición — serie temporal si hay traza, fija si solo punto
+        if t.lats and t.lons:
+            cartographic = []
+            for i, (la, lo) in enumerate(zip(t.lats, t.lons)):
+                if la is None or lo is None:
+                    continue
+                cartographic.append(i * 60.0)         # seconds offset
+                cartographic.append(float(lo))         # longitude °
+                cartographic.append(float(la))         # latitude °
+                cartographic.append(float(t.alt0) * 1000.0)  # altitude m
+            entry["position"] = {
+                "interpolationAlgorithm": "LAGRANGE",
+                "interpolationDegree": 5,
+                "epoch": start_iso,
+                "cartographicDegrees": cartographic,
+            }
+            # Polilínea opcional para la traza
+            entry["path"] = {
+                "material": {
+                    "polylineGlow": {
+                        "color": {"rgba": color_rgba},
+                        "glowPower": 0.2,
+                    }
+                },
+                "width": 2 if is_primary else 1.2,
+                "leadTime": 0,
+                "trailTime": span_minutes * 60,
+                "resolution": 60,
+            }
+        else:
+            entry["position"] = {
+                "cartographicDegrees": [
+                    float(t.lon0), float(t.lat0), float(t.alt0) * 1000.0
+                ]
+            }
+        czml.append(entry)
+    return _json.dumps(czml, separators=(",", ":"))
+
+
 def _conjunction_risk_label(miss_km: float, sigma_km: float) -> tuple[str, str]:
     """Etiqueta cualitativa del riesgo según miss_distance y σ combinado.
 
@@ -1079,14 +1182,16 @@ def _filter_tracks(
     *,
     types: set[str] | None = None,
     owners: set[str] | None = None,
+    alt_range: tuple[float, float] | None = None,
+    incl_range: tuple[float, float] | None = None,
     primary_norad: int | None = None,
 ) -> list[Any]:
-    """Filtra tracks por tipo y operador usando metadata satcat.
+    """Filtra tracks por tipo, operador, altitud e inclinación.
 
     El primary siempre se mantiene aunque no pase el filtro (UX: el
     usuario quiere ver al menos su objeto de interés).
     """
-    if not types and not owners:
+    if not types and not owners and alt_range is None and incl_range is None:
         return tracks
     out = []
     for t in tracks:
@@ -1096,6 +1201,10 @@ def _filter_tracks(
         if types and _meta_type(t.norad) not in types:
             continue
         if owners and _meta_owner(t.norad) not in owners:
+            continue
+        if alt_range is not None and not (alt_range[0] <= t.alt_mean <= alt_range[1]):
+            continue
+        if incl_range is not None and not (incl_range[0] <= t.incl <= incl_range[1]):
             continue
         out.append(t)
     return out
@@ -1233,7 +1342,7 @@ def _fetch_group_tles(group: str) -> str | None:
     """Descarga un grupo CelesTrak. Falla rápido, no se cuelga.
 
     Probamos primero los .txt directos (más rápidos) y luego el API gp.php.
-    Timeout corto (20-30 s) y un solo intento por URL.
+    Timeout más generoso para datasets grandes (Starlink son 1.7 MB).
     """
     if "-" in group and group[:4].isdigit():
         urls = [
@@ -1247,8 +1356,13 @@ def _fetch_group_tles(group: str) -> str | None:
             # API gp.php como fallback
             f"https://celestrak.org/NORAD/elements/gp.php?GROUP={group}&FORMAT=tle",
         ]
-    # Timeout corto: prefiero fallar rápido a colgar la app
-    timeout = 30 if group in {"active", "starlink", "cubesat"} else 20
+    # Timeouts diferenciados según tamaño esperado del payload
+    if group == "starlink":
+        timeout = 90      # ~1.7 MB, puede tardar
+    elif group in {"active", "oneweb", "cubesat"}:
+        timeout = 60      # cientos de KB
+    else:
+        timeout = 25
     last_err = None
     for url in urls:
         try:
@@ -1263,6 +1377,7 @@ def _fetch_group_tles(group: str) -> str | None:
                 raw = r.read()
             text = raw.decode("utf-8", errors="replace")
             if text.strip() and text.count("1 ") >= 3:
+                _fetch_group_tles.last_error = None  # type: ignore[attr-defined]
                 return text
         except Exception as exc:
             last_err = f"{type(exc).__name__}: {str(exc)[:100]}"
@@ -1988,6 +2103,17 @@ def _page_map() -> None:
         now_utc = datetime.now(timezone.utc)
         st.markdown(f'<div class="live-clock">🕐 {now_utc.strftime("%H:%M:%S UTC")}</div>', unsafe_allow_html=True)
 
+        # Botón compacto para forzar refresco de TLEs (limpia el cache 1h)
+        if st.button("🔄 Refrescar TLEs", key="btn_refresh_tles",
+                     use_container_width=True,
+                     help="Limpia el cache (~1h) y vuelve a pedir TLEs a CelesTrak en la próxima carga."):
+            try:
+                _fetch_live_tles.clear()
+                _fetch_group_tles.clear()
+                st.success("Cache limpiado. Cambia el dataset o el slider para recargar.", icon="✅")
+            except Exception as exc:
+                st.warning(f"No se pudo limpiar: {exc}")
+
         case_labels = {_CASE_META.get(c, {}).get("title", c): c for c in cases}
         sel_label = st.radio(
             "Objeto principal", list(case_labels.keys()),
@@ -2093,6 +2219,16 @@ def _page_map() -> None:
             _common_owners, default=[], key="filt_owners",
             help="Filtra por el campo OWNER del satcat. Vacío = sin filtro.",
         )
+        filt_alt = st.slider(
+            "Altitud media (km)", 0, 45000, (0, 45000), step=100,
+            key="filt_alt",
+            help="Filtra por altitud media orbital. 200-2000 = LEO, 2000-35000 = MEO, ~36000 = GEO.",
+        )
+        filt_incl = st.slider(
+            "Inclinación (°)", 0.0, 180.0, (0.0, 180.0), step=1.0,
+            key="filt_incl",
+            help="Inclinación del plano orbital. ~0° = ecuatorial; ~98° = polar/SSO; ~51.6° = ISS.",
+        )
 
     # ── Selección de dataset ─────────────────────────────────────────────────
     ds_group, ds_mode = _DATASETS[dataset_label]
@@ -2138,11 +2274,15 @@ def _page_map() -> None:
 
     # ── Aplicar filtros por categoría (después de propagar, antes de render)
     _n_total = len(track_list)
-    if filt_types or filt_owners:
+    _alt_is_filter = filt_alt != (0, 45000)
+    _incl_is_filter = filt_incl != (0.0, 180.0)
+    if filt_types or filt_owners or _alt_is_filter or _incl_is_filter:
         track_list = _filter_tracks(
             track_list,
             types=set(filt_types) if filt_types else None,
             owners=set(filt_owners) if filt_owners else None,
+            alt_range=filt_alt if _alt_is_filter else None,
+            incl_range=filt_incl if _incl_is_filter else None,
             primary_norad=case.evidence_bundle.object_id,
         )
         _n_after = len(track_list)
@@ -2153,13 +2293,37 @@ def _page_map() -> None:
         if ds_group != "stations":
             if ds_tle is None:
                 err = getattr(_fetch_group_tles, "last_error", "timeout")
-                st.warning(
-                    f"⚠ No se pudo descargar **{ds_group}** desde CelesTrak.  "
-                    f"Mostrando estaciones por defecto.  "
-                    f"Razón: `{err[:120]}`. Prueba un dataset más pequeño o vuelve a intentar."
-                )
+                _is_large = ds_group in {"starlink", "active", "oneweb"}
+                _help_msgs = [
+                    f"⚠ No se pudo descargar **{ds_group}** desde CelesTrak.",
+                    f"Razón: `{(err or 'timeout')[:160]}`",
+                    "",
+                    "**Qué hacer:**",
+                ]
+                if _is_large:
+                    _help_msgs.extend([
+                        "• Es un dataset grande (cientos a miles de objetos). CelesTrak "
+                        "a veces lo rate-limita o tarda más del timeout.",
+                        "• Espera 1-2 minutos y vuelve a intentar — los timeouts "
+                        "actuales son 60-90 s para datasets grandes.",
+                        "• Si persiste, prueba con un dataset más pequeño "
+                        "(GPS, Galileo, Iridium, etc.) — todos los embebidos cargan "
+                        "instantáneamente sin red.",
+                    ])
+                else:
+                    _help_msgs.extend([
+                        "• Posible problema temporal de red o de CelesTrak.",
+                        "• Pulsa **🔄 Refrescar TLEs** arriba para limpiar el cache "
+                        "y forzar otro intento.",
+                        "• Mientras tanto, el dataset por defecto sigue activo "
+                        "(estaciones).",
+                    ])
+                st.warning("  \n".join(_help_msgs))
             elif len(track_list) == 0:
-                st.warning(f"⚠ Se descargaron TLEs de **{ds_group}** pero ninguno propagó.")
+                st.warning(
+                    f"⚠ Se descargaron TLEs de **{ds_group}** "
+                    f"pero ninguno propagó correctamente (TLE corrupto o sin datos)."
+                )
             else:
                 st.success(
                     f"✅ **{len(track_list)} objetos** de **{ds_group}**  ·  "
@@ -2421,6 +2585,27 @@ def _page_map() -> None:
                     f"**{t.name}**  \nNORAD {t.norad} · {t.alt_mean:.0f} km · {t.incl:.1f}°",
                     icon="❓",
                 )
+
+        # ── Export de la escena a CZML (abre en Cesium standalone) ─────
+        st.divider()
+        try:
+            czml_text = _tracks_to_czml(
+                track_list,
+                primary_norad=case.evidence_bundle.object_id,
+                case_label=f"Orbital Sentinel · {selected}",
+            )
+            st.download_button(
+                "⬇ Exportar escena a CZML",
+                data=czml_text,
+                file_name=f"{selected}_scene.czml",
+                mime="application/json",
+                use_container_width=True,
+                help=("Descarga la escena (satélites + trazas + tiempo) en formato "
+                      "Cesium Language. Abre el JSON en cesium.com/Apps/CesiumViewer/ "
+                      "para visualizarlo offline en cualquier viewer Cesium."),
+            )
+        except Exception:
+            pass
 
     # ── Tabla completa (clicable: selecciona fila → centra en el globo) ──────
     all_objs = track_list + extra_tracks
