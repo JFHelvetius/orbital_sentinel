@@ -689,8 +689,17 @@ button[kind="primary"]:hover { background: var(--accent-bri) !important; }
 .stApp [data-testid="element-container"] {
   margin-bottom: 0 !important;
 }
-/* HorizontalBlock — sin gap inferior */
-[data-testid="stHorizontalBlock"] { margin-bottom: 0 !important; gap: 1rem !important; }
+/* HorizontalBlock — sin gap inferior; gap horizontal reducido */
+[data-testid="stHorizontalBlock"] {
+  margin-bottom: 0 !important;
+  gap: .5rem !important;
+}
+/* Columnas: la del globo sin padding right; la del panel sin padding left
+   — para que el contenido use el 100% de su ancho asignado */
+[data-testid="column"] {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
 /* Apretar el gap interno del contenedor vertical de la columna del globo */
 [data-testid="column"] [data-testid="stVerticalBlock"] {
   gap: .35rem !important;
@@ -2216,8 +2225,9 @@ def _page_map() -> None:
     # ── Carga TLEs anticipada (no bloquea el layout) ──────────────────────────
     tle_text, tle_source = _fetch_live_tles()
 
-    # ── Layout: globo izquierda · panel control derecha ───────────────────────
-    col_globe, col_ctrl = st.columns([5, 1], gap="medium")
+    # ── Layout: globo izquierda · panel control derecha
+    # Ratio 6:1 con gap=small → el globo ocupa ~86% del ancho del tab.
+    col_globe, col_ctrl = st.columns([6, 1], gap="small")
 
     with col_ctrl:
         now_utc = datetime.now(timezone.utc)
