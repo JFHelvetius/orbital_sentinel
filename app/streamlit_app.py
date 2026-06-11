@@ -569,7 +569,13 @@ button[kind="primary"]:hover { background: var(--accent-bri) !important; }
     0 0 80px rgba(30,90,200,0.30),
     0 0 240px rgba(15,60,160,0.18);
   overflow: hidden;
-  margin: .4rem 0 .8rem;
+  margin: .4rem 0 .4rem;
+}
+/* components.v1.html iframe (Cesium) — mismo trato que el chart Plotly */
+[data-testid="stIFrame"], iframe[title="streamlit_app"] {
+  margin: .4rem 0 .4rem !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(74,144,226,.18) !important;
 }
 [data-testid="stPlotlyChart"]:hover {
   box-shadow:
@@ -861,15 +867,29 @@ _MAJOR_CITIES = [
 
 
 _DATASETS = {
-    # Datasets embebidos (cargan al instante)
+    # ── Estaciones tripuladas y módulos ───────────────────────────────
     "🏠 Estaciones (~25)":               ("stations",       "full"),
-    "👁 Visibles a simple vista (~150)":  ("visual",         "full"),
-    "🌦 Meteorológicos (~60)":           ("weather",        "full"),
+    # ── Navegación global ─────────────────────────────────────────────
     "📡 GPS (~30)":                      ("gps-ops",        "full"),
+    "🇪🇺 Galileo (~33)":                  ("galileo",        "full"),
+    "🇷🇺 GLONASS (~28)":                  ("glo-ops",        "full"),
+    "🇨🇳 BeiDou (~54)":                   ("beidou",         "full"),
+    # ── Comunicaciones ────────────────────────────────────────────────
     "🛰 Iridium NEXT (~75)":             ("iridium-NEXT",   "full"),
+    "📞 TDRS (~26)":                     ("tdrss",          "full"),
+    # ── Meteorología y observación de la Tierra ──────────────────────
+    "🌦 Meteorológicos (~60)":           ("weather",        "full"),
+    "🌍 Observación terrestre (~167)":   ("resource",       "full"),
+    # ── Visibles y exploración ───────────────────────────────────────
+    "👁 Visibles a simple vista (~150)":  ("visual",         "full"),
+    "🧪 Ciencia (~49)":                  ("science",        "full"),
+    "🆘 Search & Rescue (~84)":          ("sarsat",         "full"),
+    "📻 Amateur Radio (~93)":            ("amateur",        "full"),
+    "🚀 CubeSats (~87)":                  ("cubesat",        "full"),
+    # ── Recientes y geoestacionarios ─────────────────────────────────
     "🚀 Lanzamientos 30 días (~300)":    ("last-30-days",   "lite"),
     "🌐 Geoestacionarios (~600)":        ("geo",            "lite"),
-    # Datasets grandes — solo desde CelesTrak en runtime (pueden fallar)
+    # ── Datasets grandes — solo desde CelesTrak en runtime (pueden fallar)
     "📞 OneWeb (~650) ⚠️":               ("oneweb",         "lite"),
     "📡 Starlink (~6000) ⚠️":             ("starlink",       "lite"),
     "🌍 Activos LEO (~3000) ⚠️":          ("active",         "lite"),
@@ -883,6 +903,15 @@ _EMBEDDED_GROUPS = {
     "geo":          "TLE_GEO",
     "iridium-NEXT": "TLE_IRIDIUM_NEXT",
     "last-30-days": "TLE_LAST_30_DAYS",
+    "galileo":      "TLE_GALILEO",
+    "glo-ops":      "TLE_GLONASS",
+    "beidou":       "TLE_BEIDOU",
+    "tdrss":        "TLE_TDRSS",
+    "resource":     "TLE_EO_RESOURCE",
+    "sarsat":       "TLE_SARSAT",
+    "amateur":      "TLE_AMATEUR",
+    "cubesat":      "TLE_CUBESAT",
+    "science":      "TLE_SCIENCE",
 }
 
 
@@ -2109,7 +2138,6 @@ def _page_map() -> None:
                 )
 
     # ── Tabla completa (clicable: selecciona fila → centra en el globo) ──────
-    st.divider()
     all_objs = track_list + extra_tracks
     show_table = st.toggle(
         f"📋 Ver tabla completa — {len(all_objs)} objetos · clic en fila para centrar el globo",

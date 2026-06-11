@@ -68,12 +68,17 @@ TYPES: dict[str, str] = {
 
 
 def collect_norads() -> set[int]:
-    """Extrae NORADs únicos de los TLE embebidos y del fixture stations."""
+    """Extrae NORADs únicos de los TLE embebidos y del fixture stations.
+
+    Detecta automáticamente todas las variables `TLE_*` que sean strings,
+    así no hay que actualizar el script cuando se añaden grupos nuevos.
+    """
     norads: set[int] = set()
     sys.path.insert(0, str(APP))
     import tle_embedded as te  # type: ignore
-    for var in ["TLE_VISUAL", "TLE_WEATHER", "TLE_GPS_OPS", "TLE_GEO",
-                "TLE_IRIDIUM_NEXT", "TLE_LAST_30_DAYS"]:
+    tle_vars = [v for v in dir(te)
+                if v.startswith("TLE_") and isinstance(getattr(te, v, None), str)]
+    for var in tle_vars:
         text = getattr(te, var, "")
         for ln in text.splitlines():
             if ln.startswith("1 "):
@@ -81,6 +86,7 @@ def collect_norads() -> set[int]:
                     norads.add(int(ln.split()[1].rstrip("U")))
                 except Exception:
                     pass
+    print(f"  ({len(tle_vars)} grupos TLE: {', '.join(v[4:] for v in tle_vars)})")
     # NORADs del fixture de stations embebido en streamlit_app.py
     sa = (APP / "streamlit_app.py").read_text(encoding="utf-8")
     for m in re.finditer(r"1 (\d{5})U", sa):
