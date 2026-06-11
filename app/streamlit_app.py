@@ -689,16 +689,28 @@ button[kind="primary"]:hover { background: var(--accent-bri) !important; }
 .stApp [data-testid="element-container"] {
   margin-bottom: 0 !important;
 }
-/* HorizontalBlock — sin gap inferior; gap horizontal reducido */
+/* HorizontalBlock — sin gap inferior NI horizontal (nuclear) */
 [data-testid="stHorizontalBlock"] {
   margin-bottom: 0 !important;
-  gap: .5rem !important;
+  gap: 0 !important;
 }
-/* Columnas: la del globo sin padding right; la del panel sin padding left
-   — para que el contenido use el 100% de su ancho asignado */
-[data-testid="column"] {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+/* Columnas: cero padding, gap visual lo controla CSS si hace falta */
+.stApp [data-testid="column"] {
+  padding: 0 !important;
+}
+/* Pequeña separación visual entre la columna del globo y la del panel
+   usando border en lugar de gap — el border no consume espacio del
+   contenido y se ve fino y profesional. */
+.stApp [data-testid="column"]:not(:last-child) {
+  border-right: 1px solid var(--border-soft);
+  padding-right: .5rem !important;
+}
+.stApp [data-testid="column"]:not(:first-child) {
+  padding-left: .5rem !important;
+}
+/* iframe Cesium / chart Plotly: 0 margin abajo (ya estaba pero refuerzo) */
+[data-testid="stIFrame"], [data-testid="stPlotlyChart"] {
+  margin-bottom: 0 !important;
 }
 /* Apretar el gap interno del contenedor vertical de la columna del globo */
 [data-testid="column"] [data-testid="stVerticalBlock"] {
@@ -797,54 +809,23 @@ a:hover { color: var(--accent) !important; text-decoration: underline !important
   border-color: var(--border) !important;
 }
 
-/* ── File uploader: textos del dropzone bien legibles ──────────────────── */
+/* ── File uploader: mínima personalización para no romper layout interno ── */
 [data-testid="stFileUploader"] section {
   background: var(--bg-card) !important;
   border: 1px dashed var(--border-strong) !important;
   border-radius: var(--radius) !important;
-  padding: 1.2rem 1.4rem !important;
 }
 [data-testid="stFileUploader"] section:hover {
   border-color: var(--accent) !important;
-  background: var(--bg-elevated) !important;
 }
-/* "Drag and drop file here" — sin superposición con el icono */
-[data-testid="stFileUploaderDropzone"] {
-  padding: 0 !important;
-  background: transparent !important;
-}
-[data-testid="stFileUploaderDropzoneInstructions"],
-[data-testid="stFileUploaderDropzone"] > div {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-start !important;
-  gap: .25rem !important;
+/* Color del texto del dropzone — sin tocar display ni posicionamiento.
+   El layout interno de Streamlit (flex con icono + textos) se respeta. */
+[data-testid="stFileUploader"] section,
+[data-testid="stFileUploader"] section * {
   color: var(--text-pri) !important;
 }
-[data-testid="stFileUploaderDropzoneInstructions"] span,
-[data-testid="stFileUploaderDropzoneInstructions"] small {
+[data-testid="stFileUploader"] section small {
   color: var(--text-sec) !important;
-  font-size: .85rem !important;
-  line-height: 1.4 !important;
-  margin: 0 !important;
-}
-[data-testid="stFileUploaderDropzoneInstructions"] > div:first-child {
-  font-weight: 600 !important;
-  color: var(--text-pri) !important;
-  font-size: .95rem !important;
-}
-/* Botón "Browse files" del uploader */
-[data-testid="stFileUploader"] button {
-  background: var(--accent) !important;
-  color: white !important;
-  border: 1px solid var(--accent-bri) !important;
-  border-radius: 6px !important;
-  padding: .4rem 1rem !important;
-  font-weight: 600 !important;
-  font-size: .85rem !important;
-}
-[data-testid="stFileUploader"] button:hover {
-  background: var(--accent-bri) !important;
 }
 </style>
 """

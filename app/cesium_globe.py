@@ -31,7 +31,7 @@ _PAGES_URL = "https://jfhelvetius.github.io/orbital_sentinel/cesium/"
 # Cache buster — incrementar cuando se cambia docs/cesium/index.html
 # para invalidar el cache CDN de GitHub Pages y forzar fetch fresco
 # desde el navegador. Versión sigue ADR-0008 enmienda 1.
-_CACHE_BUSTER = "2026.06.10.6"
+_CACHE_BUSTER = "2026.06.10.7"
 
 # Carga opcional del catálogo satcat embebido. Si falta, los infobox
 # muestran solo la info derivada del TLE (altitud, inclinación, etc.).
@@ -116,13 +116,13 @@ def html(
       width: 100%; height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }}
-    /* iframe ocupa el 100% del wrapper — el contenedor padre fija la
-       altura, evitando el gap negro que había con height fijo en px */
+    /* iframe ocupa el 100% del wrapper sin margen, sin gap inferior */
     #cesium-frame {{
       width: 100%; height: 100%;
       border: 0; border-radius: 14px;
       display: block;
       background: #01020a;
+      margin: 0; padding: 0;
     }}
     .err {{
       position: absolute; top: 14px; left: 14px; right: 14px;
