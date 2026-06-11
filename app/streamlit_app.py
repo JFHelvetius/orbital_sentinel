@@ -90,6 +90,23 @@ _ISS_DOCK: set[int] = {
 }
 _CSS_DOCK: set[int] = {48274, 53239, 54216, 49271, 69049, 69180}
 
+# Para cada caso, el dataset que CONTIENE al primary. Cuando el usuario
+# selecciona un caso, sugerimos cambiar al dataset que efectivamente
+# tiene su primary; de lo contrario el primary no aparece en la escena.
+_CASE_PREFERRED_DATASET = {
+    "iss_conjunction_001": "🏠 Estaciones (~25)",
+    "tiangong_conjunction_002": "🏠 Estaciones (~25)",
+    "gps_iiia_conjunction_001":  "📡 GPS (~30)",
+    "galileo_conjunction_001":   "🇪🇺 Galileo (~33)",
+    "glonass_conjunction_001":   "🇷🇺 GLONASS (~28)",
+    "beidou_conjunction_001":    "🇨🇳 BeiDou (~54)",
+    "iridium_conjunction_001":   "🛰 Iridium NEXT (~75)",
+    "intelsat_geo_conjunction_001": "📺 INTELSAT (~56)",
+    "earth_obs_conjunction_001": "🌍 Earth observation Esri (~167)",
+    "weather_conjunction_001":   "🌦 Meteorológicos (~60)",
+    "cubesat_conjunction_001":   "🚀 CubeSats (~87)",
+}
+
 _CASE_META = {
     "iss_conjunction_001": {
         "title": "ISS  ·  NORAD 25544",
@@ -771,15 +788,54 @@ a:hover { color: var(--accent) !important; text-decoration: underline !important
   border-color: var(--border) !important;
 }
 
-/* ── File uploader ─────────────────────────────────────────────────────── */
+/* ── File uploader: textos del dropzone bien legibles ──────────────────── */
 [data-testid="stFileUploader"] section {
   background: var(--bg-card) !important;
   border: 1px dashed var(--border-strong) !important;
   border-radius: var(--radius) !important;
+  padding: 1.2rem 1.4rem !important;
 }
 [data-testid="stFileUploader"] section:hover {
   border-color: var(--accent) !important;
   background: var(--bg-elevated) !important;
+}
+/* "Drag and drop file here" — sin superposición con el icono */
+[data-testid="stFileUploaderDropzone"] {
+  padding: 0 !important;
+  background: transparent !important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"],
+[data-testid="stFileUploaderDropzone"] > div {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: .25rem !important;
+  color: var(--text-pri) !important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"] span,
+[data-testid="stFileUploaderDropzoneInstructions"] small {
+  color: var(--text-sec) !important;
+  font-size: .85rem !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+}
+[data-testid="stFileUploaderDropzoneInstructions"] > div:first-child {
+  font-weight: 600 !important;
+  color: var(--text-pri) !important;
+  font-size: .95rem !important;
+}
+/* Botón "Browse files" del uploader */
+[data-testid="stFileUploader"] button {
+  background: var(--accent) !important;
+  color: white !important;
+  border: 1px solid var(--accent-bri) !important;
+  border-radius: 6px !important;
+  padding: .4rem 1rem !important;
+  font-weight: 600 !important;
+  font-size: .85rem !important;
+}
+[data-testid="stFileUploader"] button:hover {
+  background: var(--accent-bri) !important;
 }
 </style>
 """
@@ -2184,7 +2240,16 @@ def _page_map() -> None:
             key="map_case_radio", label_visibility="visible",
         )
         selected = case_labels[sel_label]
+        # Si el caso cambió, intenta alinear el dataset al que contiene el primary
+        # (el primary debe estar visible para que se centre y se marque en oro).
+        _prev_case = st.session_state.get("map_case")
         st.session_state["map_case"] = selected
+        if _prev_case != selected:
+            _preferred = _CASE_PREFERRED_DATASET.get(selected)
+            if _preferred and _preferred in _DATASETS:
+                # Actualiza la session_state para que el selectbox del dataset
+                # arranque con el dataset correcto en este rerun
+                st.session_state["map_dataset"] = _preferred
 
         search_q = st.text_input(
             "Buscar", placeholder="Nombre o NORAD…",
@@ -2616,21 +2681,18 @@ def _page_map() -> None:
 
         if real_evs:
             st.divider()
-            st.markdown("**⚠ Conjunciones**")
-            for be in real_evs:
+            st.markdown(f"**⚠ Conjunciones ({len(real_evs)})**")
+            for be in real_evs[:3]:  # solo top 3 en col_ctrl, resto va debajo del globo
                 hp    = be.derived_evidence.honesty_payload
                 norad = int(hp.get("other_norad_cat_id", 0))
                 miss  = float(hp.get("miss_distance_km", 0))
-                sigma = float(hp.get("combined_sigma_at_tca_km", 0))
                 tca   = be.derived_evidence.event_epoch.strftime("%d %b %H:%M")
-                level, expl = _conjunction_risk_label(miss, sigma)
                 st.error(
-                    f"**{_label(norad)}**  \n{miss:.2f} km · σ {sigma:.1f} km · {tca} UTC  \n"
-                    f"🎯 Nivel **{level}** · {expl}",
+                    f"**{_label(norad)}**  \n{miss:.2f} km · {tca} UTC",
                     icon="⚠",
                 )
-            with st.expander("¿Cómo interpretar estos datos?"):
-                st.markdown(_conjunction_explainer_md())
+            if len(real_evs) > 3:
+                st.caption(f"+ {len(real_evs)-3} más debajo del globo →")
 
         if extra_tracks:
             st.divider()
@@ -2650,26 +2712,79 @@ def _page_map() -> None:
                     icon="❓",
                 )
 
-        # ── Export de la escena a CZML (abre en Cesium standalone) ─────
-        st.divider()
-        try:
-            czml_text = _tracks_to_czml(
-                track_list,
-                primary_norad=case.evidence_bundle.object_id,
-                case_label=f"Orbital Sentinel · {selected}",
-            )
-            st.download_button(
-                "⬇ Exportar escena a CZML",
-                data=czml_text,
-                file_name=f"{selected}_scene.czml",
-                mime="application/json",
-                use_container_width=True,
-                help=("Descarga la escena (satélites + trazas + tiempo) en formato "
-                      "Cesium Language. Abre el JSON en cesium.com/Apps/CesiumViewer/ "
-                      "para visualizarlo offline en cualquier viewer Cesium."),
-            )
-        except Exception:
-            pass
+        # El bloque CZML completo va abajo del globo (col_ctrl queda compacto)
+
+    # ── Panel de conjunciones detalladas (aprovecha el ancho del globo) ──
+    if real_evs:
+        with st.container(border=True):
+            st.markdown(f"### ⚠ Conjunciones detectadas ({len(real_evs)})")
+            for be in real_evs:
+                hp    = be.derived_evidence.honesty_payload
+                norad = int(hp.get("other_norad_cat_id", 0))
+                miss  = float(hp.get("miss_distance_km", 0))
+                sigma = float(hp.get("combined_sigma_at_tca_km", 0))
+                tca   = be.derived_evidence.event_epoch.strftime("%d %b %Y · %H:%M:%S")
+                level, expl = _conjunction_risk_label(miss, sigma)
+                level_color = {
+                    "crítico": "#ef4444", "alto": "#f59e0b",
+                    "moderado": "#3b82f6", "bajo": "#10b981",
+                    "indeterminado": "#64748b",
+                }.get(level, "#64748b")
+                c1, c2, c3 = st.columns([2, 1, 3])
+                with c1:
+                    st.markdown(f"**{_label(norad)}**")
+                    st.caption(f"TCA: {tca} UTC")
+                with c2:
+                    st.markdown(f"**{miss:.2f} km**")
+                    st.caption(f"σ {sigma:.1f} km")
+                with c3:
+                    st.markdown(
+                        f'<div style="background:{level_color}22;border-left:3px solid {level_color};'
+                        f'padding:6px 10px;border-radius:4px;">'
+                        f'<b style="color:{level_color};">Nivel {level}</b><br>'
+                        f'<span style="font-size:.85em;color:var(--text-sec);">{expl}</span>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+            if st.toggle("📖 ¿Cómo interpretar estos datos?", key="map_conj_explainer"):
+                st.markdown(_conjunction_explainer_md())
+
+    # ── Export CZML al main flow, con presencia y explicación ───────────────
+    try:
+        czml_text = _tracks_to_czml(
+            track_list,
+            primary_norad=case.evidence_bundle.object_id,
+            case_label=f"Orbital Sentinel · {selected}",
+        )
+        with st.container(border=True):
+            c1, c2 = st.columns([3, 1])
+            with c1:
+                st.markdown("### 🌐 Exportar escena a CZML")
+                st.markdown(
+                    "**CZML** *(Cesium Language)* es el formato JSON nativo de **Cesium** "
+                    "para escenas espacio-temporales: incluye trayectorias, posiciones, "
+                    "tiempos y atributos visuales. La escena descargada se abre en "
+                    "[cesium.com/Apps/CesiumViewer/](https://cesium.com/Apps/CesiumViewer/) "
+                    "(arrastra el archivo) o en cualquier visor Cesium standalone, sin "
+                    "necesidad de servidor, sin internet."
+                )
+                st.caption(
+                    f"Contiene {len(track_list)} satélites · trazas Lagrange-interpoladas · "
+                    f"primary destacado en oro · paleta consistente con la app · "
+                    f"compatible con cualquier herramienta que consuma CZML."
+                )
+            with c2:
+                st.download_button(
+                    "⬇ Descargar .czml",
+                    data=czml_text,
+                    file_name=f"{selected}_scene.czml",
+                    mime="application/json",
+                    use_container_width=True,
+                    type="primary",
+                )
+                st.caption(f"~{len(czml_text)//1024} KB")
+    except Exception:
+        pass
 
     # ── Tabla completa (clicable: selecciona fila → centra en el globo) ──────
     all_objs = track_list + extra_tracks
