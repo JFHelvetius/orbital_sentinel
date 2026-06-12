@@ -31,6 +31,9 @@ import streamlit as st
 from sgp4.api import Satrec
 from sgp4.api import jday as _jday
 
+from orbital_sentinel.analytics.conjunctions.analysis import (
+    CO_ORBITING_RELATIVE_VELOCITY_THRESHOLD_KM_S,
+)
 from orbital_sentinel.analytics.investigations.models import InvestigationCase
 from orbital_sentinel.analytics.investigations.verifier import verify_investigation_case
 
@@ -871,6 +874,7 @@ def _ev_rows(case: InvestigationCase) -> list[dict[str, Any]]:
                 "TCA (UTC)": ev.event_epoch.strftime("%Y-%m-%d  %H:%M"),
                 "Miss (km)": round(float(hp.get("miss_distance_km", 0)), 4),
                 "σ (km)": round(float(hp.get("combined_sigma_at_tca_km", 0)), 2),
+                "Co-orbitando": "🔗 sí" if _is_co_orbiting(hp) else "—",
                 "Refinado": "✓" if hp.get("tca_was_refined") else "—",
                 "evidence_id": _short(ev.evidence_id, 10),
             })
@@ -1223,6 +1227,27 @@ def _conjunction_risk_label(miss_km: float, sigma_km: float) -> tuple[str, str]:
     return ("bajo",
             f"La distancia mínima ({miss_km:.1f} km) es mucho mayor que "
             f"la incertidumbre ({sigma_km:.1f} km). El paso es de control rutinario.")
+
+
+def _is_co_orbiting(hp: dict[str, Any]) -> bool:
+    """¿Esta conjunción es co-orbiting/acoplada? (ADR-0044).
+
+    Prefiere el campo ``is_apparent_co_orbiting`` si la evidencia lo trae
+    (casos ≥ ADR-0044). Para casos anteriores lo deriva de
+    ``relative_velocity_km_s`` con el MISMO umbral declarado del backend, que
+    es la única fuente de verdad. Función pura de la velocidad relativa.
+    """
+    stored = hp.get("is_apparent_co_orbiting")
+    if isinstance(stored, bool):
+        return stored
+    rel_v = hp.get("relative_velocity_km_s")
+    if rel_v is None:
+        return False
+    threshold = float(
+        hp.get("co_orbiting_velocity_threshold_km_s")
+        or CO_ORBITING_RELATIVE_VELOCITY_THRESHOLD_KM_S
+    )
+    return float(rel_v) < threshold
 
 
 def _conjunction_explainer_md() -> str:
@@ -2715,24 +2740,43 @@ def _page_map() -> None:
                 miss  = float(hp.get("miss_distance_km", 0))
                 sigma = float(hp.get("combined_sigma_at_tca_km", 0))
                 tca   = be.derived_evidence.event_epoch.strftime("%d %b %Y · %H:%M:%S")
-                level, expl = _conjunction_risk_label(miss, sigma)
-                level_color = {
-                    "crítico": "#ef4444", "alto": "#f59e0b",
-                    "moderado": "#3b82f6", "bajo": "#10b981",
-                    "indeterminado": "#64748b",
-                }.get(level, "#64748b")
+                co_orbiting = _is_co_orbiting(hp)
+                rel_v = float(hp.get("relative_velocity_km_s", 0.0))
+                if co_orbiting:
+                    # ADR-0044: velocidad relativa ≈ 0 ⇒ co-movimiento (acoplado o
+                    # en formación), NO geometría de colisión. Mostrar "crítico"
+                    # por un miss de 0 km aquí sería deshonesto (P2).
+                    level_color = "#8b5cf6"
+                    badge_title = "🔗 Co-orbitando / acoplado"
+                    expl = (
+                        f"Velocidad relativa ≈ {rel_v*1000:.1f} m/s (prácticamente nula): "
+                        f"los dos objetos comparten órbita —acoplados o en formación—, "
+                        f"no es una geometría de colisión. El miss ≈ 0 km es esperado, "
+                        f"no una alerta."
+                    )
+                else:
+                    level, expl = _conjunction_risk_label(miss, sigma)
+                    level_color = {
+                        "crítico": "#ef4444", "alto": "#f59e0b",
+                        "moderado": "#3b82f6", "bajo": "#10b981",
+                        "indeterminado": "#64748b",
+                    }.get(level, "#64748b")
+                    badge_title = f"Nivel {level}"
                 c1, c2, c3 = st.columns([2, 1, 3])
                 with c1:
                     st.markdown(f"**{_label(norad)}**")
                     st.caption(f"TCA: {tca} UTC")
                 with c2:
                     st.markdown(f"**{miss:.2f} km**")
-                    st.caption(f"σ {sigma:.1f} km")
+                    st.caption(
+                        f"v_rel {rel_v*1000:.1f} m/s" if co_orbiting
+                        else f"σ {sigma:.1f} km"
+                    )
                 with c3:
                     st.markdown(
                         f'<div style="background:{level_color}22;border-left:3px solid {level_color};'
                         f'padding:6px 10px;border-radius:4px;">'
-                        f'<b style="color:{level_color};">Nivel {level}</b><br>'
+                        f'<b style="color:{level_color};">{badge_title}</b><br>'
                         f'<span style="font-size:.85em;color:var(--text-sec);">{expl}</span>'
                         f'</div>',
                         unsafe_allow_html=True,
