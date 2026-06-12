@@ -330,3 +330,84 @@ def test_build_conjunction_propagates_analysis_engine_version() -> None:
     det = _make_conjunction(norad_a=1, norad_b=2)
     for ev in build_conjunction_evidence([det]):
         assert ev.analysis_engine_version == det.analysis_engine_version
+
+
+# --- consumed_source_hashes / provenance por-evidencia (ADR-0043) ------
+
+
+def _series_with_maneuver_distinct(
+    n: int = 20, jump_at: int = 15,
+) -> OrbitalElementSeries:
+    """Como _series_with_maneuver pero con content_hash_source distinto por
+    elemento, para verificar que el par before/after consumido es preciso."""
+    els = []
+    for i in range(n):
+        bump = 1e-2 if i > jump_at else 0.0
+        els.append(
+            make_element(
+                days_offset=float(i),
+                mean_motion=15.5 + 1e-7 * i + bump,
+                tle_hash=f"{i:064x}",
+                content_hash_source=f"{(i + 5000):064x}",
+            )
+        )
+    return OrbitalElementSeries.from_elements(els)
+
+
+def _series_with_anomaly_distinct(
+    n: int = 25, shift_at: int = 21,
+) -> OrbitalElementSeries:
+    els = []
+    for i in range(n):
+        bump = 1e-2 if i >= shift_at else 0.0
+        els.append(
+            make_element(
+                days_offset=float(i),
+                mean_motion=15.5 + bump,
+                tle_hash=f"{i:064x}",
+                content_hash_source=f"{(i + 7000):064x}",
+            )
+        )
+    return OrbitalElementSeries.from_elements(els)
+
+
+def test_build_maneuver_consumed_hashes_are_before_after_pair() -> None:
+    series = _series_with_maneuver_distinct()
+    result = detect_maneuvers(series, baseline_window_days=30.0, clock=_fixed_clock)
+    evs = build_maneuver_evidence(result)
+    assert evs
+    for ev, src in zip(evs, result.events, strict=True):
+        expected = sorted({
+            src.content_hash_source_before, src.content_hash_source_after,
+        })
+        assert ev.honesty_payload["consumed_source_hashes"] == expected
+        # Distinct sources → exactamente dos hashes consumidos.
+        assert len(ev.honesty_payload["consumed_source_hashes"]) == 2
+
+
+def test_build_anomaly_consumed_hash_is_observed_point() -> None:
+    series = _series_with_anomaly_distinct()
+    result = detect_anomalies(series, baseline_window_days=30.0, clock=_fixed_clock)
+    evs = build_anomaly_evidence(result)
+    assert evs
+    for ev, src in zip(evs, result.events, strict=True):
+        assert ev.honesty_payload["content_hash_source"] == src.content_hash_source
+        assert ev.honesty_payload["consumed_source_hashes"] == [
+            src.content_hash_source
+        ]
+
+
+def test_build_conjunction_consumed_hash_is_side_specific() -> None:
+    det = _make_conjunction(norad_a=11111, norad_b=22222)
+    by_norad = {e.object_id: e for e in build_conjunction_evidence([det])}
+    assert by_norad[11111].honesty_payload["consumed_source_hashes"] == [
+        det.element_a_content_hash_source
+    ]
+    assert by_norad[22222].honesty_payload["consumed_source_hashes"] == [
+        det.element_b_content_hash_source
+    ]
+    # El lado a NO arrastra el TLE del objeto b (precisión por-evidencia).
+    assert (
+        det.element_b_content_hash_source
+        not in by_norad[11111].honesty_payload["consumed_source_hashes"]
+    )

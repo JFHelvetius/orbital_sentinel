@@ -11,6 +11,7 @@ import pytest
 from orbital_sentinel.analytics.agent_contract import build_agent_input
 from orbital_sentinel.analytics.bundles import build_evidence_bundle
 from orbital_sentinel.analytics.evidence import (
+    CONSUMED_SOURCE_HASHES_KEY,
     EVIDENCE_TYPE_MANEUVER,
     DerivedEvidence,
     EvidenceCatalog,
@@ -55,9 +56,13 @@ def _make_snapshot(
 
 def _make_evidence(
     *, object_id: int = 25544, detector_event_id: str = "evt",
-    days_offset: float = 0.0,
+    days_offset: float = 0.0, consumed: list[str] | None = None,
 ) -> DerivedEvidence:
     ep = EPOCH + timedelta(days=days_offset)
+    honesty: dict = {"detection_method_name": "test"}
+    if consumed is not None:
+        # ADR-0043: provenance por-evidencia declarada en honesty_payload.
+        honesty[CONSUMED_SOURCE_HASHES_KEY] = list(consumed)
     return DerivedEvidence(
         evidence_id=compute_evidence_id(
             source_detector="maneuver_detection_v01", object_id=object_id,
@@ -69,7 +74,7 @@ def _make_evidence(
         source_detector="maneuver_detection_v01",
         detector_event_id=detector_event_id,
         event_epoch=ep,
-        honesty_payload={"detection_method_name": "test"},
+        honesty_payload=honesty,
         analysis_engine_version="0.1.0",
     )
 
@@ -325,6 +330,77 @@ def test_derive_with_missing_raw_snapshot_raises(tmp_path: Path) -> None:
 
 
 # --- Determinismo crítico ante reorden de inserts -------------
+
+
+# --- Granularidad por-evidencia (ADR-0043) -------------------------
+
+
+def _insert_object_snapshots(tle_repo, elem_repo, hashes: list[str]) -> None:  # type: ignore[no-untyped-def]
+    for i, ch in enumerate(hashes):
+        tle_repo.insert(_make_snapshot(content_hash=ch, raw_text=f"PAYLOAD_{ch}"))
+        elem_repo.insert_many([
+            make_element(
+                norad=25544, days_offset=float(i),
+                content_hash_source=ch, tle_index=0, tle_hash=f"{i:064x}",
+            ),
+        ])
+
+
+def test_derive_per_evidence_uses_declared_subset(tmp_path: Path) -> None:
+    """Evidencia que declara consumed_source_hashes ⊂ hashes-del-objeto:
+    el registry solo incluye los records consumidos, NO todos los del objeto."""
+    tle_repo, elem_repo = _setup_repos(tmp_path)
+    h1, h2, h3 = "c" * 64, "d" * 64, "e" * 64
+    _insert_object_snapshots(tle_repo, elem_repo, [h1, h2, h3])
+
+    # La evidencia consumió solo h1 y h3 (no h2).
+    ev = _make_evidence(detector_event_id="x", consumed=[h1, h3])
+    bundle = _build_bundle(ev)
+    reg = derive_external_source_registry_for_bundle(
+        bundle, tle_snapshots_repo=tle_repo, orbital_elements_repo=elem_repo,
+        clock=_clock,
+    )
+    # Precisión: 2 records (h1, h3), NO 3 — h2 no sustenta esta evidencia.
+    assert reg.n_records == 2
+    payload_hashes = {r.source_payload_hash for r in reg.records}
+    assert payload_hashes == {h1, h3}
+    assert h2 not in payload_hashes
+    rpt = verify_external_source_registry(reg, bundle, clock=_clock)
+    assert rpt.is_valid is True
+
+
+def test_derive_fallback_per_object_when_no_consumed(tmp_path: Path) -> None:
+    """Evidencia SIN consumed_source_hashes (pre-0043) cae al path por-objeto
+    de ADR-0042: incluye los 3 records del objeto. Backward-compatible."""
+    tle_repo, elem_repo = _setup_repos(tmp_path)
+    _insert_object_snapshots(tle_repo, elem_repo, ["c" * 64, "d" * 64, "e" * 64])
+    ev = _make_evidence(detector_event_id="x")  # sin consumed
+    bundle = _build_bundle(ev)
+    reg = derive_external_source_registry_for_bundle(
+        bundle, tle_snapshots_repo=tle_repo, orbital_elements_repo=elem_repo,
+        clock=_clock,
+    )
+    assert reg.n_records == 3
+    rpt = verify_external_source_registry(reg, bundle, clock=_clock)
+    assert rpt.is_valid is True
+
+
+def test_derive_per_evidence_independent_of_orbital_elements_repo(tmp_path: Path) -> None:
+    """Con consumed declarado, la derivación va directa a Raw y no depende del
+    repo de elements (no necesita find_all_by_norad_id)."""
+    tle_repo, _elem_repo = _setup_repos(tmp_path)
+    h1 = "c" * 64
+    tle_repo.insert(_make_snapshot(content_hash=h1, raw_text="P1"))
+    # elem_repo deliberadamente vacío.
+    empty_elem_repo = OrbitalElementsRepository(tmp_path / "empty" / "orbital_elements")
+    ev = _make_evidence(detector_event_id="x", consumed=[h1])
+    bundle = _build_bundle(ev)
+    reg = derive_external_source_registry_for_bundle(
+        bundle, tle_snapshots_repo=tle_repo, orbital_elements_repo=empty_elem_repo,
+        clock=_clock,
+    )
+    assert reg.n_records == 1
+    assert reg.records[0].source_payload_hash == h1
 
 
 def test_derive_independent_of_insertion_order(tmp_path: Path) -> None:

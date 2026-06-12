@@ -22,8 +22,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import datetime
+from typing import Any
 
 from orbital_sentinel.analytics.bundles import EvidenceBundle
+from orbital_sentinel.analytics.evidence import CONSUMED_SOURCE_HASHES_KEY
 from orbital_sentinel.analytics.external_sources.builder import (
     build_external_source_record,
     build_external_source_registry,
@@ -54,6 +56,18 @@ def _map_provider(source_name: str) -> SourceProvider:
     return "manual_offline_import"
 
 
+def _consumed_source_hashes(honesty_payload: dict[str, Any]) -> list[str]:
+    """Lee ``consumed_source_hashes`` del honesty_payload (ADR-0043).
+
+    Devuelve lista limpia de hex strings, o ``[]`` si la clave no existe
+    (evidencia pre-0043) o no es una lista de strings.
+    """
+    raw = honesty_payload.get(CONSUMED_SOURCE_HASHES_KEY)
+    if not isinstance(raw, (list, tuple)):
+        return []
+    return [h for h in raw if isinstance(h, str) and h]
+
+
 def derive_external_source_registry_for_bundle(
     bundle: EvidenceBundle,
     *,
@@ -63,41 +77,50 @@ def derive_external_source_registry_for_bundle(
 ) -> ExternalSourceRegistry:
     """Deriva el :class:`ExternalSourceRegistry` correspondiente a un bundle.
 
-    Algoritmo:
+    Granularidad por-evidencia (ADR-0043) con fallback por-objeto (ADR-0042):
 
-    1. Recolecta los ``object_id`` distintos de ``bundle.evidence_payloads``.
-    2. Para cada uno, consulta
-       :meth:`OrbitalElementsRepository.find_all_by_norad_id` para recuperar
-       el conjunto de ``content_hash_source`` que contribuyeron observación
-       a ese objeto.
-    3. Para cada ``content_hash_source`` único, recupera
-       :class:`TLESnapshot` desde Raw y lo convierte a
+    1. Para cada evidencia, determina sus ``content_hash_source`` consumidos:
+
+       * Si su ``honesty_payload`` declara ``consumed_source_hashes`` (los TLEs
+         exactos que el detector consumió, ADR-0043), se usan directamente.
+       * Si no (bundle pre-0043), se cae al path por-objeto de ADR-0042:
+         ``OrbitalElementsRepository.find_all_by_norad_id(object_id)`` →
+         conjunto de hashes que contribuyeron observación al objeto.
+
+    2. Para cada ``content_hash_source`` único (unión sobre todas las
+       evidencias), recupera :class:`TLESnapshot` desde Raw y lo convierte a
        :class:`ExternalSourceRecord` determinístico.
-    4. Compone ``evidence_to_source_record_mapping``: cada ``evidence_id``
-       apunta al conjunto de records que cubren su ``object_id``.
+    3. Compone ``evidence_to_source_record_mapping``: cada ``evidence_id``
+       apunta al conjunto de records de SUS hashes consumidos.
 
-    Si un ``content_hash_source`` referenciado en Normalized no existe en
-    Raw (cache purgado), se omite silenciosamente; el verifier detectará
-    la cobertura faltante via ``evidence_not_covered_by_any_source_record``.
+    Si un ``content_hash_source`` no existe en Raw (cache purgado), se omite
+    silenciosamente; el verifier detectará la cobertura faltante via
+    ``evidence_not_covered_by_any_source_record``.
 
     Raises:
         ExternalSourceRegistryBuilderError: si el bundle tiene evidencia
             pero ningún snapshot fue encontrado en Raw (catalog vacío o
             bundle construido fuera del flujo persistido).
     """
-    bundle_object_ids: set[int] = {
-        bp.derived_evidence.object_id for bp in bundle.evidence_payloads
-    }
+    # Paso 1: hashes consumidos por evidencia (per-evidencia o fallback).
+    object_hash_cache: dict[int, list[str]] = {}
+    evidence_to_hashes: dict[str, list[str]] = {}
+    for bp in bundle.evidence_payloads:
+        consumed = _consumed_source_hashes(bp.derived_evidence.honesty_payload)
+        if consumed:
+            evidence_to_hashes[bp.evidence_id] = sorted(set(consumed))
+            continue
+        obj = bp.derived_evidence.object_id
+        if obj not in object_hash_cache:
+            elements = orbital_elements_repo.find_all_by_norad_id(obj)
+            object_hash_cache[obj] = sorted({
+                e.content_hash_source for e in elements
+            })
+        evidence_to_hashes[bp.evidence_id] = object_hash_cache[obj]
 
-    object_to_hash_sources: dict[int, list[str]] = {}
-    for obj in sorted(bundle_object_ids):
-        elements = orbital_elements_repo.find_all_by_norad_id(obj)
-        object_to_hash_sources[obj] = sorted({
-            e.content_hash_source for e in elements
-        })
-
+    # Paso 2: records para la unión de hashes consumidos.
     all_hash_sources: list[str] = sorted({
-        ch for srcs in object_to_hash_sources.values() for ch in srcs
+        ch for hashes in evidence_to_hashes.values() for ch in hashes
     })
 
     hash_to_record_id: dict[str, str] = {}
@@ -118,13 +141,13 @@ def derive_external_source_registry_for_bundle(
         records.append(rec)
         hash_to_record_id[ch] = rec.source_record_id
 
+    # Paso 3: mapping por evidencia desde sus propios hashes.
     mapping: dict[str, list[str]] = {}
     for bp in bundle.evidence_payloads:
-        obj = bp.derived_evidence.object_id
-        hashes_for_obj = object_to_hash_sources.get(obj, [])
+        hashes = evidence_to_hashes[bp.evidence_id]
         mapping[bp.evidence_id] = sorted({
             hash_to_record_id[ch]
-            for ch in hashes_for_obj
+            for ch in hashes
             if ch in hash_to_record_id
         })
 

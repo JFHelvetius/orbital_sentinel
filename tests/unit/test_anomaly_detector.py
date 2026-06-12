@@ -236,8 +236,8 @@ def test_event_object_id_uses_object_name_when_present() -> None:
 def test_result_honesty_and_versioning_fields() -> None:
     series = _series_with_value_shift()
     result = detect_anomalies(series, baseline_window_days=30.0, clock=_fixed_clock)
-    assert result.schema_version == ANOMALY_DETECTION_SCHEMA_VERSION == "0.1.0"
-    assert result.analysis_engine_version == ANOMALY_DETECTION_ENGINE_VERSION == "0.1.0"
+    assert result.schema_version == ANOMALY_DETECTION_SCHEMA_VERSION == "0.2.0"
+    assert result.analysis_engine_version == ANOMALY_DETECTION_ENGINE_VERSION == "0.2.0"
     assert result.is_apparent_not_confirmed is True
     assert result.configuration_used.detection_method_name == DETECTION_METHOD_NAME
 

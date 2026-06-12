@@ -137,6 +137,7 @@ def detect_anomalies(
                         object_id=_resolve_object_id(el.object_name, el.norad_cat_id),
                         norad_cat_id=el.norad_cat_id,
                         epoch_datetime=epoch_k,
+                        content_hash_source=el.content_hash_source,
                         feature_name=f,
                         observed_value=observed,
                         baseline_mean=mu,

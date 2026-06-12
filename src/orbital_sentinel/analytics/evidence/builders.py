@@ -17,6 +17,7 @@ from orbital_sentinel.analytics.anomalies.models import (
 )
 from orbital_sentinel.analytics.conjunctions.storage import ConjunctionDetection
 from orbital_sentinel.analytics.evidence.models import (
+    CONSUMED_SOURCE_HASHES_KEY,
     EVIDENCE_TYPE_ANOMALY,
     EVIDENCE_TYPE_CONJUNCTION,
     EVIDENCE_TYPE_MANEUVER,
@@ -27,6 +28,14 @@ from orbital_sentinel.analytics.maneuvers.detector import (
     ManeuverDetectionResult,
     ManeuverEvent,
 )
+
+# --- Provenance por-evidencia (ADR-0043) -------------------------------
+
+
+def _ordered_unique(hashes: Iterable[str]) -> list[str]:
+    """Lista determinística (ordenada, deduplicada) de content_hash_source."""
+    return sorted({h for h in hashes if h})
+
 
 # --- Maneuver -----------------------------------------------------------
 
@@ -69,6 +78,10 @@ def _maneuver_event_to_evidence(event: ManeuverEvent) -> DerivedEvidence:
         "content_hash_source_after": event.content_hash_source_after,
         "epoch_before": event.epoch_before.isoformat(),
         "epoch_after": event.epoch_after.isoformat(),
+        # ADR-0043: los dos TLEs exactos que sustentan el salto detectado.
+        CONSUMED_SOURCE_HASHES_KEY: _ordered_unique(
+            [event.content_hash_source_before, event.content_hash_source_after]
+        ),
     }
     engine = "0.1.0"  # ManeuverEvent no expone analysis_engine_version directamente;
     # usamos el valor del módulo (mismo SemVer del detector)
@@ -126,6 +139,9 @@ def _anomaly_event_to_evidence(event: AnomalyEvent) -> DerivedEvidence:
         "baseline_stddev": event.baseline_stddev,
         "anomaly_score": event.anomaly_score,
         "object_id_string": event.object_id,
+        "content_hash_source": event.content_hash_source,
+        # ADR-0043: el TLE exacto del punto observado que sustenta la anomalía.
+        CONSUMED_SOURCE_HASHES_KEY: _ordered_unique([event.content_hash_source]),
     }
     evidence_id = compute_evidence_id(
         source_detector="anomaly_detection_v01",
@@ -185,6 +201,13 @@ def _conjunction_to_evidence(
     other_norad: int,
 ) -> DerivedEvidence:
     detector_event_id = f"{det.detection_content_hash}_side_{side}"
+    # ADR-0043: el TLE exacto de ESTE lado (a/b) de la conjunción. El TLE del
+    # otro objeto sustenta la evidencia del otro lado, no la de este object_id.
+    side_content_hash_source = (
+        det.element_a_content_hash_source
+        if side == "a"
+        else det.element_b_content_hash_source
+    )
     honesty_payload: dict[str, Any] = {
         "miss_distance_km": det.miss_distance_km,
         "relative_velocity_km_s": det.relative_velocity_km_s,
@@ -202,6 +225,8 @@ def _conjunction_to_evidence(
         "other_norad_cat_id": other_norad,
         "detection_content_hash": det.detection_content_hash,
         "side": side,
+        "content_hash_source": side_content_hash_source,
+        CONSUMED_SOURCE_HASHES_KEY: _ordered_unique([side_content_hash_source]),
     }
     evidence_id = compute_evidence_id(
         source_detector="conjunction_detection_v01",

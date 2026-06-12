@@ -53,8 +53,8 @@ def test_cli_anomalies_emits_valid_json(catalog_with_shifted_series: Path) -> No
     assert rc == 0
     out = json.loads(buf.getvalue())
     assert out["norad_cat_id"] == 12345
-    assert out["schema_version"] == "0.1.0"
-    assert out["analysis_engine_version"] == "0.1.0"
+    assert out["schema_version"] == "0.2.0"
+    assert out["analysis_engine_version"] == "0.2.0"
     assert "events" in out and isinstance(out["events"], list)
     assert out["total_anomalies_found"] == len(out["events"])
     assert out["total_objects_analyzed"] == 1

@@ -33,6 +33,13 @@ EVIDENCE_TYPE_MANEUVER = "maneuver_jump_detected"
 EVIDENCE_TYPE_ANOMALY = "anomaly_observed"
 EVIDENCE_TYPE_CONJUNCTION = "conjunction_detected"
 
+# ADR-0043: clave uniforme en honesty_payload con los content_hash_source
+# exactos que la evidencia consumió. Vive en honesty_payload (dict libre,
+# cargado verbatim del JSON) y NO como campo tipado de DerivedEvidence: así un
+# case.json emitido antes de ADR-0043 recomputa su bundle signature bit-a-bit
+# idéntico bajo el código nuevo, preservando la inmutabilidad de ADR-0006/0031.
+CONSUMED_SOURCE_HASHES_KEY = "consumed_source_hashes"
+
 
 def compute_evidence_id(
     *,

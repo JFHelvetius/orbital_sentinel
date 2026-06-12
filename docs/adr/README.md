@@ -68,5 +68,6 @@ Ver [template.md](template.md) para el formato.
 | [0040](0040-external-source-provenance-layer-v1.md) | External Source Provenance Layer v1 | Aceptado | 2026-06-07 |
 | [0041](0041-dissent-layer-v1.md) | Dissent Layer v1 | Aceptado | 2026-06-07 |
 | [0042](0042-provenance-wiring-v1.md) | Provenance Wiring v1 | Aceptado | 2026-06-07 |
+| [0043](0043-per-evidence-provenance-granularity-v1.md) | Per-Evidence Provenance Granularity v1 | Aceptado | 2026-06-11 |
 
 ADR-0012 y ADR-0013 (sucesores de ADR-0001) son las decisiones más influyentes: gobiernan qué partes del sistema pueden depender de la red y qué propiedades de reproducibilidad se garantizan. Las decisiones posteriores son aplicaciones suyas a planos concretos. Cuando los dos principios entran en tensión, manda ADR-0013.

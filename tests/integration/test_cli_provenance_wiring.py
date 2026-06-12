@@ -334,13 +334,24 @@ def test_derivation_produces_hash_matching_manual_construction(
     tle_repo = TLESnapshotsRepository(
         pipeline_with_raw_snapshots["raw_root"],
     )
-    obj_ids = {bp.derived_evidence.object_id for bp in bundle.evidence_payloads}
+    # ADR-0043: granularidad por-evidencia. Cada evidencia declara sus
+    # content_hash_source exactos en honesty_payload; fallback por-objeto si no.
+    from orbital_sentinel.analytics.evidence import CONSUMED_SOURCE_HASHES_KEY
+    obj_cache: dict[int, list[str]] = {}
+    evidence_to_hashes: dict[str, list[str]] = {}
     hash_sources: set[str] = set()
-    obj_to_hashes: dict[int, list[str]] = {}
-    for obj in sorted(obj_ids):
-        els = elem_repo.find_all_by_norad_id(obj)
-        chs = sorted({e.content_hash_source for e in els})
-        obj_to_hashes[obj] = chs
+    for bp in bundle.evidence_payloads:
+        consumed = bp.derived_evidence.honesty_payload.get(CONSUMED_SOURCE_HASHES_KEY)
+        if isinstance(consumed, (list, tuple)) and consumed:
+            chs = sorted({h for h in consumed if isinstance(h, str) and h})
+        else:
+            obj = bp.derived_evidence.object_id
+            if obj not in obj_cache:
+                obj_cache[obj] = sorted({
+                    e.content_hash_source for e in elem_repo.find_all_by_norad_id(obj)
+                })
+            chs = obj_cache[obj]
+        evidence_to_hashes[bp.evidence_id] = chs
         hash_sources.update(chs)
     records = []
     hash_to_rec: dict[str, str] = {}
@@ -360,7 +371,7 @@ def test_derivation_produces_hash_matching_manual_construction(
         hash_to_rec[ch] = rec.source_record_id
     mapping = {
         bp.evidence_id: sorted({
-            hash_to_rec[ch] for ch in obj_to_hashes.get(bp.derived_evidence.object_id, [])
+            hash_to_rec[ch] for ch in evidence_to_hashes[bp.evidence_id]
         })
         for bp in bundle.evidence_payloads
     }

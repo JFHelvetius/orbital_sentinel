@@ -10,11 +10,11 @@ from __future__ import annotations
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
-ANOMALY_DETECTION_SCHEMA_VERSION = "0.1.0"
-"""SemVer del esquema (ADR-0010)."""
+ANOMALY_DETECTION_SCHEMA_VERSION = "0.2.0"
+"""SemVer del esquema (ADR-0010). 0.2.0: + content_hash_source (ADR-0043)."""
 
-ANOMALY_DETECTION_ENGINE_VERSION = "0.1.0"
-"""SemVer del motor de anomalías (ADR-0010 engine_version)."""
+ANOMALY_DETECTION_ENGINE_VERSION = "0.2.0"
+"""SemVer del motor de anomalías (ADR-0010 engine_version). 0.2.0: ADR-0043."""
 
 DETECTION_METHOD_NAME = "self_baseline_z_score_v1"
 """Identificador del método (ADR-0028).
@@ -42,6 +42,12 @@ class AnomalyEvent(BaseModel):
     )
     norad_cat_id: int
     epoch_datetime: AwareDatetime
+
+    # --- Provenance del punto observado (ADR-0043) ---
+    content_hash_source: str = Field(
+        description="content_hash_source del OrbitalElement observado; FK "
+        "Normalized→Raw del TLE exacto que sustenta este finding (ADR-0043)."
+    )
 
     # --- Feature observada ---
     feature_name: str

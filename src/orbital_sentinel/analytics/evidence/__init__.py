@@ -6,6 +6,7 @@ from orbital_sentinel.analytics.evidence.builders import (
     build_maneuver_evidence,
 )
 from orbital_sentinel.analytics.evidence.models import (
+    CONSUMED_SOURCE_HASHES_KEY,
     EVIDENCE_LAYER_ENGINE_VERSION,
     EVIDENCE_LAYER_SCHEMA_VERSION,
     EVIDENCE_TYPE_ANOMALY,
@@ -18,6 +19,7 @@ from orbital_sentinel.analytics.evidence.models import (
 )
 
 __all__ = [
+    "CONSUMED_SOURCE_HASHES_KEY",
     "EVIDENCE_LAYER_ENGINE_VERSION",
     "EVIDENCE_LAYER_SCHEMA_VERSION",
     "EVIDENCE_TYPE_ANOMALY",
