@@ -135,6 +135,19 @@ def test_hash_changes_with_step() -> None:
 # --- ConjunctionDetection.from_analysis ----------------------------------
 
 
+def test_from_analysis_carries_co_orbiting_annotation() -> None:
+    """ADR-0044: ISS vs self (rel_v≈0) → co-orbiting; la anotación se
+    materializa en la detección persistible (honesty field sobrevive)."""
+    analysis = _make_analysis_iss_self()
+    det = ConjunctionDetection.from_analysis(analysis, persisted_at=PERSISTED_AT)
+    assert analysis.is_apparent_co_orbiting is True
+    assert det.is_apparent_co_orbiting is True
+    assert (
+        det.co_orbiting_velocity_threshold_km_s
+        == analysis.co_orbiting_velocity_threshold_km_s
+    )
+
+
 def test_from_analysis_preserves_all_fields() -> None:
     analysis = _make_analysis_iss_self()
     det = ConjunctionDetection.from_analysis(analysis, persisted_at=PERSISTED_AT)

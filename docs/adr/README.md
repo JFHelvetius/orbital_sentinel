@@ -69,5 +69,6 @@ Ver [template.md](template.md) para el formato.
 | [0041](0041-dissent-layer-v1.md) | Dissent Layer v1 | Aceptado | 2026-06-07 |
 | [0042](0042-provenance-wiring-v1.md) | Provenance Wiring v1 | Aceptado | 2026-06-07 |
 | [0043](0043-per-evidence-provenance-granularity-v1.md) | Per-Evidence Provenance Granularity v1 | Aceptado | 2026-06-11 |
+| [0044](0044-co-orbiting-annotation-v1.md) | Co-orbiting Annotation v1 (motivado por dato real) | Aceptado | 2026-06-12 |
 
 ADR-0012 y ADR-0013 (sucesores de ADR-0001) son las decisiones más influyentes: gobiernan qué partes del sistema pueden depender de la red y qué propiedades de reproducibilidad se garantizan. Las decisiones posteriores son aplicaciones suyas a planos concretos. Cuando los dos principios entran en tensión, manda ADR-0013.

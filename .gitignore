@@ -57,6 +57,9 @@ data/cache/
 mypy_full.txt
 ruff_full.txt
 
+# Local-only real-data validation runs (live CelesTrak ingest scratch; reproducible)
+realrun/
+
 # Reference cases caches/raw are intermediate. Final artifacts (JSON + verifications + README)
 # are tracked explicitly; per-case raw/normalized/derived parquet are excluded by convention.
 reference_cases/*/raw/year=*

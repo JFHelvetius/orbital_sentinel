@@ -32,11 +32,13 @@ from orbital_sentinel.catalog.orbital_elements import OrbitalElement
 from orbital_sentinel.catalog.tle_snapshots import TLESnapshot
 from orbital_sentinel.propagation import Sgp4Propagator
 
-CONJUNCTION_SCHEMA_VERSION = "0.3.0"
+CONJUNCTION_SCHEMA_VERSION = "0.4.0"
 """SemVer del esquema de ConjunctionAnalysis (ADR-0010).
 
 v0.2.0 (ADR-0017): añade campo ``tca_was_refined``.
 v0.3.0 (ADR-0020): añade 7 campos de Pc + covarianza declarada.
+v0.4.0 (ADR-0044): añade anotación co-orbiting (2 campos). Solo estructura:
+    los valores geométricos/Pc son bit-idénticos, por eso engine_version NO sube.
 """
 
 CONJUNCTION_ENGINE_VERSION = "0.3.0"
@@ -44,6 +46,22 @@ CONJUNCTION_ENGINE_VERSION = "0.3.0"
 
 v0.2.0 (ADR-0017): refinamiento de TCA por bisección.
 v0.3.0 (ADR-0020): cómputo de Pc con covarianza declarada (Foster fast).
+
+NOTA (ADR-0044): la anotación co-orbiting NO sube engine_version: es una
+interpretación declarada de ``relative_velocity_km_s`` (ya computada), no
+cambia ningún valor geométrico. ``detection_content_hash`` permanece estable.
+"""
+
+CO_ORBITING_RELATIVE_VELOCITY_THRESHOLD_KM_S = 0.05
+"""Umbral declarado de velocidad relativa para marcar co-orbiting (ADR-0044).
+
+Justificación física: una conjunción entre objetos independientes en LEO tiene
+velocidad relativa en el TCA del orden de 0.5–15 km/s (geometrías que se cruzan
+o convergen). Objetos co-orbitando o acoplados (misma órbita, misma fase:
+ISS + Soyuz/Progress/Dragon/módulos) tienen velocidad relativa ~0 (cm/s a m/s).
+50 m/s es conservador: por debajo, el "encuentro" es co-movimiento, no geometría
+de colisión. Validado contra dato real CelesTrak (grupo 'stations', 2026-06-12).
+Es un umbral DECLARADO y overridable, no una constante mágica oculta (P2).
 """
 
 TCA_REFINEMENT_TOLERANCE_SECONDS = 1.0
@@ -157,6 +175,25 @@ class ConjunctionAnalysis(BaseModel):
         description="Identificador del método de Pc usado (ADR-0020)."
     )
 
+    # --- Anotación co-orbiting (ADR-0044, honestidad sobre P2) ---
+    co_orbiting_velocity_threshold_km_s: float = Field(
+        default=CO_ORBITING_RELATIVE_VELOCITY_THRESHOLD_KM_S,
+        ge=0.0,
+        description=(
+            "Umbral declarado de velocidad relativa por debajo del cual el "
+            "encuentro se anota como co-orbiting (ADR-0044)."
+        ),
+    )
+    is_apparent_co_orbiting: bool = Field(
+        default=False,
+        description=(
+            "True si relative_velocity_km_s < co_orbiting_velocity_threshold_km_s. "
+            "Indica co-movimiento (acoplado/co-orbitando), NO una geometría de "
+            "colisión. NO filtra la detección: la anota honestamente (ADR-0044). "
+            "Apparent, no confirmado: el operador interpreta."
+        ),
+    )
+
     # --- Versioning (ADR-0010) ---
     schema_version: str = Field(default=CONJUNCTION_SCHEMA_VERSION)
     engine_version: str = Field(default=CONJUNCTION_ENGINE_VERSION)
@@ -175,6 +212,9 @@ def analyze_pairwise_conjunction(
     refine_tca: bool = True,
     refinement_tolerance_seconds: float = TCA_REFINEMENT_TOLERANCE_SECONDS,
     combined_hard_body_radius_km: float = 0.0,
+    co_orbiting_velocity_threshold_km_s: float = (
+        CO_ORBITING_RELATIVE_VELOCITY_THRESHOLD_KM_S
+    ),
     clock: Callable[[], datetime] | None = None,
 ) -> ConjunctionAnalysis:
     """Encuentra el TCA de mínima distancia entre dos objetos.
@@ -273,6 +313,10 @@ def analyze_pairwise_conjunction(
         combined_hard_body_radius_km=combined_hard_body_radius_km,
     )
 
+    # Anotación co-orbiting (ADR-0044): pura función de la velocidad relativa
+    # ya computada. NO altera ningún valor geométrico ni el detection_hash.
+    is_apparent_co_orbiting = rel_v < co_orbiting_velocity_threshold_km_s
+
     return ConjunctionAnalysis(
         norad_a=element_a.norad_cat_id,
         norad_b=element_b.norad_cat_id,
@@ -300,6 +344,8 @@ def analyze_pairwise_conjunction(
         covariance_growth_sigma_km_per_day=COVARIANCE_GROWTH_SIGMA_KM_PER_DAY,
         combined_sigma_at_tca_km=sigma_combined,
         pc_method=PC_METHOD_NAME,
+        co_orbiting_velocity_threshold_km_s=co_orbiting_velocity_threshold_km_s,
+        is_apparent_co_orbiting=is_apparent_co_orbiting,
         derived_at=derived_at,
     )
 

@@ -26,11 +26,13 @@ from orbital_sentinel.analytics.conjunctions.analysis import ConjunctionAnalysis
 from orbital_sentinel.catalog.tle_snapshots import TLESnapshotsRepository
 from orbital_sentinel.core.errors import OrbitalSentinelError
 
-PERSISTED_CONJUNCTION_SCHEMA_VERSION = "0.2.0"
+PERSISTED_CONJUNCTION_SCHEMA_VERSION = "0.3.0"
 """SemVer del esquema persistido.
 
 v0.1.0 (ADR-0019): primer esquema persistido.
 v0.2.0 (ADR-0020): añade 7 campos de Pc + covarianza declarada.
+v0.3.0 (ADR-0044): añade anotación co-orbiting (2 campos). detection_content_hash
+    NO cambia (engine_version se mantiene en 0.3.0).
 """
 
 
@@ -120,6 +122,16 @@ class ConjunctionDetection(BaseModel):
     combined_sigma_at_tca_km: float
     pc_method: str
 
+    # --- Anotación co-orbiting (ADR-0044) ---
+    co_orbiting_velocity_threshold_km_s: float = Field(
+        default=0.0,
+        description="Umbral declarado de velocidad relativa (ADR-0044).",
+    )
+    is_apparent_co_orbiting: bool = Field(
+        default=False,
+        description="Co-movimiento (acoplado/co-orbitando), no colisión (ADR-0044).",
+    )
+
     # --- Versioning del análisis original ---
     analysis_schema_version: str
     analysis_engine_version: str
@@ -169,6 +181,8 @@ class ConjunctionDetection(BaseModel):
             covariance_growth_sigma_km_per_day=analysis.covariance_growth_sigma_km_per_day,
             combined_sigma_at_tca_km=analysis.combined_sigma_at_tca_km,
             pc_method=analysis.pc_method,
+            co_orbiting_velocity_threshold_km_s=analysis.co_orbiting_velocity_threshold_km_s,
+            is_apparent_co_orbiting=analysis.is_apparent_co_orbiting,
             analysis_schema_version=analysis.schema_version,
             analysis_engine_version=analysis.engine_version,
             analysis_derived_at=analysis.derived_at,
@@ -207,6 +221,8 @@ _ARROW_SCHEMA = pa.schema(
         pa.field("covariance_growth_sigma_km_per_day", pa.float64(), nullable=False),
         pa.field("combined_sigma_at_tca_km", pa.float64(), nullable=False),
         pa.field("pc_method", pa.string(), nullable=False),
+        pa.field("co_orbiting_velocity_threshold_km_s", pa.float64(), nullable=False),
+        pa.field("is_apparent_co_orbiting", pa.bool_(), nullable=False),
         pa.field("analysis_schema_version", pa.string(), nullable=False),
         pa.field("analysis_engine_version", pa.string(), nullable=False),
         pa.field("analysis_derived_at", pa.timestamp("us", tz="UTC"), nullable=False),
@@ -381,6 +397,10 @@ class ConjunctionDetectionsRepository:
                 ],
                 "combined_sigma_at_tca_km": [d.combined_sigma_at_tca_km for d in rows],
                 "pc_method": [d.pc_method for d in rows],
+                "co_orbiting_velocity_threshold_km_s": [
+                    d.co_orbiting_velocity_threshold_km_s for d in rows
+                ],
+                "is_apparent_co_orbiting": [d.is_apparent_co_orbiting for d in rows],
                 "analysis_schema_version": [d.analysis_schema_version for d in rows],
                 "analysis_engine_version": [d.analysis_engine_version for d in rows],
                 "analysis_derived_at": [d.analysis_derived_at for d in rows],

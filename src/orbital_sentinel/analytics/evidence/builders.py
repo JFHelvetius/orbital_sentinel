@@ -222,6 +222,9 @@ def _conjunction_to_evidence(
         "sgp4_uncertainty_growth_km_per_day": det.sgp4_uncertainty_growth_km_per_day,
         "tca_resolution_minutes": det.tca_resolution_minutes,
         "tca_was_refined": det.tca_was_refined,
+        # ADR-0044: anotación honesta co-orbiting (no filtra, contextualiza).
+        "is_apparent_co_orbiting": det.is_apparent_co_orbiting,
+        "co_orbiting_velocity_threshold_km_s": det.co_orbiting_velocity_threshold_km_s,
         "other_norad_cat_id": other_norad,
         "detection_content_hash": det.detection_content_hash,
         "side": side,

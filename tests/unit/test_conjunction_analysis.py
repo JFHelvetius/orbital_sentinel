@@ -343,10 +343,57 @@ def test_no_refinement_with_single_sample() -> None:
     assert result.tca == EPOCH
 
 
-def test_engine_and_schema_versions_are_v03() -> None:
-    """Bump explícito a 0.3.0 por ADR-0020 (Pc + covarianza declarada)."""
+# --- Anotación co-orbiting (ADR-0044) ----------------------------------
+
+
+def test_co_orbiting_same_object_is_flagged() -> None:
+    """A vs A (rel_v ≈ 0) → is_apparent_co_orbiting=True. No filtra: anota."""
+    element, snap = _iss_pair()
+    result = analyze_pairwise_conjunction(
+        element, snap, element, snap,
+        window_start=EPOCH, window_end=EPOCH + timedelta(minutes=10),
+        step_minutes=2.0,
+    )
+    assert result.relative_velocity_km_s < result.co_orbiting_velocity_threshold_km_s
+    assert result.is_apparent_co_orbiting is True
+    # La detección NO se elimina: el miss sigue ahí, solo anotado.
+    assert result.miss_distance_km == pytest.approx(0.0, abs=1e-9)
+
+
+def test_crossing_orbits_not_flagged_co_orbiting() -> None:
+    """ISS vs GEO (rel_v de varios km/s) → is_apparent_co_orbiting=False."""
+    elements, snap = _multi_pair()
+    iss, geo = elements
+    result = analyze_pairwise_conjunction(
+        iss, snap, geo, snap,
+        window_start=EPOCH, window_end=EPOCH + timedelta(hours=2),
+        step_minutes=5.0,
+    )
+    assert result.relative_velocity_km_s > result.co_orbiting_velocity_threshold_km_s
+    assert result.is_apparent_co_orbiting is False
+
+
+def test_co_orbiting_threshold_is_declared_and_overridable() -> None:
+    """El umbral es un campo declarado; subirlo reclasifica honestamente (P2)."""
+    elements, snap = _multi_pair()
+    iss, geo = elements
+    # Umbral enorme → incluso ISS vs GEO cae bajo el umbral → True.
+    result = analyze_pairwise_conjunction(
+        iss, snap, geo, snap,
+        window_start=EPOCH, window_end=EPOCH + timedelta(hours=2),
+        step_minutes=5.0,
+        co_orbiting_velocity_threshold_km_s=1e9,
+    )
+    assert result.co_orbiting_velocity_threshold_km_s == 1e9
+    assert result.is_apparent_co_orbiting is True
+
+
+def test_engine_and_schema_versions() -> None:
+    """engine 0.3.0 (ADR-0020). schema 0.4.0 tras ADR-0044 (co-orbiting):
+    el bump es SOLO de esquema; engine_version se mantiene porque los valores
+    geométricos/Pc son bit-idénticos."""
     assert CONJUNCTION_ENGINE_VERSION == "0.3.0"
-    assert CONJUNCTION_SCHEMA_VERSION == "0.3.0"
+    assert CONJUNCTION_SCHEMA_VERSION == "0.4.0"
 
 
 def test_refinement_is_deterministic() -> None:

@@ -397,6 +397,19 @@ def test_build_anomaly_consumed_hash_is_observed_point() -> None:
         ]
 
 
+def test_build_conjunction_co_orbiting_survives_in_honesty_payload() -> None:
+    """ADR-0044: la anotación co-orbiting del detector sobrevive en la evidencia
+    (ADR-0029 § los honesty fields upstream sobreviven)."""
+    det = _make_conjunction(norad_a=11111, norad_b=22222)
+    co_det = det.model_copy(update={
+        "is_apparent_co_orbiting": True,
+        "co_orbiting_velocity_threshold_km_s": 0.05,
+    })
+    for ev in build_conjunction_evidence([co_det]):
+        assert ev.honesty_payload["is_apparent_co_orbiting"] is True
+        assert ev.honesty_payload["co_orbiting_velocity_threshold_km_s"] == 0.05
+
+
 def test_build_conjunction_consumed_hash_is_side_specific() -> None:
     det = _make_conjunction(norad_a=11111, norad_b=22222)
     by_norad = {e.object_id: e for e in build_conjunction_evidence([det])}
